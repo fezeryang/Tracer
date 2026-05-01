@@ -1,0 +1,238 @@
+
+
+
+export interface AlpacaAccount {
+  id: string;
+  portfolio_value: string;
+  buying_power: string;
+  cash: string;
+  equity: string;
+}
+
+export interface AlpacaOrder {
+  id: string;
+  symbol: string;
+}
+
+export interface StockQuote {
+  symbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volatility: number; // Implied Volatility
+  source?: string;
+}
+
+export interface OptionLeg {
+  type: 'call' | 'put';
+  action: 'buy' | 'sell';
+  strike: number;
+  premium: number;
+  expiration: string;
+}
+
+export interface Greeks {
+  delta: number;
+  gamma: number;
+  theta: number;
+  vega: number;
+  rho: number;
+}
+
+export interface StrategyRecommendation {
+  name: string;
+  ticker: string;
+  currentPrice: number;
+  thesis: string; // Bullish, Bearish, Neutral, Volatile
+  explanation: string;
+  legs: OptionLeg[];
+  maxProfit: number | 'Unlimited';
+  maxLoss: number | 'Unlimited';
+  breakEven: number[];
+  // New "Cool" Metrics
+  pop: number; // Probability of Profit (0-100)
+  riskScore: number; // 1-10
+  complexity: 'Low' | 'Medium' | 'High' | 'Degen';
+  marketDataSource?: string;
+}
+
+export interface CompanyFundamentals {
+  symbol: string;
+  companyName: string;
+  description: string;
+  sector: string;
+  industry: string;
+  marketCap: number;
+  peRatio: number;
+  beta: number; // Volatility measure
+  website: string;
+}
+
+export interface NewsItem {
+  title: string;
+  image: string;
+  site: string;
+  text: string;
+  url: string;
+  publishedDate: string;
+  sentiment: 'Positive' | 'Negative' | 'Neutral';
+  sentimentScore: number; // -1 to 1 range
+}
+
+// --- News Impact Predictor Types ---
+export interface HistoricalEvent {
+    event: string;
+    date: string;
+    ticker: string;
+    movePercent: number;
+    similarity: number; // 0-100 match
+}
+
+export interface NewsImpactAnalysis {
+    headline: string;
+    ticker: string;
+    publishedTime: string;
+    sentimentScore: number; // 0-100
+    predictedMoveLow: number; // %
+    predictedMoveHigh: number; // %
+    currentMove: number; // %
+    remainingAlpha: number; // % (Average Predicted - Current)
+    confidence: number; // 0-100
+    reasoning: string;
+    similarEvents: HistoricalEvent[];
+    verdict: 'Load the Boat' | 'Buy Dip' | 'Wait' | 'Sell Strength' | 'Priced In';
+}
+
+export interface OptionContract {
+  contractName?: string;
+  strike: number;
+  type: 'call' | 'put';
+  bid: number;
+  ask: number;
+  lastPrice: number;
+  theoreticalPrice: number; // Black-Scholes Model Price
+  volume: number;
+  openInterest: number;
+  impliedVolatility: number;
+  inTheMoney: boolean;
+}
+
+export interface OptionsChain {
+  symbol: string;
+  currentPrice: number;
+  expirations: string[];
+  selectedExpiration: string;
+  calls: OptionContract[];
+  puts: OptionContract[];
+}
+
+export interface Message {
+  id: string;
+  role: 'user' | 'model';
+  text?: string;
+  strategy?: StrategyRecommendation; // If the model proposes a strategy
+  fundamentals?: CompanyFundamentals; // If the model fetches fundamentals
+  news?: NewsItem[]; // If the model fetches news
+  whisper?: WhisperData; // If the model fetches whisper data
+  impactAnalysis?: NewsImpactAnalysis; // If the model predicts news impact
+  quote?: StockQuote; // If the model fetches a quote
+  isLoading?: boolean;
+  ragContext?: string[];
+}
+
+// --- Backtest Types ---
+export interface EquityPoint {
+  date: string;
+  strategyValue: number;
+  benchmarkValue: number; // Buy & Hold stock
+  underlyingPrice: number; // Raw stock price for reference
+  // Granular Debug Data
+  cash: number;
+  sharesHeld: number;
+  contractsHeld: number;
+  optionValue: number;
+  action?: 'entry' | 'exit' | 'hold'; // For chart markers
+}
+
+export interface TradeLog {
+  id: number;
+  entryDate: string;
+  exitDate: string;
+  type: 'call' | 'put';
+  action: 'buy' | 'sell';
+  strike: number;
+  stockPrice: number; // Stock price at time of entry
+  entryPrice: number; // Premium per share
+  exitPrice: number; // Settlement per share
+  pnl: number; // Total Dollar PnL
+  status: 'Win' | 'Loss';
+}
+
+export interface BacktestResult {
+  ticker: string;
+  strategy: string;
+  totalReturn: number;
+  winRate: number;
+  maxDrawdown: number;
+  tradeCount: number;
+  equityCurve: EquityPoint[];
+  trades: TradeLog[];
+}
+
+// --- Auth & Admin Types ---
+export interface UserSession {
+  username: string;
+  sessionId: string;
+  loginTime: string;
+}
+
+export interface AdminLog {
+  username: string;
+  loginTime: string;
+  lastActive: string;
+  durationMinutes: number;
+  platform: string; // 'BigQuery' or 'SQLite' source
+  ipAddress?: string;
+}
+
+export interface RegisteredUser {
+  username: string;
+  email: string;
+  created_at: string;
+  ipAddress?: string;
+}
+
+// --- Time Machine Types ---
+export interface TimeMachineFrame {
+  date: string;
+  price: number;
+  volatility: number;
+  news: string;
+  commentary: string;
+}
+
+export interface MarketEvent {
+  id: string;
+  title: string;
+  ticker: string;
+  description: string;
+  frames: TimeMachineFrame[];
+}
+
+// --- Whisper / Alternative Data Types ---
+export interface WhisperSource {
+    source: 'Reddit' | 'Twitter' | 'Glassdoor' | 'Google Trends' | 'App Store' | 'LinkedIn';
+    score: number; // Normalized 0-100 or specific metric
+    trend: 'up' | 'down' | 'flat';
+    sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+    insight: string; // "Hiring spree detected", "Negative employee reviews"
+    icon?: any;
+}
+
+export interface WhisperData {
+    ticker: string;
+    overallScore: number; // 0-100
+    sentimentLabel: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell';
+    sources: WhisperSource[];
+    summary: string;
+}

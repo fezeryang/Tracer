@@ -1,0 +1,7 @@
+{
+  "name": "Remix: VOLT - Option Volatility Terminal",
+  "description": "VOLT | Institutional level tools for retail investors. AI-powered options trading strategies and real-time market intelligence.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
