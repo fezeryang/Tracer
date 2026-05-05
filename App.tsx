@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Activity, Info, Zap, Radio, TrendingUp, Shield, HelpCircle, GraduationCap, MessageSquare, Mic, Volume2, X, Layers, Newspaper, History, MessageCircle, Database, ShieldCheck, Clock, Users, ArrowRight, AlertTriangle, Globe, ShoppingCart } from 'lucide-react';
-import { createChatSession } from './services/geminiService';
+import { Send, Activity, Info, Zap, Radio, TrendingUp, Shield, HelpCircle, GraduationCap, MessageSquare, Mic, Volume2, X, Layers, Newspaper, History, MessageCircle, Database, ShieldCheck, Clock, Users, ArrowRight, AlertTriangle, Globe, ShoppingCart, FileText } from 'lucide-react';
+import { createChatSession, GEMINI_KEY_MISSING_MESSAGE } from './services/geminiService';
 import { Message, OptionContract, StockQuote, UserSession } from './types';
 import { fetchStockQuote } from './services/marketDataService';
 import StrategyCard from './components/StrategyCard';
@@ -20,6 +20,7 @@ import NewsImpactView from './components/NewsImpactView';
 import QuoteCard from './components/QuoteCard';
 import MacroView from './components/MacroView';
 import TradingView from './components/TradingView';
+import ReportView from './components/ReportView';
 
 const TickerTape = () => {
   const [quotes, setQuotes] = useState<StockQuote[]>([]);
@@ -165,7 +166,7 @@ const VoiceVisualizer = ({ active, onClose }: { active: boolean, onClose: () => 
   );
 };
 
-type ViewMode = 'chat' | 'academy' | 'chain' | 'backtest' | 'feedback' | 'admin' | 'timemachine' | 'whisper' | 'news-impact' | 'macro' | 'trading';
+type ViewMode = 'chat' | 'report' | 'academy' | 'chain' | 'backtest' | 'feedback' | 'admin' | 'timemachine' | 'whisper' | 'news-impact' | 'macro' | 'trading';
 
 const App: React.FC = () => {
   // Login State
@@ -208,7 +209,26 @@ const App: React.FC = () => {
   }, [userSession]);
 
   useEffect(() => {
-    chatSessionRef.current = createChatSession();
+    try {
+      chatSessionRef.current = createChatSession();
+    } catch (error: any) {
+      console.warn('[App] Chat session unavailable during initialization.', error);
+      chatSessionRef.current = null;
+      setMessages(prev => {
+        if (prev.some(message => message.id === 'gemini-key-missing')) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            id: 'gemini-key-missing',
+            role: 'model',
+            text: GEMINI_KEY_MISSING_MESSAGE,
+          },
+        ];
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -297,7 +317,9 @@ const App: React.FC = () => {
     setIsTyping(true);
 
     try {
-      if (!chatSessionRef.current) return;
+      if (!chatSessionRef.current) {
+        throw new Error(GEMINI_KEY_MISSING_MESSAGE);
+      }
       // @ts-ignore - Handle potential return types
       const response = await chatSessionRef.current.sendMessage(text);
       
@@ -317,6 +339,9 @@ const App: React.FC = () => {
       console.error('Error:', error);
       
       let errorText = "Connection interrupted. Retrying market feed...";
+      if (error?.message?.includes(GEMINI_KEY_MISSING_MESSAGE)) {
+          errorText = GEMINI_KEY_MISSING_MESSAGE;
+      } else
       if (error?.message?.includes('429') || error?.status === 429 || error?.code === 429) {
           errorText = "⚠️ API Quota Exceeded. The system is momentarily overloaded or your API plan limit has been reached. Please try again in a few minutes.";
       } else if (error?.message?.includes('503') || error?.status === 503) {
@@ -353,6 +378,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
       switch(view) {
+          case 'report': return <ReportView />;
           case 'chain': return <OptionsChainView onSelectContract={handleContractSelect} />;
           case 'academy': return <EducationView />;
           case 'backtest': return <BacktestView />;
@@ -529,6 +555,13 @@ const App: React.FC = () => {
              >
                <MessageSquare className="w-3.5 h-3.5" />
                <span className="hidden md:inline">Chat</span>
+             </button>
+             <button 
+                onClick={() => setView('report')}
+                className={`px-3 md:px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all whitespace-nowrap ${view === 'report' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white'}`}
+             >
+               <FileText className="w-3.5 h-3.5" />
+               <span className="hidden md:inline">Report</span>
              </button>
              <button 
                 onClick={() => setView('chain')}

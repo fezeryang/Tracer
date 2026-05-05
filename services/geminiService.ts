@@ -5,12 +5,19 @@ import { StrategyRecommendation, OptionLeg, CompanyFundamentals, NewsItem, Whisp
 import { vectorStore } from './ragService';
 
 let aiInstance: GoogleGenAI | null = null;
+export const GEMINI_KEY_MISSING_MESSAGE = "Gemini API key is not configured. AI chat is disabled until a key is provided.";
 
-const getAI = () => {
+const getGeminiApiKey = () => {
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const fallbackKey = import.meta.env.GEMINI_API_KEY;
+  return viteKey || fallbackKey || '';
+};
+
+export const getAI = () => {
   if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is missing. Please ensure it is set in the AI Studio Settings menu.");
+      throw new Error(GEMINI_KEY_MISSING_MESSAGE);
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }
@@ -146,7 +153,7 @@ interface ChatSession {
 }
 
 // Helper: Exponential Backoff Retry
-async function retryOperation<T>(operation: () => Promise<T>, maxRetries: number = 3, initialDelay: number = 2000): Promise<T> {
+export async function retryOperation<T>(operation: () => Promise<T>, maxRetries: number = 3, initialDelay: number = 2000): Promise<T> {
   let delay = initialDelay;
   for (let i = 0; i < maxRetries; i++) {
     try {

@@ -4,11 +4,17 @@ import { GoogleGenAI } from "@google/genai";
 // Initialize Gemini for Embeddings
 let aiInstance: GoogleGenAI | null = null;
 
+const getGeminiApiKey = () => {
+  const viteKey = import.meta.env.VITE_GEMINI_API_KEY;
+  const fallbackKey = import.meta.env.GEMINI_API_KEY;
+  return viteKey || fallbackKey || '';
+};
+
 const getAI = () => {
   if (!aiInstance) {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is missing. Please ensure it is set in the AI Studio Settings menu.");
+      throw new Error("Gemini API key is not configured. RAG features are disabled until a key is provided.");
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }

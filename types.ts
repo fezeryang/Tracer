@@ -236,3 +236,23 @@ export interface WhisperData {
     sources: WhisperSource[];
     summary: string;
 }
+
+// --- Report Types ---
+export interface StockAnalysisReport {
+  ticker: string;
+  generatedAt: string;
+  quote: StockQuote | null;
+  fundamentals: CompanyFundamentals | null;
+  news: NewsItem[];
+  whisper: WhisperData | null;
+  summary: string;
+  priceAnalysis: string;
+  newsAnalysis: string;
+  fundamentalsAnalysis: string;
+  volatilityAnalysis: string;
+  optionsEducation: string;
+  risks: string[];
+  conclusion: string;
+  disclaimer: string;
+  dataAvailability?: string[];
+}
