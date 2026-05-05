@@ -1,6 +1,8 @@
 import { getAI, retryOperation } from './geminiService';
 import { fetchCompanyFundamentals, fetchStockNews, fetchStockQuote, fetchWhisperData } from './marketDataService';
-import { CompanyFundamentals, NewsItem, StockAnalysisReport, StockQuote, WhisperData } from '../types';
+import { fetchVerifiedStockNews } from './newsVerificationService';
+import { fetchSecFilingsForTicker } from './secFilingService';
+import { CompanyFundamentals, NewsItem, SecFilingVerification, StockAnalysisReport, StockQuote, VerifiedNewsItem, WhisperData } from '../types';
 
 interface StockAnalysisReportLLMResponse {
   summary?: string;
@@ -17,6 +19,16 @@ interface StockAnalysisReportLLMResponse {
 const REPORT_DISCLAIMER = 'For educational and research use only. Not financial advice.';
 
 const normalizeTicker = (ticker: string) => ticker.trim().toUpperCase();
+
+const buildUnavailableSecFilings = (ticker: string, error?: string): SecFilingVerification => ({
+  ticker,
+  generatedAt: new Date().toISOString(),
+  filings: [],
+  formsIncluded: [],
+  status: 'unavailable',
+  error,
+  notes: ['SEC EDGAR filings are currently unavailable.'],
+});
 
 const toStringArray = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -82,6 +94,7 @@ const buildAvailabilityNotes = (
   quote: StockQuote | null,
   fundamentals: CompanyFundamentals | null,
   news: NewsItem[],
+  officialFilings: SecFilingVerification,
   whisper: WhisperData | null,
   failedSources: string[]
 ): string[] => {
@@ -90,6 +103,7 @@ const buildAvailabilityNotes = (
   if (!quote) notes.push('Live quote data was unavailable when this report was generated.');
   if (!fundamentals) notes.push('Company fundamentals were unavailable or incomplete for this run.');
   if (news.length === 0) notes.push('No recent news items were available, so news coverage is limited.');
+  if (officialFilings.status !== 'available') notes.push('SEC EDGAR official filings were unavailable or empty for this report.');
   if (!whisper) {
     notes.push('Experimental Whisper alternative signal data was unavailable for this report.');
   } else {
@@ -108,10 +122,12 @@ const buildFallbackReport = (
   quote: StockQuote | null,
   fundamentals: CompanyFundamentals | null,
   news: NewsItem[],
+  verifiedNews: VerifiedNewsItem[],
+  officialFilings: SecFilingVerification,
   whisper: WhisperData | null,
   failedSources: string[]
 ): StockAnalysisReport => {
-  const availabilityNotes = buildAvailabilityNotes(quote, fundamentals, news, whisper, failedSources);
+  const availabilityNotes = buildAvailabilityNotes(quote, fundamentals, news, officialFilings, whisper, failedSources);
   const newsHeadlineSummary =
     news.length > 0
       ? news
@@ -138,6 +154,8 @@ const buildFallbackReport = (
     quote,
     fundamentals,
     news,
+    verifiedNews,
+    officialFilings,
     whisper,
     summary: `${quoteSummary} This report is a research-oriented snapshot assembled from currently available market, company, and headline data. ${REPORT_DISCLAIMER}`,
     priceAnalysis: `${quoteSummary} If quote coverage is delayed or simulated, treat this as a rough reference rather than a trading input.`,
@@ -164,6 +182,7 @@ const buildPrompt = (
   quote: StockQuote | null,
   fundamentals: CompanyFundamentals | null,
   news: NewsItem[],
+  officialFilings: SecFilingVerification,
   whisper: WhisperData | null,
   availabilityNotes: string[]
 ) => `
@@ -189,6 +208,7 @@ Rules:
 - Focus on educational observations, research summary, risk factors, things to monitor, and options education.
 - Explicitly acknowledge uncertainty when data is missing or incomplete.
 - Treat Whisper as experimental, simulated-style alternative signal data, not as a complete or verified social media dataset.
+- Official SEC filings are supporting context for disclosure verification, not investment advice.
 - The disclaimer field must be exactly: "${REPORT_DISCLAIMER}"
 - Mention when news sentiment is automatically estimated from available headlines/summaries and may be incomplete.
 
@@ -199,6 +219,7 @@ ${JSON.stringify(
     quote,
     fundamentals,
     news: news.slice(0, 5),
+    officialFilings: officialFilings.filings.slice(0, 5),
     whisper,
     availabilityNotes,
   },
@@ -210,11 +231,12 @@ ${JSON.stringify(
 export const generateStockAnalysisReport = async (tickerInput: string): Promise<StockAnalysisReport> => {
   const ticker = normalizeTicker(tickerInput || 'NVDA');
 
-  const [quoteResult, fundamentalsResult, newsResult, whisperResult] = await Promise.allSettled([
+  const [quoteResult, fundamentalsResult, newsResult, verifiedNewsResult, secFilingsResult, whisperResult] = await Promise.allSettled([
     fetchStockQuote(ticker),
     fetchCompanyFundamentals(ticker),
-    // TODO: replace with fetchVerifiedStockNews when the report news type supports VerifiedNewsItem.
     fetchStockNews(ticker),
+    fetchVerifiedStockNews(ticker),
+    fetchSecFilingsForTicker(ticker),
     fetchWhisperData(ticker),
   ]);
 
@@ -229,10 +251,19 @@ export const generateStockAnalysisReport = async (tickerInput: string): Promise<
   const news = newsResult.status === 'fulfilled' ? newsResult.value : [];
   if (newsResult.status === 'rejected') failedSources.push('news');
 
+  const verifiedNews = verifiedNewsResult.status === 'fulfilled' ? verifiedNewsResult.value : [];
+  if (verifiedNewsResult.status === 'rejected') failedSources.push('verified news');
+
+  const officialFilings =
+    secFilingsResult.status === 'fulfilled'
+      ? secFilingsResult.value
+      : buildUnavailableSecFilings(ticker, secFilingsResult.reason instanceof Error ? secFilingsResult.reason.message : 'SEC filings failed.');
+  if (secFilingsResult.status === 'rejected') failedSources.push('SEC filings');
+
   const whisper = whisperResult.status === 'fulfilled' ? whisperResult.value : null;
   if (whisperResult.status === 'rejected') failedSources.push('whisper');
 
-  const fallbackReport = buildFallbackReport(ticker, quote, fundamentals, news, whisper, failedSources);
+  const fallbackReport = buildFallbackReport(ticker, quote, fundamentals, news, verifiedNews, officialFilings, whisper, failedSources);
   const availabilityNotes = fallbackReport.dataAvailability || [];
 
   try {
@@ -240,7 +271,7 @@ export const generateStockAnalysisReport = async (tickerInput: string): Promise<
     const response = (await retryOperation(() =>
       ai.models.generateContent({
         model: 'gemini-3.1-pro-preview',
-        contents: buildPrompt(ticker, quote, fundamentals, news, whisper, availabilityNotes),
+        contents: buildPrompt(ticker, quote, fundamentals, news, officialFilings, whisper, availabilityNotes),
       })
     )) as { text?: string };
 
@@ -257,6 +288,8 @@ export const generateStockAnalysisReport = async (tickerInput: string): Promise<
       quote,
       fundamentals,
       news,
+      verifiedNews,
+      officialFilings,
       whisper,
       summary: parsed.summary?.trim() || fallbackReport.summary,
       priceAnalysis: parsed.priceAnalysis?.trim() || fallbackReport.priceAnalysis,

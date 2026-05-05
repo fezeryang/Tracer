@@ -7,9 +7,11 @@ import {
   BookOpen,
   Building2,
   FileText,
+  Landmark,
   Newspaper,
   RefreshCw,
   Search,
+  ShieldCheck,
   ShieldAlert,
   Sparkles,
   Waves,
@@ -19,6 +21,8 @@ import { CompanyFundamentals, NewsItem, ShellViewMode, StockAnalysisReport, Stoc
 import { Language, t } from '../i18n';
 import { theme } from '../designTokens';
 import { NuxButton, NuxNotice } from './NuxPage';
+import OfficialFilingsPanel from './OfficialFilingsPanel';
+import VerifiedNewsPanel from './VerifiedNewsPanel';
 
 const shellCardStyle = {
   backgroundColor: theme.colors.cardBg,
@@ -487,6 +491,16 @@ const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
               <NewsList news={report.news} language={language} />
               <WhisperSummary whisper={report.whisper} language={language} />
             </div>
+          </SectionCard>
+
+          {report.verifiedNews && report.verifiedNews.length > 0 && (
+            <SectionCard icon={ShieldCheck} title={t(language, 'news.verifiedTitle')}>
+              <VerifiedNewsPanel items={report.verifiedNews} language={language} />
+            </SectionCard>
+          )}
+
+          <SectionCard icon={Landmark} title={t(language, 'sec.title')}>
+            <OfficialFilingsPanel verification={report.officialFilings} language={language} />
           </SectionCard>
 
           <SectionCard icon={BookOpen} title={t(language, 'report.aiReport')}>

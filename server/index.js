@@ -8,6 +8,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
+import { getSecFilingsForTicker } from './secService.js';
 
 dotenv.config();
 
@@ -366,6 +367,23 @@ app.get('/api/news/:ticker', async (req, res) => {
   } catch (error) {
     console.error(`[API] News failed for ${ticker}:`, error.message);
     res.status(500).json({ error: 'Failed to fetch news' });
+  }
+});
+
+app.get('/api/sec/filings/:ticker', async (req, res) => {
+  try {
+    const result = await getSecFilingsForTicker(req.params.ticker);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      ticker: String(req.params.ticker || '').toUpperCase(),
+      generatedAt: new Date().toISOString(),
+      filings: [],
+      formsIncluded: [],
+      status: 'error',
+      error: e.message,
+      notes: ['SEC EDGAR filings are currently unavailable.'],
+    });
   }
 });
 

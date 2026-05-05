@@ -94,18 +94,62 @@ export interface NewsItem {
   sentimentScore: number; // -1 to 1 range
 }
 
+export type NewsSourceTier =
+  | 'official'
+  | 'finance_api'
+  | 'major_media'
+  | 'aggregator'
+  | 'unknown';
+
 export interface VerifiedNewsItem {
   title: string;
-  url: string;
+  url?: string;
   source: string;
-  publishedDate: string;
-  text: string;
+  publishedDate?: string;
+  text?: string;
   sentiment: 'Positive' | 'Negative' | 'Neutral';
   sentimentScore: number;
-  sourceTier: 'official' | 'finance_api' | 'major_media' | 'aggregator' | 'unknown';
+  sourceTier: NewsSourceTier;
   confidenceScore: number;
   verifiedBySources: string[];
   duplicateCount: number;
+  relatedTickers?: string[];
+  reliabilityNotes?: string[];
+}
+
+export interface NewsVerificationSummary {
+  ticker: string;
+  generatedAt: string;
+  totalItems: number;
+  highConfidenceCount: number;
+  mediumConfidenceCount: number;
+  lowConfidenceCount: number;
+  sourcesUsed: string[];
+  notes: string[];
+}
+
+export interface SecFiling {
+  ticker: string;
+  cik: string;
+  accessionNumber: string;
+  form: string;
+  filingDate: string;
+  reportDate?: string;
+  primaryDocument?: string;
+  description?: string;
+  url?: string;
+  source: 'SEC EDGAR';
+}
+
+export interface SecFilingVerification {
+  ticker: string;
+  cik?: string;
+  generatedAt: string;
+  filings: SecFiling[];
+  formsIncluded: string[];
+  status: 'available' | 'unavailable' | 'not_found' | 'error';
+  error?: string;
+  notes: string[];
 }
 
 // --- News Impact Predictor Types ---
@@ -273,6 +317,8 @@ export interface StockAnalysisReport {
   quote: StockQuote | null;
   fundamentals: CompanyFundamentals | null;
   news: NewsItem[];
+  verifiedNews?: VerifiedNewsItem[];
+  officialFilings?: SecFilingVerification;
   whisper: WhisperData | null;
   summary: string;
   priceAnalysis: string;
