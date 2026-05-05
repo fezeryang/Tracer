@@ -213,6 +213,7 @@ export const generateStockAnalysisReport = async (tickerInput: string): Promise<
   const [quoteResult, fundamentalsResult, newsResult, whisperResult] = await Promise.allSettled([
     fetchStockQuote(ticker),
     fetchCompanyFundamentals(ticker),
+    // TODO: replace with fetchVerifiedStockNews when the report news type supports VerifiedNewsItem.
     fetchStockNews(ticker),
     fetchWhisperData(ticker),
   ]);

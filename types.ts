@@ -23,6 +23,21 @@ export interface StockQuote {
   source?: string;
 }
 
+export type ShellViewMode =
+  | 'overview'
+  | 'chat'
+  | 'report'
+  | 'chain'
+  | 'backtest'
+  | 'news-impact'
+  | 'macro'
+  | 'trading'
+  | 'timemachine'
+  | 'whisper'
+  | 'academy'
+  | 'feedback'
+  | 'admin';
+
 export interface OptionLeg {
   type: 'call' | 'put';
   action: 'buy' | 'sell';
@@ -77,6 +92,20 @@ export interface NewsItem {
   publishedDate: string;
   sentiment: 'Positive' | 'Negative' | 'Neutral';
   sentimentScore: number; // -1 to 1 range
+}
+
+export interface VerifiedNewsItem {
+  title: string;
+  url: string;
+  source: string;
+  publishedDate: string;
+  text: string;
+  sentiment: 'Positive' | 'Negative' | 'Neutral';
+  sentimentScore: number;
+  sourceTier: 'official' | 'finance_api' | 'major_media' | 'aggregator' | 'unknown';
+  confidenceScore: number;
+  verifiedBySources: string[];
+  duplicateCount: number;
 }
 
 // --- News Impact Predictor Types ---

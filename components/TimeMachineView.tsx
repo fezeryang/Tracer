@@ -4,8 +4,10 @@ import { Play, Pause, SkipBack, StepForward, TrendingUp, Activity, AlertTriangle
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Line, ComposedChart } from 'recharts';
 import { getMarketEvents } from '../services/timeMachineService';
 import { MarketEvent } from '../types';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, RiskDisclaimer } from './NuxPage';
 
-const TimeMachineView: React.FC = () => {
+const TimeMachineView: React.FC<{ language: Language }> = ({ language }) => {
   const events = getMarketEvents();
   const [selectedEvent, setSelectedEvent] = useState<MarketEvent>(events[0]);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
@@ -81,6 +83,7 @@ const TimeMachineView: React.FC = () => {
 
   return (
     <div className="animate-fade-in w-full pb-10">
+       <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'nav.timemachine')} subtitle={t(language, 'backtest.subtitle')} />
        
        {/* Event Selector */}
        <div className="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
@@ -229,6 +232,7 @@ const TimeMachineView: React.FC = () => {
            </div>
 
        </div>
+       <RiskDisclaimer language={language} />
     </div>
   );
 };

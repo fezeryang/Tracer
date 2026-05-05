@@ -1,6 +1,6 @@
 {
-  "name": "Remix: VOLT - Option Volatility Terminal",
-  "description": "VOLT | Institutional level tools for retail investors. AI-powered options trading strategies and real-time market intelligence.",
+  "name": "Remix: NUX - AI Financial Research Terminal",
+  "description": "NUX | AI Financial Research Terminal for market research, strategy analysis, and real-time financial intelligence.",
   "requestFramePermissions": [
     "microphone"
   ]

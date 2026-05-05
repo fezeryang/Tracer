@@ -5,8 +5,10 @@ import { runStrategyBacktest } from '../services/marketDataService';
 import { BacktestResult, OptionContract } from '../types';
 import OptionsChainView from './OptionsChainView';
 import Backtest3DVisualizer from './Backtest3DVisualizer';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, RiskDisclaimer } from './NuxPage';
 
-const BacktestView: React.FC = () => {
+const BacktestView: React.FC<{ language: Language }> = ({ language }) => {
   const [ticker, setTicker] = useState('SPY');
   const [strategy, setStrategy] = useState<'Covered Call' | 'Long Call' | 'Short Put'>('Covered Call');
   const [loading, setLoading] = useState(false);
@@ -60,16 +62,18 @@ const BacktestView: React.FC = () => {
 
   return (
     <div className="animate-fade-in w-full pb-10 relative">
+       <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'backtest.title')} subtitle={t(language, 'backtest.subtitle')} />
        
        {showChainModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-8 animate-fade-in">
                 <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-5xl h-full max-h-[800px] overflow-hidden flex flex-col shadow-2xl">
                     <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                        <h3 className="text-white font-bold">Select Reference Contract</h3>
-                        <button onClick={() => setShowChainModal(false)} className="text-slate-400 hover:text-white">Close</button>
+                        <h3 className="text-white font-bold">{t(language, 'backtest.selectContract')}</h3>
+                        <button onClick={() => setShowChainModal(false)} className="text-slate-400 hover:text-white">{t(language, 'backtest.closeModal')}</button>
                     </div>
                     <div className="flex-grow overflow-hidden p-4">
                         <OptionsChainView 
+                            language={language}
                             initialTicker={ticker}
                             onSelectContract={handleContractSelect} 
                         />
@@ -83,18 +87,18 @@ const BacktestView: React.FC = () => {
            <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                     <History className="w-6 h-6 text-indigo-400" />
-                    Strategy Backtester
+                    {t(language, 'backtest.title')}
                 </h2>
                 <div className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-full border border-white/5">
                     <Globe className="w-3 h-3 text-emerald-400" />
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Data: Yahoo Finance</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{t(language, 'backtest.dataSource')}: Yahoo Finance</span>
                 </div>
            </div>
 
            <div className="bg-slate-900/60 backdrop-blur-md border border-white/10 p-6 rounded-2xl flex flex-col gap-6">
                <div className="flex flex-col md:flex-row gap-6 items-end">
                     <div className="flex-1 w-full">
-                        <label className="block text-xs text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Ticker</label>
+                        <label className="block text-xs text-slate-400 mb-1.5 font-bold uppercase tracking-wide">{t(language, 'backtest.ticker')}</label>
                         <input 
                             type="text" 
                             value={ticker}
@@ -103,11 +107,11 @@ const BacktestView: React.FC = () => {
                         />
                     </div>
                     <div className="flex-1 w-full">
-                        <label className="block text-xs text-slate-400 mb-1.5 font-bold uppercase tracking-wide">Strategy</label>
+                        <label className="block text-xs text-slate-400 mb-1.5 font-bold uppercase tracking-wide">{t(language, 'backtest.strategy')}</label>
                         <select 
                             value={strategy}
                             onChange={(e: any) => setStrategy(e.target.value)}
-                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-indigo-500/50 outline-none appearance-none cursor-pointer"
+                            className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:border-blue-500/50 outline-none appearance-none cursor-pointer"
                         >
                             <option value="Covered Call">Covered Call (Passive Income)</option>
                             <option value="Long Call">Long Call (Bullish Speculation)</option>
@@ -117,10 +121,10 @@ const BacktestView: React.FC = () => {
                     <button 
                         onClick={handleRun}
                         disabled={loading}
-                        className="w-full md:w-auto px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-indigo-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full md:w-auto px-8 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <PlayCircle className="w-4 h-4" />}
-                        Run Simulation
+                        {t(language, 'backtest.runBacktest')}
                     </button>
                </div>
                
@@ -282,6 +286,7 @@ const BacktestView: React.FC = () => {
                )}
            </div>
        )}
+       <RiskDisclaimer language={language} />
     </div>
   );
 };

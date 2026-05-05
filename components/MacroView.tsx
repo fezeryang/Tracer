@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, TrendingUp, TrendingDown, AlertCircle, RefreshCw, BarChart3, Globe } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, NuxNotice, RiskDisclaimer } from './NuxPage';
 
 interface EnergyDataPoint {
     period: string;
@@ -9,7 +11,7 @@ interface EnergyDataPoint {
     seriesId: string;
 }
 
-const MacroView: React.FC = () => {
+const MacroView: React.FC<{ language: Language }> = ({ language }) => {
     const [data, setData] = useState<EnergyDataPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -49,18 +51,20 @@ const MacroView: React.FC = () => {
 
     return (
         <div className="h-full flex flex-col animate-fade-in space-y-6">
+            <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'macro.title')} subtitle={t(language, 'macro.subtitle')} />
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <Globe className="w-6 h-6 text-indigo-400" />
-                        Macro Intelligence
+                        {t(language, 'macro.title')}
                     </h2>
-                    <p className="text-slate-400 text-sm">Real-time energy and commodity data powered by EIA.</p>
+                    <p className="text-slate-400 text-sm">{t(language, 'macro.subtitle')}</p>
                 </div>
                 <button 
                     onClick={fetchData}
                     disabled={loading}
                     className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg border border-white/10 transition-colors"
+                    title={t(language, 'macro.refresh')}
                 >
                     <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
                 </button>
@@ -70,13 +74,13 @@ const MacroView: React.FC = () => {
                 <div className="flex-1 flex items-center justify-center">
                     <div className="bg-rose-500/10 border border-rose-500/20 p-6 rounded-2xl max-w-md text-center">
                         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-                        <h3 className="text-white font-bold mb-2">Data Connection Error</h3>
+                        <h3 className="text-white font-bold mb-2">{t(language, 'macro.error')}</h3>
                         <p className="text-slate-400 text-sm mb-4">{error}</p>
                         <button 
                             onClick={fetchData}
                             className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all"
                         >
-                            Retry Connection
+                            {t(language, 'common.retry')}
                         </button>
                     </div>
                 </div>
@@ -186,6 +190,12 @@ const MacroView: React.FC = () => {
                     </div>
                 </div>
             )}
+            {!error && !loading && data.length === 0 && (
+                <NuxNotice tone="info">
+                    <strong>{t(language, 'macro.emptyTitle')}</strong> {t(language, 'macro.emptyBody')}
+                </NuxNotice>
+            )}
+            <RiskDisclaimer language={language} />
         </div>
     );
 };

@@ -8,6 +8,8 @@ import VolatilitySurface from './VolatilitySurface';
 import OptionsChainView from './OptionsChainView';
 import OptionPricingDonut from './OptionPricingDonut';
 import OptionsRunnerGame from './OptionsRunnerGame';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, RiskDisclaimer } from './NuxPage';
 
 interface ConceptProps {
   title: string;
@@ -314,7 +316,7 @@ const getExampleChartData = (id: string): StrategyRecommendation => {
     };
 };
 
-const EducationView: React.FC = () => {
+const EducationView: React.FC<{ language: Language }> = ({ language }) => {
   const [activeView, setActiveView] = useState<'playbook' | 'lab' | '3d' | 'pricing' | 'game'>('playbook');
   const [filter, setFilter] = useState<'all' | StrategyType>('all');
   
@@ -360,16 +362,18 @@ const EducationView: React.FC = () => {
 
   return (
     <div className="mt-6 animate-fade-in pb-20 relative">
+       <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'academy.title')} subtitle={t(language, 'academy.subtitle')} />
 
        {showChainModal && (
             <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-8 animate-fade-in">
                 <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-5xl h-full max-h-[800px] overflow-hidden flex flex-col shadow-2xl">
                     <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                        <h3 className="text-white font-bold">Select Contract to Visualize</h3>
-                        <button onClick={() => setShowChainModal(false)} className="text-slate-400 hover:text-white">Close</button>
+                        <h3 className="text-white font-bold">{t(language, 'backtest.selectContract')}</h3>
+                        <button onClick={() => setShowChainModal(false)} className="text-slate-400 hover:text-white">{t(language, 'common.close')}</button>
                     </div>
                     <div className="flex-grow overflow-hidden p-4">
                         <OptionsChainView 
+                            language={language}
                             initialTicker="SPY"
                             onSelectContract={handleContractSelect} 
                         />
@@ -700,6 +704,7 @@ const EducationView: React.FC = () => {
                 </div>
            </div>
        )}
+       <RiskDisclaimer language={language} />
     </div>
   );
 };

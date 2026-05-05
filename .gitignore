@@ -4,3 +4,5 @@ dist/
 .env.local
 .DS_Store
 .zed/
+*.db
+volt_local.db

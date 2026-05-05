@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { AdminLog, RegisteredUser } from '../types';
 import { ShieldCheck, Clock, Users, Database, UserPlus, List, Server, Terminal, CheckCircle, XCircle, Activity, Zap, Radio, Globe, BarChart2, AlertCircle } from 'lucide-react';
+import { Language, t } from '../i18n';
+import { NuxPageHeader } from './NuxPage';
 
-const AdminDashboard: React.FC = () => {
+const AdminDashboard: React.FC<{ language: Language }> = ({ language }) => {
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [users, setUsers] = useState<RegisteredUser[]>([]);
   const [view, setView] = useState<'sessions' | 'users' | 'diagnostics' | 'feeds'>('feeds');
@@ -224,40 +226,41 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="animate-fade-in w-full pb-10">
+       <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'admin.title')} subtitle={t(language, 'admin.subtitle')} />
        <div className="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between bg-slate-900/60 p-6 rounded-2xl border border-white/10 backdrop-blur-md gap-4">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                 <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                System Logs
+                {t(language, 'admin.title')}
             </h2>
-            <p className="text-slate-400 text-sm">Monitor user activity and session duration.</p>
+            <p className="text-slate-400 text-sm">{t(language, 'admin.subtitle')}</p>
           </div>
           
           <div className="flex flex-wrap gap-4 items-center">
               <div className="flex bg-slate-950 p-1 rounded-xl border border-white/5">
                  <button 
                     onClick={() => setView('feeds')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'feeds' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'feeds' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                  >
-                    <Radio className="w-3.5 h-3.5" /> Data Feeds
+                    <Radio className="w-3.5 h-3.5" /> {t(language, 'admin.dataFeeds')}
                  </button>
                  <button 
                     onClick={() => setView('sessions')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'sessions' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'sessions' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                  >
-                    <List className="w-3.5 h-3.5" /> Sessions
+                    <List className="w-3.5 h-3.5" /> {t(language, 'admin.sessions')}
                  </button>
                  <button 
                     onClick={() => setView('users')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'users' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'users' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                  >
-                    <UserPlus className="w-3.5 h-3.5" /> Registry
+                    <UserPlus className="w-3.5 h-3.5" /> {t(language, 'admin.registry')}
                  </button>
                  <button 
                     onClick={() => setView('diagnostics')}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'diagnostics' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-all ${view === 'diagnostics' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                  >
-                    <Terminal className="w-3.5 h-3.5" /> Diagnostics
+                    <Terminal className="w-3.5 h-3.5" /> {t(language, 'admin.diagnostics')}
                  </button>
               </div>
           </div>
@@ -280,7 +283,7 @@ const AdminDashboard: React.FC = () => {
                    Server Connectivity Check
                </h3>
                <p className="text-sm text-slate-400 mb-6">
-                   Verify that the Volt Server is correctly proxying market data from Alpaca/Yahoo and not relying on client-side simulation.
+                   Verify that the NUX server is correctly proxying market data from Alpaca/Yahoo and not relying on client-side simulation.
                </p>
 
                <div className="bg-black/50 rounded-xl border border-white/10 p-6 font-mono text-sm shadow-inner">

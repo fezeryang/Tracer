@@ -52,9 +52,9 @@ const LoginOverlay: React.FC<LoginOverlayProps> = ({ onLogin }) => {
                    <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-600/30">
                        <Zap className="w-6 h-6 text-white fill-white" />
                    </div>
-                   <h1 className="text-2xl font-bold text-white tracking-tight">VOLT // OPTION VOLATILITY TERMINAL</h1>
+                   <h1 className="text-2xl font-bold text-white tracking-tight">NUX // Financial Intelligence Terminal</h1>
                    <p className="text-indigo-400 text-xs font-bold uppercase tracking-widest mt-1">
-                       Institutional Level Tools for Retail Investors
+                       AI Financial Research Terminal
                    </p>
                    <p className="text-slate-400 text-sm mt-4">
                        Enter Callsign to Initialize

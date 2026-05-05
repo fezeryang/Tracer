@@ -5,8 +5,11 @@ import { OptionsChain, OptionContract } from '../types';
 import { fetchOptionsChain, calculateHestonPrice } from '../services/marketDataService';
 import { createChatSession } from '../services/geminiService';
 import OptionsChainVisualizer from './OptionsChainVisualizer';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, NuxNotice, RiskDisclaimer } from './NuxPage';
 
 interface OptionsChainViewProps {
+  language?: Language;
   initialTicker?: string;
   onSelectContract?: (ticker: string, expiration: string, contract: OptionContract, currentPrice: number) => void;
 }
@@ -96,10 +99,11 @@ interface MispricingResult {
     recommendation: 'BUY' | 'SELL';
 }
 
-const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SPY', onSelectContract }) => {
+const OptionsChainView: React.FC<OptionsChainViewProps> = ({ language = 'zh', initialTicker = 'SPY', onSelectContract }) => {
   const [ticker, setTicker] = useState(initialTicker);
   const [loading, setLoading] = useState(false);
   const [chain, setChain] = useState<OptionsChain | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'table' | 'visual' | 'scanner'>('table');
   
   // Scanner State
@@ -110,6 +114,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
 
   const loadChain = async (symbol: string, date?: string) => {
     setLoading(true);
+    setError(null);
     try {
       const data = await fetchOptionsChain(symbol, date);
       setChain(data);
@@ -117,6 +122,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
       setScannerResults([]);
     } catch (e) {
       console.error(e);
+      setError(t(language, 'chain.error'));
     } finally {
       setLoading(false);
     }
@@ -280,6 +286,10 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
           });
       } catch (e) {
           console.error(e);
+          setQuantMemo({
+              id: `${res.contract.strike}-${res.type}`,
+              text: t(language, 'chain.noKeyMemo')
+          });
       } finally {
           setGeneratingMemo(false);
       }
@@ -298,17 +308,19 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
 
   return (
     <div className="h-full flex flex-col animate-fade-in w-full relative">
+      <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'chain.title')} subtitle={t(language, 'chain.subtitle')} />
+      {error && <NuxNotice tone="danger">{error}</NuxNotice>}
       
       {quantMemo && (
           <div className="absolute inset-0 z-50 flex items-center justify-center p-8 bg-black/60 backdrop-blur-sm animate-fade-in">
-              <div className="bg-slate-900 border border-indigo-500/50 rounded-2xl p-6 max-w-lg shadow-2xl relative">
+              <div className="bg-slate-900 border border-blue-500/50 rounded-2xl p-6 max-w-lg shadow-2xl relative">
                   <button 
                     onClick={() => setQuantMemo(null)}
                     className="absolute top-4 right-4 text-slate-500 hover:text-white"
                   >
                       <X className="w-5 h-5" />
                   </button>
-                  <div className="flex items-center gap-2 mb-4 text-indigo-400 font-bold uppercase tracking-wider text-sm">
+                  <div className="flex items-center gap-2 mb-4 text-blue-400 font-bold uppercase tracking-wider text-sm">
                       <BrainCircuit className="w-5 h-5" /> GenAI Quant Memo
                   </div>
                   <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-line">
@@ -317,7 +329,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                   <div className="mt-4 pt-4 border-t border-white/10 flex justify-end">
                       <button 
                         onClick={() => setQuantMemo(null)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold"
                       >
                           Acknowledge
                       </button>
@@ -330,10 +342,10 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
       <div className="mb-6 flex flex-col md:flex-row gap-4 justify-between items-end md:items-center">
          <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-               <Layers className="w-6 h-6 text-indigo-400" />
-               Options Chain
+               <Layers className="w-6 h-6 text-blue-400" />
+               {t(language, 'chain.title')}
             </h2>
-            <p className="text-slate-400 text-sm">Real-time quotes powered by Black-Scholes Model.</p>
+            <p className="text-slate-400 text-sm">{t(language, 'chain.subtitle')}</p>
          </div>
 
          <div className="flex gap-3 items-center">
@@ -349,8 +361,8 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                  </button>
                  <button 
                     onClick={() => setViewMode('visual')}
-                    className={`p-2 rounded-md transition-all ${viewMode === 'visual' ? 'bg-indigo-600 text-white shadow' : 'text-slate-500 hover:text-white'}`}
-                    title="Liquidity Canyon Visualizer"
+                    className={`p-2 rounded-md transition-all ${viewMode === 'visual' ? 'bg-blue-600 text-white shadow' : 'text-slate-500 hover:text-white'}`}
+                    title={t(language, 'chain.visualView')}
                  >
                      <BarChart3 className="w-4 h-4" />
                  </button>
@@ -364,12 +376,13 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
              </div>
 
              <form onSubmit={handleSearch} className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400" />
                 <input 
                   type="text" 
                   value={ticker}
                   onChange={(e) => setTicker(e.target.value.toUpperCase())}
-                  className="bg-slate-900 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 w-32 font-mono font-bold tracking-wide"
+                  placeholder={t(language, 'chain.tickerPlaceholder')}
+                  className="bg-slate-900 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 w-32 font-mono font-bold tracking-wide"
                 />
              </form>
 
@@ -381,7 +394,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                     <select 
                         value={chain.selectedExpiration}
                         onChange={handleDateChange}
-                        className="bg-slate-900 border border-white/10 rounded-xl pl-10 pr-8 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50 appearance-none font-mono cursor-pointer transition-colors hover:border-indigo-500/30"
+                        className="bg-slate-900 border border-white/10 rounded-xl pl-10 pr-8 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 appearance-none font-mono cursor-pointer transition-colors hover:border-blue-500/30"
                     >
                         {chain.expirations.map(date => (
                             <option key={date} value={date}>{date}</option>
@@ -398,7 +411,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
          
          {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm z-30">
-                <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
             </div>
          )}
 
@@ -453,7 +466,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-slate-500">
-                            <p>Enter a ticker to load the chain.</p>
+                            <p>{t(language, 'chain.emptyBody')}</p>
                         </div>
                     )}
                 </div>
@@ -467,7 +480,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                      />
                  ) : (
                      <div className="flex items-center justify-center h-full text-slate-500">
-                         No data loaded.
+                         {t(language, 'chain.emptyTitle')}
                      </div>
                  )}
              </div>
@@ -525,16 +538,16 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                                          <button 
                                             onClick={() => generateQuantMemo(res)}
                                             disabled={generatingMemo}
-                                            className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 px-3 py-1.5 rounded-lg text-indigo-300 transition-colors"
+                                            className="flex-1 flex items-center justify-center gap-1 text-[10px] bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 px-3 py-1.5 rounded-lg text-blue-300 transition-colors"
                                          >
                                              {generatingMemo ? <RefreshCw className="w-3 h-3 animate-spin"/> : <BrainCircuit className="w-3 h-3" />}
-                                             Quant Memo
+                                             {t(language, 'chain.quantMemo')}
                                          </button>
                                          <button 
                                             onClick={() => onSelectContract && onSelectContract(chain!.symbol, chain!.selectedExpiration, res.contract, chain!.currentPrice)}
                                             className="flex items-center justify-center gap-1 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-lg text-white transition-colors"
                                          >
-                                             Trade <ArrowRight className="w-3 h-3" />
+                                             {t(language, 'chain.trade')} <ArrowRight className="w-3 h-3" />
                                          </button>
                                      </div>
                                  </div>
@@ -546,9 +559,9 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
                          <div className="p-4 bg-slate-900 rounded-full border border-white/5">
                              <Radar className="w-8 h-8 text-slate-600" />
                          </div>
-                         <p>No significant mispricings detected in this expiration.</p>
-                         <button onClick={runScanner} className="text-indigo-400 hover:text-white text-xs font-bold uppercase tracking-wide flex items-center gap-2">
-                             <RefreshCw className="w-3 h-3" /> Force Re-Scan
+                         <p>{t(language, 'chain.emptyTitle')}</p>
+                         <button onClick={runScanner} className="text-blue-400 hover:text-white text-xs font-bold uppercase tracking-wide flex items-center gap-2">
+                             <RefreshCw className="w-3 h-3" /> {t(language, 'chain.forceRescan')}
                          </button>
                      </div>
                  )}
@@ -578,6 +591,7 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ initialTicker = 'SP
              </div>
          )}
       </div>
+      <RiskDisclaimer language={language} />
     </div>
   );
 };

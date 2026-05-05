@@ -4,15 +4,19 @@ import { Newspaper, Radio, Target, History, Zap, ArrowRight, AlertTriangle, Tren
 import { fetchStockNews, fetchStockQuote } from '../services/marketDataService';
 import { createChatSession } from '../services/geminiService';
 import { NewsImpactAnalysis, NewsItem } from '../types';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, NuxNotice, RiskDisclaimer } from './NuxPage';
 
-const NewsImpactView: React.FC = () => {
+const NewsImpactView: React.FC<{ language: Language }> = ({ language }) => {
     const [ticker, setTicker] = useState('NVDA');
     const [loading, setLoading] = useState(false);
     const [analysis, setAnalysis] = useState<NewsImpactAnalysis | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
     const analyze = async () => {
         if (!ticker) return;
         setLoading(true);
+        setNotice(null);
         try {
             // 1. Get Real Data
             const [quote, news] = await Promise.all([
@@ -52,15 +56,21 @@ const NewsImpactView: React.FC = () => {
 
             // 2. Ask Gemini to Predict
             // We create a temporary session just for this analysis tool call
-            const session = createChatSession();
-            // We force the prompt to trigger the 'predictNewsImpact' tool
-            const prompt = `Analyze the impact of this breaking news for ${ticker}: "${targetNews.title}". 
-            The stock has currently moved ${currentMove}%. 
-            Call the 'predictNewsImpact' tool to generate a quantitative prediction.`;
+            let response: any = null;
+            try {
+                const session = createChatSession();
+                // We force the prompt to trigger the 'predictNewsImpact' tool
+                const prompt = `Analyze the impact of this breaking news for ${ticker}: "${targetNews.title}". 
+                The stock has currently moved ${currentMove}%. 
+                Call the 'predictNewsImpact' tool to generate a quantitative prediction.`;
 
-            const response = await session.sendMessage(prompt);
+                response = await session.sendMessage(prompt);
+            } catch (e) {
+                console.warn('[NewsImpactView] Gemini unavailable, using fallback analysis.', e);
+                setNotice(t(language, 'impact.noKeyFallback'));
+            }
             
-            if (response.impactAnalysis) {
+            if (response?.impactAnalysis) {
                 setAnalysis(response.impactAnalysis);
             } else {
                 // Fallback if tool wasn't called (rare)
@@ -74,7 +84,7 @@ const NewsImpactView: React.FC = () => {
                     currentMove: currentMove,
                     remainingAlpha: 0,
                     confidence: 50,
-                    reasoning: response.text || "AI Analysis based on market sentiment.",
+                    reasoning: response?.text || "Fallback analysis based on quote movement and headline sentiment.",
                     similarEvents: [],
                     verdict: 'Wait'
                 });
@@ -82,6 +92,7 @@ const NewsImpactView: React.FC = () => {
 
         } catch (e) {
             console.error("Analysis Failed", e);
+            setNotice(t(language, 'impact.error'));
         } finally {
             setLoading(false);
         }
@@ -89,14 +100,16 @@ const NewsImpactView: React.FC = () => {
 
     return (
         <div className="animate-fade-in w-full pb-10">
+            <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'impact.title')} subtitle={t(language, 'impact.subtitle')} />
+            {notice && <NuxNotice tone="warning">{notice}</NuxNotice>}
             {/* Header */}
             <div className="mb-8 bg-slate-900/60 p-6 rounded-2xl border border-white/10 backdrop-blur-md flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <Radio className="w-6 h-6 text-rose-500 animate-pulse" />
-                        News Impact Predictor
+                        {t(language, 'impact.title')}
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Quantify the "Alpha" remaining in breaking headlines.</p>
+                    <p className="text-slate-400 text-sm mt-1">{t(language, 'impact.subtitle')}</p>
                 </div>
                 <div className="flex gap-2 w-full md:w-auto">
                     <input 
@@ -104,7 +117,7 @@ const NewsImpactView: React.FC = () => {
                         value={ticker}
                         onChange={(e) => setTicker(e.target.value.toUpperCase())}
                         className="w-full bg-slate-950 border border-white/10 rounded-xl pl-4 py-3 text-white font-mono focus:border-indigo-500/50 outline-none uppercase font-bold"
-                        placeholder="TICKER"
+                        placeholder={t(language, 'impact.tickerPlaceholder')}
                     />
                     <button 
                         onClick={analyze}
@@ -112,7 +125,7 @@ const NewsImpactView: React.FC = () => {
                         className="px-6 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-rose-500/20 disabled:opacity-50 flex items-center gap-2"
                     >
                         {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                        Predict
+                        {t(language, 'impact.predict')}
                     </button>
                 </div>
             </div>
@@ -253,6 +266,12 @@ const NewsImpactView: React.FC = () => {
 
                 </div>
             )}
+            {!analysis && !loading && (
+                <NuxNotice tone="info">
+                    <strong>{t(language, 'impact.emptyTitle')}</strong> {t(language, 'impact.emptyBody')}
+                </NuxNotice>
+            )}
+            <RiskDisclaimer language={language} />
         </div>
     );
 };

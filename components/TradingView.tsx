@@ -3,8 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Briefcase, RefreshCw, AlertCircle, ShoppingCart, Clock, Info, Zap } from 'lucide-react';
 import { fetchAlpacaAccount, fetchAlpacaPositions, placeAlpacaOrder, fetchAlpacaClock } from '../services/tradingService';
 import { AlpacaAccount } from '../types';
+import { Language, t } from '../i18n';
+import { NuxPageHeader, NuxNotice, RiskDisclaimer } from './NuxPage';
 
-const TradingView: React.FC = () => {
+const TradingView: React.FC<{ language: Language }> = ({ language }) => {
     const [account, setAccount] = useState<AlpacaAccount | null>(null);
     const [positions, setPositions] = useState<any[]>([]);
     const [clock, setClock] = useState<{ is_open: boolean, timestamp: string, next_open: string, next_close: string } | null>(null);
@@ -77,13 +79,14 @@ const TradingView: React.FC = () => {
     if (loading && !account) {
         return (
             <div className="flex items-center justify-center h-64">
-                <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
             </div>
         );
     }
 
     return (
         <div className="space-y-6 animate-fade-in">
+            <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'trade.title')} subtitle={t(language, 'trade.subtitle')} />
             {/* Market Status Banner */}
             {clock && (
                 <div className={`flex items-center justify-between px-4 py-2 rounded-xl border ${clock.is_open ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
@@ -101,9 +104,11 @@ const TradingView: React.FC = () => {
                 <div className="bg-rose-500/10 border border-rose-500/20 p-4 rounded-xl flex items-center gap-3 text-rose-400">
                     <AlertCircle className="w-5 h-5" />
                     <p className="text-sm font-medium">{error}</p>
-                    <button onClick={loadData} className="ml-auto text-xs bg-rose-500/20 px-3 py-1 rounded-lg hover:bg-rose-500/30 transition-colors">Retry</button>
+                    <button onClick={loadData} className="ml-auto text-xs bg-rose-500/20 px-3 py-1 rounded-lg hover:bg-rose-500/30 transition-colors">{t(language, 'common.retry')}</button>
                 </div>
             )}
+
+            {error && <NuxNotice tone="warning">{t(language, 'trade.error')}</NuxNotice>}
 
             {orderStatus && (
                 <div className={`p-4 rounded-xl flex items-center gap-3 border ${orderStatus.success ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
@@ -117,8 +122,8 @@ const TradingView: React.FC = () => {
                 {/* Account Summary */}
                 <div className="bg-slate-900/50 border border-white/5 p-6 rounded-2xl backdrop-blur-sm">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center">
-                            <Wallet className="w-5 h-5 text-indigo-400" />
+                        <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                            <Wallet className="w-5 h-5 text-blue-400" />
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-white uppercase tracking-wider">Account Value</h3>
@@ -322,6 +327,7 @@ const TradingView: React.FC = () => {
                     </table>
                 </div>
             </div>
+            <RiskDisclaimer language={language} />
         </div>
     );
 };
