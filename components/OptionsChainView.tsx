@@ -101,6 +101,7 @@ interface MispricingResult {
 
 const OptionsChainView: React.FC<OptionsChainViewProps> = ({ language = 'zh', initialTicker = 'SPY', onSelectContract }) => {
   const [ticker, setTicker] = useState(initialTicker);
+  const [tickerEdited, setTickerEdited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [chain, setChain] = useState<OptionsChain | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +132,14 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ language = 'zh', in
   useEffect(() => {
     loadChain(ticker);
   }, []);
+
+  useEffect(() => {
+    const normalized = initialTicker.trim().toUpperCase();
+    if (!normalized || tickerEdited || normalized === ticker) return;
+
+    setTicker(normalized);
+    loadChain(normalized);
+  }, [initialTicker, ticker, tickerEdited]);
 
   // Run Heston Scanner Logic
   useEffect(() => {
@@ -380,7 +389,10 @@ const OptionsChainView: React.FC<OptionsChainViewProps> = ({ language = 'zh', in
                 <input 
                   type="text" 
                   value={ticker}
-                  onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                  onChange={(e) => {
+                    setTickerEdited(true);
+                    setTicker(e.target.value.toUpperCase());
+                  }}
                   placeholder={t(language, 'chain.tickerPlaceholder')}
                   className="bg-slate-900 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 w-32 font-mono font-bold tracking-wide"
                 />

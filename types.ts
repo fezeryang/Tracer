@@ -117,6 +117,35 @@ export interface VerifiedNewsItem {
   reliabilityNotes?: string[];
 }
 
+export type ReportGenerationStage =
+  | 'idle'
+  | 'quote'
+  | 'fundamentals'
+  | 'news'
+  | 'trust'
+  | 'ai'
+  | 'finalizing'
+  | 'done'
+  | 'error';
+
+export type DataSourceStatus =
+  | 'success'
+  | 'unavailable'
+  | 'timeout'
+  | 'rate_limited'
+  | 'forbidden'
+  | 'error'
+  | 'simulation'
+  | 'fallback';
+
+export interface DataSourceHealth {
+  key: string;
+  label: string;
+  status: DataSourceStatus;
+  message?: string;
+  updatedAt: string;
+}
+
 export interface NewsVerificationSummary {
   ticker: string;
   generatedAt: string;
@@ -149,6 +178,83 @@ export interface SecFilingVerification {
   formsIncluded: string[];
   status: 'available' | 'unavailable' | 'not_found' | 'error';
   error?: string;
+  notes: string[];
+}
+
+export type OfficialSourceType =
+  | 'sec'
+  | 'investor_relations'
+  | 'press_release'
+  | 'newsroom'
+  | 'official_website'
+  | 'exchange'
+  | 'wire_service'
+  | 'major_media'
+  | 'aggregator'
+  | 'unknown';
+
+export type OfficialSourceStatus =
+  | 'available'
+  | 'partial'
+  | 'not_found'
+  | 'unsupported'
+  | 'error';
+
+export type OfficialSourceTier =
+  | 'official'
+  | 'official_channel'
+  | 'major_media'
+  | 'aggregator'
+  | 'unknown';
+
+export type AiAuthorityAssessment =
+  | 'likely_official'
+  | 'possibly_official'
+  | 'third_party'
+  | 'unknown';
+
+export interface OfficialCompanySource {
+  ticker: string;
+  companyName?: string;
+  type: OfficialSourceType;
+  name: string;
+  url: string;
+  domain?: string;
+  sourceTier: OfficialSourceTier;
+  authorityScore: number;
+  aiReviewed?: boolean;
+  aiAssessment?: AiAuthorityAssessment;
+  aiConfidence?: number;
+  aiReasoning?: string;
+  warnings?: string[];
+  notes: string[];
+}
+
+export interface OfficialSourceVerification {
+  ticker: string;
+  companyName?: string;
+  generatedAt: string;
+  status: OfficialSourceStatus;
+  sources: OfficialCompanySource[];
+  notes: string[];
+  mode: 'rule_only' | 'rule_plus_ai';
+}
+
+export type SourceTrustLevel = 'high' | 'medium' | 'low' | 'unknown';
+
+export interface SourceTrustSummary {
+  ticker: string;
+  generatedAt: string;
+  overallScore: number;
+  confidenceLevel: SourceTrustLevel;
+  officialSourceCount: number;
+  secFilingCount: number;
+  verifiedNewsCount: number;
+  highConfidenceNewsCount: number;
+  aiReviewed: boolean;
+  mode: 'rule_only' | 'rule_plus_ai';
+  strengths: string[];
+  warnings: string[];
   notes: string[];
 }
 
@@ -310,6 +416,20 @@ export interface WhisperData {
     summary: string;
 }
 
+export interface AiReportSections {
+  summary: string;
+  dataAvailabilityAnalysis: string;
+  priceAnalysis: string;
+  fundamentalsAnalysis: string;
+  newsAnalysis: string;
+  sourceTrustAnalysis: string;
+  volatilityAnalysis: string;
+  optionsEducation: string;
+  risks: string[];
+  followUpChecklist: string[];
+  conclusion: string;
+}
+
 // --- Report Types ---
 export interface StockAnalysisReport {
   ticker: string;
@@ -319,15 +439,24 @@ export interface StockAnalysisReport {
   news: NewsItem[];
   verifiedNews?: VerifiedNewsItem[];
   officialFilings?: SecFilingVerification;
+  officialSources?: OfficialSourceVerification;
   whisper: WhisperData | null;
   summary: string;
+  dataAvailabilityAnalysis?: string;
   priceAnalysis: string;
   newsAnalysis: string;
   fundamentalsAnalysis: string;
   volatilityAnalysis: string;
   optionsEducation: string;
+  sourceTrustAnalysis?: string;
+  followUpChecklist?: string[];
   risks: string[];
   conclusion: string;
   disclaimer: string;
   dataAvailability?: string[];
+  dataSourceHealth?: DataSourceHealth[];
+  isCached?: boolean;
+  cachedAt?: string;
+  aiProvider?: 'deepseek' | 'gemini' | 'fallback';
+  aiModel?: string;
 }

@@ -9,6 +9,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { getSecFilingsForTicker } from './secService.js';
+import { getOfficialSourcesForTicker } from './officialSourceService.js';
+import { generateDeepSeekReport } from './aiReportService.js';
 
 dotenv.config();
 
@@ -309,7 +311,7 @@ app.get('/api/fundamentals/:ticker', async (req, res) => {
     res.json(data);
   } catch (error) {
     console.error(`[API] Fundamentals failed for ${ticker}:`, error.message);
-    res.status(500).json({ error: 'Failed to fetch fundamentals' });
+    res.json([]);
   }
 });
 
@@ -366,7 +368,7 @@ app.get('/api/news/:ticker', async (req, res) => {
     res.json(news);
   } catch (error) {
     console.error(`[API] News failed for ${ticker}:`, error.message);
-    res.status(500).json({ error: 'Failed to fetch news' });
+    res.json([]);
   }
 });
 
@@ -383,6 +385,36 @@ app.get('/api/sec/filings/:ticker', async (req, res) => {
       status: 'error',
       error: e.message,
       notes: ['SEC EDGAR filings are currently unavailable.'],
+    });
+  }
+});
+
+app.get('/api/official-sources/:ticker', async (req, res) => {
+  try {
+    const result = await getOfficialSourcesForTicker(req.params.ticker);
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({
+      ticker: String(req.params.ticker || '').toUpperCase(),
+      generatedAt: new Date().toISOString(),
+      status: 'error',
+      sources: [],
+      notes: ['Official source discovery is currently unavailable.'],
+      mode: process.env.DEEPSEEK_API_KEY ? 'rule_plus_ai' : 'rule_only',
+      error: e.message,
+    });
+  }
+});
+
+app.post('/api/ai/report', async (req, res) => {
+  try {
+    const result = await generateDeepSeekReport(req.body || {});
+    res.json(result);
+  } catch (e) {
+    res.json({
+      ok: false,
+      provider: 'deepseek',
+      error: e instanceof Error ? e.message : 'AI report generation failed.',
     });
   }
 });
@@ -482,12 +514,13 @@ app.post('/api/feedback', async (req, res) => {
 app.post('/api/auth/access', async (req, res) => {
     if (!isReady()) return res.status(503).json({ error: 'System Initializing...' });
     const { username, email } = req.body;
-    if (!username || !email) return res.status(400).json({ error: 'Callsign and Email required' });
+    if (!username) return res.status(400).json({ error: 'Callsign required' });
+    const normalizedEmail = email || `${username}@local.nux`;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
     try {
         let user = await findUser(username);
-        if (!user) await createUser(username, email, ip);
+        if (!user) await createUser(username, normalizedEmail, ip);
         const sessionId = crypto.randomUUID();
         await logUserLogin(username, sessionId, ip);
         res.json({ success: true, sessionId, username, loginTime: new Date().toISOString() });

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Newspaper, Radio, Target, History, Zap, ArrowRight, AlertTriangle, TrendingUp, TrendingDown, RefreshCw, Activity } from 'lucide-react';
 import { fetchStockNews, fetchStockQuote } from '../services/marketDataService';
 import { createChatSession } from '../services/geminiService';
@@ -7,11 +7,25 @@ import { NewsImpactAnalysis, NewsItem } from '../types';
 import { Language, t } from '../i18n';
 import { NuxPageHeader, NuxNotice, RiskDisclaimer } from './NuxPage';
 
-const NewsImpactView: React.FC<{ language: Language }> = ({ language }) => {
-    const [ticker, setTicker] = useState('NVDA');
+interface NewsImpactViewProps {
+    language: Language;
+    selectedTicker?: string;
+}
+
+const normalizeTicker = (value: string | undefined) => (value || 'NVDA').trim().toUpperCase();
+
+const NewsImpactView: React.FC<NewsImpactViewProps> = ({ language, selectedTicker }) => {
+    const [ticker, setTicker] = useState(() => normalizeTicker(selectedTicker));
+    const [tickerEdited, setTickerEdited] = useState(false);
     const [loading, setLoading] = useState(false);
     const [analysis, setAnalysis] = useState<NewsImpactAnalysis | null>(null);
     const [notice, setNotice] = useState<string | null>(null);
+
+    useEffect(() => {
+        const normalized = normalizeTicker(selectedTicker);
+        if (tickerEdited || normalized === ticker) return;
+        setTicker(normalized);
+    }, [selectedTicker, ticker, tickerEdited]);
 
     const analyze = async () => {
         if (!ticker) return;
@@ -115,7 +129,10 @@ const NewsImpactView: React.FC<{ language: Language }> = ({ language }) => {
                     <input 
                         type="text" 
                         value={ticker}
-                        onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                        onChange={(e) => {
+                            setTickerEdited(true);
+                            setTicker(e.target.value.toUpperCase());
+                        }}
                         className="w-full bg-slate-950 border border-white/10 rounded-xl pl-4 py-3 text-white font-mono focus:border-indigo-500/50 outline-none uppercase font-bold"
                         placeholder={t(language, 'impact.tickerPlaceholder')}
                     />

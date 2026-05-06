@@ -37,14 +37,25 @@ const FundamentalsCard: React.FC<FundamentalsCardProps> = ({ data }) => {
             <span className="text-cyan-400 font-mono text-xs tracking-wider">{data.symbol}</span>
           </div>
         </div>
-        <a 
-            href={data.website} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors"
-        >
-            <Globe className="w-4 h-4" />
-        </a>
+        {data.website ? (
+          <a
+              href={data.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+              title="Company website"
+          >
+              <Globe className="w-4 h-4" />
+          </a>
+        ) : (
+          <button
+              disabled
+              className="inline-flex h-9 w-9 cursor-not-allowed items-center justify-center rounded-lg text-slate-600 opacity-60"
+              title="No website link"
+          >
+              <Globe className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-3">

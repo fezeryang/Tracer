@@ -11,7 +11,12 @@ interface EnergyDataPoint {
     seriesId: string;
 }
 
-const MacroView: React.FC<{ language: Language }> = ({ language }) => {
+interface MacroViewProps {
+    language: Language;
+    selectedTicker?: string;
+}
+
+const MacroView: React.FC<MacroViewProps> = ({ language, selectedTicker }) => {
     const [data, setData] = useState<EnergyDataPoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -52,6 +57,7 @@ const MacroView: React.FC<{ language: Language }> = ({ language }) => {
     return (
         <div className="h-full flex flex-col animate-fade-in space-y-6">
             <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'macro.title')} subtitle={t(language, 'macro.subtitle')} />
+            {selectedTicker && <NuxNotice tone="info">{t(language, 'common.currentResearchTarget')}: {selectedTicker}</NuxNotice>}
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">

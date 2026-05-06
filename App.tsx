@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { createChatSession, GEMINI_KEY_MISSING_MESSAGE } from './services/geminiService';
-import { Message, OptionContract, UserSession } from './types';
+import { Message, OptionContract, StockAnalysisReport, UserSession } from './types';
 import StrategyCard from './components/StrategyCard';
 import FundamentalsCard from './components/FundamentalsCard';
 import NewsFeed from './components/NewsFeed';
@@ -35,6 +35,7 @@ import ReportView from './components/ReportView';
 import OverviewView from './components/OverviewView';
 import AppShell from './components/AppShell';
 import { NuxPage, NuxPageHeader, NuxNotice } from './components/NuxPage';
+import { loadCachedReport, loadSelectedTicker, saveCachedReport, saveSelectedTicker } from './services/reportCacheService';
 import { getInitialLanguage, LANGUAGE_STORAGE_KEY, Language, t } from './i18n';
 import { ShellViewMode } from './types';
 
@@ -47,6 +48,8 @@ const QuickChip = ({ icon: Icon, label, onClick }: { icon: any; label: string; o
     {label}
   </button>
 );
+
+const normalizeResearchTicker = (ticker: string) => (ticker || 'NVDA').trim().toUpperCase();
 
 const VoiceVisualizer = ({ active, onClose, language }: { active: boolean; onClose: () => void; language: Language }) => {
   if (!active) return null;
@@ -114,6 +117,8 @@ const App: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
   const [isAiConfigured, setIsAiConfigured] = useState(true);
+  const [selectedTicker, setSelectedTicker] = useState(() => loadSelectedTicker() || 'NVDA');
+  const [lastReport, setLastReport] = useState<StockAnalysisReport | null>(() => loadCachedReport());
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatSessionRef = useRef<ReturnType<typeof createChatSession> | null>(null);
@@ -312,6 +317,9 @@ const App: React.FC = () => {
   };
 
   const handleContractSelect = (ticker: string, expiration: string, contract: OptionContract) => {
+    const normalizedTicker = normalizeResearchTicker(ticker);
+    setSelectedTicker(normalizedTicker);
+    saveSelectedTicker(normalizedTicker);
     setView('chat');
     const type = contract.type.toUpperCase();
     const prompt = `Analyze this option contract: ${ticker} $${contract.strike} ${type} expiring ${expiration}. It is currently trading at ~$${contract.ask.toFixed(2)}. What are the risks and is this a good entry point?`;
@@ -325,11 +333,14 @@ const App: React.FC = () => {
         title={t(language, 'chat.title')}
         subtitle={t(language, 'chat.subtitle')}
       />
+      <NuxNotice tone="info">
+        {t(language, 'common.currentResearchTarget')}: {selectedTicker}
+      </NuxNotice>
       {!isAiConfigured && <NuxNotice tone="warning">{t(language, 'common.configGeminiHint')}</NuxNotice>}
       {messages.length <= 2 && (
         <div className="mb-8 grid grid-cols-2 gap-2 md:grid-cols-4 animate-fade-in-up">
-          <QuickChip icon={TrendingUp} label={t(language, 'chat.quickMoonshot')} onClick={() => void handleSend("I'm extremely bullish on NVDA, what's a high upside play?")} />
-          <QuickChip icon={Newspaper} label={t(language, 'chat.quickNews')} onClick={() => void handleSend('Scan the news for AAPL and analyze sentiment.')} />
+          <QuickChip icon={TrendingUp} label={t(language, 'chat.quickMoonshot')} onClick={() => void handleSend(`I'm extremely bullish on ${selectedTicker}, what's a high upside play?`)} />
+          <QuickChip icon={Newspaper} label={t(language, 'chat.quickNews')} onClick={() => void handleSend(`Scan the news for ${selectedTicker} and analyze sentiment.`)} />
           <QuickChip icon={HelpCircle} label={t(language, 'chat.quickTheta')} onClick={() => void handleSend('I want to profit from time decay (Theta) on a tech stock.')} />
           <QuickChip icon={Radio} label={t(language, 'chat.quickImpact')} onClick={() => setView('news-impact')} />
         </div>
@@ -452,23 +463,40 @@ const App: React.FC = () => {
       case 'overview':
         return <OverviewView language={language} />;
       case 'report':
-        return <ReportView language={language} onNavigate={setView} />;
+        return (
+          <ReportView
+            language={language}
+            selectedTicker={selectedTicker}
+            onTickerChange={(ticker) => {
+              const normalizedTicker = normalizeResearchTicker(ticker);
+              setSelectedTicker(normalizedTicker);
+              saveSelectedTicker(normalizedTicker);
+            }}
+            cachedReport={lastReport}
+            onReportGenerated={(report) => {
+              setLastReport(report);
+              saveCachedReport(report);
+              saveSelectedTicker(report.ticker);
+            }}
+            onNavigate={setView}
+          />
+        );
       case 'chain':
-        return <OptionsChainView language={language} onSelectContract={handleContractSelect} />;
+        return <OptionsChainView language={language} initialTicker={selectedTicker} onSelectContract={handleContractSelect} />;
       case 'academy':
         return <EducationView language={language} />;
       case 'backtest':
-        return <BacktestView language={language} />;
+        return <BacktestView language={language} selectedTicker={selectedTicker} />;
       case 'timemachine':
         return <TimeMachineView language={language} />;
       case 'whisper':
         return <WhisperView language={language} />;
       case 'news-impact':
-        return <NewsImpactView language={language} />;
+        return <NewsImpactView language={language} selectedTicker={selectedTicker} />;
       case 'macro':
-        return <MacroView language={language} />;
+        return <MacroView language={language} selectedTicker={selectedTicker} />;
       case 'trading':
-        return <TradingView language={language} />;
+        return <TradingView language={language} selectedTicker={selectedTicker} />;
       case 'feedback':
         return <FeedbackView language={language} />;
       case 'admin':

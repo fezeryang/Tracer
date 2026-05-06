@@ -6,7 +6,14 @@ import { AlpacaAccount } from '../types';
 import { Language, t } from '../i18n';
 import { NuxPageHeader, NuxNotice, RiskDisclaimer } from './NuxPage';
 
-const TradingView: React.FC<{ language: Language }> = ({ language }) => {
+interface TradingViewProps {
+    language: Language;
+    selectedTicker?: string;
+}
+
+const normalizeTicker = (value: string | undefined) => (value || '').trim().toUpperCase();
+
+const TradingView: React.FC<TradingViewProps> = ({ language, selectedTicker }) => {
     const [account, setAccount] = useState<AlpacaAccount | null>(null);
     const [positions, setPositions] = useState<any[]>([]);
     const [clock, setClock] = useState<{ is_open: boolean, timestamp: string, next_open: string, next_close: string } | null>(null);
@@ -14,7 +21,8 @@ const TradingView: React.FC<{ language: Language }> = ({ language }) => {
     const [error, setError] = useState<string | null>(null);
     
     // Order State
-    const [orderSymbol, setOrderSymbol] = useState('');
+    const [orderSymbol, setOrderSymbol] = useState(() => normalizeTicker(selectedTicker));
+    const [orderSymbolEdited, setOrderSymbolEdited] = useState(false);
     const [orderQty, setOrderQty] = useState(1);
     const [orderSide, setOrderSide] = useState<'buy' | 'sell'>('buy');
     const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
@@ -47,6 +55,12 @@ const TradingView: React.FC<{ language: Language }> = ({ language }) => {
         const interval = setInterval(loadData, 30000); // Refresh every 30s
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        const normalized = normalizeTicker(selectedTicker);
+        if (!normalized || orderSymbolEdited || normalized === orderSymbol) return;
+        setOrderSymbol(normalized);
+    }, [selectedTicker, orderSymbol, orderSymbolEdited]);
 
     const handlePlaceOrder = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -87,6 +101,7 @@ const TradingView: React.FC<{ language: Language }> = ({ language }) => {
     return (
         <div className="space-y-6 animate-fade-in">
             <NuxPageHeader eyebrow={t(language, 'common.nuxEyebrow')} title={t(language, 'trade.title')} subtitle={t(language, 'trade.subtitle')} />
+            {selectedTicker && <NuxNotice tone="info">{t(language, 'common.currentResearchTarget')}: {selectedTicker}</NuxNotice>}
             {/* Market Status Banner */}
             {clock && (
                 <div className={`flex items-center justify-between px-4 py-2 rounded-xl border ${clock.is_open ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'}`}>
@@ -187,7 +202,10 @@ const TradingView: React.FC<{ language: Language }> = ({ language }) => {
                                 <input 
                                     type="text" 
                                     value={orderSymbol}
-                                    onChange={(e) => setOrderSymbol(e.target.value)}
+                                    onChange={(e) => {
+                                        setOrderSymbolEdited(true);
+                                        setOrderSymbol(e.target.value.toUpperCase());
+                                    }}
                                     placeholder="AAPL"
                                     className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors uppercase font-mono"
                                 />

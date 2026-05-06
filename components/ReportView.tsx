@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -6,8 +6,10 @@ import {
   BarChart3,
   BookOpen,
   Building2,
+  Database,
+  ExternalLink,
   FileText,
-  Landmark,
+  Globe2,
   Newspaper,
   RefreshCw,
   Search,
@@ -16,13 +18,25 @@ import {
   Sparkles,
   Waves,
 } from 'lucide-react';
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { generateStockAnalysisReport } from '../services/reportService';
-import { CompanyFundamentals, NewsItem, ShellViewMode, StockAnalysisReport, StockQuote, WhisperData } from '../types';
+import { assessQuoteQuality, getDataAvailability, getSentimentCounts } from '../services/reportQualityService';
+import { buildSourceTrustSummary } from '../services/sourceTrustService';
+import {
+  CompanyFundamentals,
+  DataSourceHealth,
+  DataSourceStatus,
+  NewsItem,
+  ReportGenerationStage,
+  ShellViewMode,
+  StockAnalysisReport,
+  StockQuote,
+  WhisperData,
+} from '../types';
 import { Language, t } from '../i18n';
 import { theme } from '../designTokens';
 import { NuxButton, NuxNotice } from './NuxPage';
-import OfficialFilingsPanel from './OfficialFilingsPanel';
-import VerifiedNewsPanel from './VerifiedNewsPanel';
+import SourceTrustCenter from './SourceTrustCenter';
 
 const shellCardStyle = {
   backgroundColor: theme.colors.cardBg,
@@ -33,6 +47,74 @@ const shellCardStyle = {
 const panelStyle = {
   backgroundColor: theme.colors.cardAltBg,
   borderColor: theme.colors.borderSubtle,
+};
+
+const getQualityColor = (quality: ReturnType<typeof assessQuoteQuality>) => {
+  if (quality === 'realtime' || quality === 'delayed') return theme.colors.up;
+  if (quality === 'fallback' || quality === 'simulation') return theme.colors.warn;
+  return theme.colors.down;
+};
+
+const getSentimentLabel = (language: Language, sentiment: NewsItem['sentiment']) => {
+  if (sentiment === 'Positive') return t(language, 'report.sentimentPositive');
+  if (sentiment === 'Negative') return t(language, 'report.sentimentNegative');
+  return t(language, 'report.sentimentNeutral');
+};
+
+const generationStageOrder: ReportGenerationStage[] = ['quote', 'fundamentals', 'news', 'trust', 'ai', 'finalizing'];
+
+const getGenerationStageLabel = (language: Language, stage: ReportGenerationStage) => {
+  const keyByStage: Partial<Record<ReportGenerationStage, string>> = {
+    quote: 'report.generationStageQuote',
+    fundamentals: 'report.generationStageFundamentals',
+    news: 'report.generationStageNews',
+    trust: 'report.generationStageTrust',
+    ai: 'report.generationStageAi',
+    finalizing: 'report.generationStageFinalizing',
+  };
+
+  return keyByStage[stage] ? t(language, keyByStage[stage]!) : '';
+};
+
+const getDataSourceStatusLabel = (language: Language, status: DataSourceStatus) => {
+  const keyByStatus: Record<DataSourceStatus, string> = {
+    success: 'report.dataSourceSuccess',
+    unavailable: 'report.dataSourceUnavailable',
+    timeout: 'report.dataSourceTimeout',
+    rate_limited: 'report.dataSourceRateLimited',
+    forbidden: 'report.dataSourceForbidden',
+    error: 'report.dataSourceError',
+    simulation: 'report.dataSourceSimulation',
+    fallback: 'report.dataSourceFallback',
+  };
+
+  return t(language, keyByStatus[status]);
+};
+
+const getDataSourceStatusColor = (status: DataSourceStatus) => {
+  if (status === 'success') return theme.colors.up;
+  if (status === 'simulation' || status === 'fallback' || status === 'rate_limited' || status === 'timeout') return theme.colors.warn;
+  return theme.colors.down;
+};
+
+const formatReportDateTime = (value: string | undefined) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+};
+
+const formatAvailabilityNote = (language: Language, note: string) => {
+  if (note.includes('simulation or fallback')) return t(language, 'report.availabilityNotes.quoteSimulation');
+  if (note.includes('Live quote data was unavailable')) return t(language, 'report.availabilityNotes.quoteUnavailable');
+  if (note.includes('Company fundamentals')) return t(language, 'report.availabilityNotes.fundamentalsUnavailable');
+  if (note.includes('No recent news')) return t(language, 'report.availabilityNotes.newsUnavailable');
+  if (note.includes('SEC EDGAR')) return t(language, 'report.availabilityNotes.secUnavailable');
+  if (note.includes('Official source discovery')) return t(language, 'report.availabilityNotes.officialSourcesUnavailable');
+  if (note.includes('Whisper signals')) return t(language, 'report.availabilityNotes.whisperExperimental');
+  if (note.includes('Whisper alternative signal data was unavailable')) return t(language, 'report.availabilityNotes.whisperUnavailable');
+  if (note.includes('Data source issues detected')) return t(language, 'report.availabilityNotes.dataSourceIssues', { sources: note.replace(/^Data source issues detected: /, '').replace(/\.$/, '') });
+  return note;
 };
 
 const SectionCard = ({
@@ -70,9 +152,19 @@ const MarketSnapshot = ({ quote, language }: { quote: StockQuote | null; languag
   }
 
   const up = quote.changePercent >= 0;
+  const quality = assessQuoteQuality(quote);
+  const qualityColor = getQualityColor(quality);
+  const isSimulatedOrFallback = quality === 'simulation' || quality === 'fallback';
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
+    <div className="space-y-4">
+      {isSimulatedOrFallback && (
+        <div className="rounded-[18px] border p-4 text-sm leading-6" style={{ ...panelStyle, borderColor: 'rgba(243,182,63,0.32)', color: theme.colors.warn }}>
+          {t(language, 'report.simulatedQuoteWarning')}
+        </div>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
       <div className="rounded-[20px] border p-6" style={panelStyle}>
         <div className="text-[11px] uppercase tracking-[0.2em]" style={{ color: theme.colors.textMuted }}>
           {t(language, 'report.marketSnapshot')}
@@ -84,6 +176,9 @@ const MarketSnapshot = ({ quote, language }: { quote: StockQuote | null; languag
             </div>
             <div className="mt-1 text-sm" style={{ color: theme.colors.textMuted }}>
               {t(language, 'report.source')}: {quote.source || t(language, 'common.unavailable')}
+            </div>
+            <div className="mt-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ borderColor: qualityColor, color: qualityColor }}>
+              {t(language, `report.quality.${quality}`)}
             </div>
           </div>
           <div className="text-right">
@@ -106,7 +201,7 @@ const MarketSnapshot = ({ quote, language }: { quote: StockQuote | null; languag
           {(quote.volatility * 100).toFixed(1)}%
         </div>
         <p className="mt-2 text-sm leading-relaxed" style={{ color: theme.colors.textSecondary }}>
-          Heuristic volatility estimate from the current quote service.
+          {t(language, 'report.estimatedIvNotice')}
         </p>
       </div>
 
@@ -115,11 +210,12 @@ const MarketSnapshot = ({ quote, language }: { quote: StockQuote | null; languag
           {t(language, 'report.feedQuality')}
         </div>
         <div className="mt-3 text-3xl font-semibold" style={{ color: theme.colors.textPrimary }}>
-          {quote.source?.includes('Simulation') ? t(language, 'report.limited') : t(language, 'report.available')}
+          {t(language, `report.quality.${quality}`)}
         </div>
         <p className="mt-2 text-sm leading-relaxed" style={{ color: theme.colors.textSecondary }}>
-          Simulated or fallback quotes should be treated as research context only.
+          {isSimulatedOrFallback ? t(language, 'report.quoteCheckTicker') : t(language, 'report.realQuoteNotice')}
         </p>
+      </div>
       </div>
     </div>
   );
@@ -134,8 +230,16 @@ const FundamentalsSnapshot = ({
 }) => {
   if (!fundamentals) {
     return (
-      <div className="rounded-[18px] border border-dashed p-5 text-sm" style={{ ...panelStyle, color: theme.colors.textMuted }}>
-        {t(language, 'report.unavailableFundamentals')}
+      <div className="flex flex-col justify-between gap-4 rounded-[18px] border border-dashed p-5 text-sm md:flex-row md:items-center" style={{ ...panelStyle, color: theme.colors.textMuted }}>
+        <span>{t(language, 'report.unavailableFundamentals')}</span>
+        <button
+          disabled
+          className="inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[14px] border px-4 text-sm font-medium opacity-60"
+          style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textMuted }}
+        >
+          <Globe2 className="h-4 w-4" />
+          {t(language, 'report.noCompanyWebsite')}
+        </button>
       </div>
     );
   }
@@ -162,16 +266,26 @@ const FundamentalsSnapshot = ({
             {fundamentals.description || 'No company description available.'}
           </p>
         </div>
-        {fundamentals.website && (
+        {fundamentals.website ? (
           <a
             href={fundamentals.website}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-[14px] border px-4 py-3 text-sm font-medium transition"
-            style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textSecondary }}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border px-4 text-sm font-medium transition"
+            style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.accentSoft }}
           >
+            <Globe2 className="h-4 w-4" />
             {t(language, 'report.companyWebsite')}
           </a>
+        ) : (
+          <button
+            disabled
+            className="inline-flex h-11 cursor-not-allowed items-center justify-center gap-2 rounded-[14px] border px-4 text-sm font-medium opacity-60"
+            style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textMuted }}
+          >
+            <Globe2 className="h-4 w-4" />
+            {t(language, 'report.noCompanyWebsite')}
+          </button>
         )}
       </div>
 
@@ -199,6 +313,40 @@ const FundamentalsSnapshot = ({
   );
 };
 
+const NewsSentimentChart = ({ news, language }: { news: NewsItem[]; language: Language }) => {
+  const counts = getSentimentCounts(news);
+  const data = [
+    { label: t(language, 'report.sentimentPositive'), value: counts.Positive, color: theme.colors.up },
+    { label: t(language, 'report.sentimentNeutral'), value: counts.Neutral, color: theme.colors.warn },
+    { label: t(language, 'report.sentimentNegative'), value: counts.Negative, color: theme.colors.down },
+  ];
+
+  return (
+    <div className="rounded-[18px] border p-4" style={panelStyle}>
+      <div className="mb-3 text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+        {t(language, 'report.sentimentDistribution')}
+      </div>
+      <div className="h-40">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data}>
+            <XAxis dataKey="label" tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip
+              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              contentStyle={{ backgroundColor: theme.colors.cardBg, border: `1px solid ${theme.colors.borderSubtle}`, borderRadius: 12, color: theme.colors.textPrimary }}
+            />
+            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+              {data.map((entry) => (
+                <Cell key={entry.label} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 const NewsList = ({ news, language }: { news: NewsItem[]; language: Language }) => {
   if (news.length === 0) {
     return (
@@ -213,6 +361,7 @@ const NewsList = ({ news, language }: { news: NewsItem[]; language: Language }) 
       <div className="rounded-[18px] border px-4 py-3 text-sm leading-relaxed" style={{ ...panelStyle, color: theme.colors.warn }}>
         {t(language, 'report.newsSentimentNotice')}
       </div>
+      <NewsSentimentChart news={news} language={language} />
 
       <div className="space-y-3">
         {news.map((item, index) => (
@@ -222,13 +371,21 @@ const NewsList = ({ news, language }: { news: NewsItem[]; language: Language }) 
               <span>•</span>
               <span>{new Date(item.publishedDate).toLocaleString()}</span>
               <span>•</span>
-              <span>{item.sentiment}</span>
+              <span>{getSentimentLabel(language, item.sentiment)}</span>
+            </div>
+            <div className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: theme.colors.textMuted }}>
+              {t(language, 'report.originalTitle')}
             </div>
             <h4 className="mt-3 text-lg font-semibold tracking-tight" style={{ color: theme.colors.textPrimary }}>
               {item.title}
             </h4>
+            {language === 'zh' && (
+              <p className="mt-2 text-xs leading-5" style={{ color: theme.colors.textMuted }}>
+                {t(language, 'report.englishSummaryNotice')}
+              </p>
+            )}
             <p className="mt-2 text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
-              {item.text || 'No summary text available.'}
+              {item.text || t(language, 'report.noNewsSummary')}
             </p>
             <div className="mt-4 flex items-center justify-between gap-3">
               <div className="text-xs" style={{ color: theme.colors.textMuted }}>
@@ -241,7 +398,8 @@ const NewsList = ({ news, language }: { news: NewsItem[]; language: Language }) 
                 className="rounded-full border px-3 py-1.5 text-xs font-medium transition"
                 style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.accentSoft }}
               >
-                Open Article
+                {t(language, 'report.openArticle')}
+                <ExternalLink className="h-3.5 w-3.5" />
               </a>
             </div>
           </article>
@@ -262,7 +420,7 @@ const DataAvailability = ({ notes, language }: { notes: string[] | undefined; la
       <ul className="space-y-1.5 pl-5 text-sm leading-6">
         {notes.map((note) => (
           <li key={note} className="list-disc">
-            {note}
+            {formatAvailabilityNote(language, note)}
           </li>
         ))}
       </ul>
@@ -270,18 +428,150 @@ const DataAvailability = ({ notes, language }: { notes: string[] | undefined; la
   );
 };
 
+const DataAvailabilityCards = ({ report, language }: { report: StockAnalysisReport; language: Language }) => {
+  const items = getDataAvailability({
+    quote: report.quote,
+    fundamentals: report.fundamentals,
+    news: report.news,
+    verifiedNews: report.verifiedNews,
+    officialFilings: report.officialFilings,
+    officialSources: report.officialSources,
+  });
+
+  const statusColor = (status: string) => {
+    if (status === 'available') return theme.colors.up;
+    if (status === 'limited') return theme.colors.warn;
+    return theme.colors.down;
+  };
+
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      {items.map((item) => (
+        <div key={item.key} className="rounded-[18px] border p-4" style={panelStyle}>
+          <div className="text-[11px] uppercase tracking-[0.16em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, `report.data.${item.key}`)}
+          </div>
+          <div className="mt-2 text-sm font-semibold" style={{ color: statusColor(item.status) }}>
+            {t(language, `report.dataStatus.${item.status}`)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const GenerationProgress = ({ stage, language }: { stage: ReportGenerationStage; language: Language }) => {
+  if (stage === 'idle' || stage === 'done') return null;
+
+  const activeIndex = generationStageOrder.indexOf(stage);
+
+  return (
+    <div className="rounded-[20px] border p-5" style={panelStyle}>
+      <div className="mb-4 flex items-center gap-3 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
+        <RefreshCw className="h-4 w-4 animate-spin" style={{ color: theme.colors.accentSoft }} />
+        {getGenerationStageLabel(language, stage)}
+      </div>
+      <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
+        {generationStageOrder.map((item, index) => {
+          const complete = activeIndex >= index;
+          return (
+            <div
+              key={item}
+              className="rounded-[14px] border px-3 py-2 text-[11px] font-semibold"
+              style={{
+                borderColor: complete ? theme.colors.accentSoft : theme.colors.borderSubtle,
+                color: complete ? theme.colors.accentSoft : theme.colors.textMuted,
+                backgroundColor: complete ? 'rgba(47,107,255,0.08)' : theme.colors.cardAltBg,
+              }}
+            >
+              {getGenerationStageLabel(language, item)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const DataSourceStatusPanel = ({ items, language }: { items: DataSourceHealth[] | undefined; language: Language }) => {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <div className="rounded-[20px] border p-5" style={panelStyle}>
+      <div className="mb-4 text-sm font-semibold tracking-tight" style={{ color: theme.colors.textPrimary }}>
+        {t(language, 'report.dataSourceStatus')}
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {items.map((item) => {
+          const color = getDataSourceStatusColor(item.status);
+          return (
+            <div key={`${item.key}-${item.updatedAt}`} className="rounded-[16px] border p-4" style={panelStyle}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.16em]" style={{ color: theme.colors.textMuted }}>
+                    {item.label}
+                  </div>
+                  <div className="mt-2 text-sm font-semibold" style={{ color }}>
+                    {getDataSourceStatusLabel(language, item.status)}
+                  </div>
+                </div>
+                <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              </div>
+              {item.message && (
+                <p className="mt-3 line-clamp-2 text-xs leading-5" style={{ color: theme.colors.textMuted }}>
+                  {item.message}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const AiProviderNotice = ({ report, language }: { report: StockAnalysisReport; language: Language }) => {
+  const isDeepSeek = report.aiProvider === 'deepseek';
+  const badge = isDeepSeek ? t(language, 'report.deepSeekBadge') : t(language, 'report.fallbackBadge');
+  const message = isDeepSeek ? t(language, 'report.generatedByDeepSeek') : t(language, 'report.aiEngineUnavailable');
+  const color = isDeepSeek ? theme.colors.up : theme.colors.warn;
+
+  return (
+    <div className="rounded-[18px] border p-4" style={panelStyle}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, 'report.aiProvider')}
+          </div>
+          <p className="mt-2 text-sm leading-6" style={{ color: theme.colors.textSecondary }}>
+            {message}
+          </p>
+        </div>
+        <div className="inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em]" style={{ borderColor: color, color }}>
+          {badge}
+          {report.aiModel ? ` / ${report.aiModel}` : ''}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ReportSections = ({ report, language }: { report: StockAnalysisReport; language: Language }) => {
   const sections = [
     { title: t(language, 'report.executiveSummary'), icon: Sparkles, body: report.summary },
+    { title: t(language, 'report.dataAvailabilityAnalysis'), icon: Database, body: report.dataAvailabilityAnalysis || t(language, 'report.sourceTrustAnalysisUnavailable') },
     { title: t(language, 'report.priceAnalysis'), icon: BarChart3, body: report.priceAnalysis },
     { title: t(language, 'report.newsAnalysis'), icon: Newspaper, body: report.newsAnalysis },
     { title: t(language, 'report.fundamentalsAnalysis'), icon: Building2, body: report.fundamentalsAnalysis },
+    { title: t(language, 'report.sourceTrustAnalysis'), icon: ShieldCheck, body: report.sourceTrustAnalysis || t(language, 'report.sourceTrustAnalysisUnavailable') },
     { title: t(language, 'report.volatilityOptions'), icon: Waves, body: `${report.volatilityAnalysis}\n\n${report.optionsEducation}` },
     { title: t(language, 'report.conclusion'), icon: FileText, body: report.conclusion },
   ];
 
   return (
     <div className="space-y-4">
+      <AiProviderNotice report={report} language={language} />
+      <DataAvailabilityCards report={report} language={language} />
       <DataAvailability notes={report.dataAvailability} language={language} />
       <div className="grid gap-4 xl:grid-cols-2">
         {sections.map((section) => (
@@ -321,6 +611,24 @@ const ReportSections = ({ report, language }: { report: StockAnalysisReport; lan
           ))}
         </ul>
       </div>
+
+      <div className="rounded-[20px] border p-5" style={panelStyle}>
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'rgba(47,107,255,0.14)', color: theme.colors.accentSoft }}>
+            <ArrowRight className="h-4 w-4" />
+          </div>
+          <h4 className="text-sm font-semibold tracking-tight" style={{ color: theme.colors.textPrimary }}>
+            {t(language, 'report.followUpChecklist')}
+          </h4>
+        </div>
+        <ul className="space-y-2 pl-5 text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
+          {(report.followUpChecklist && report.followUpChecklist.length > 0 ? report.followUpChecklist : [t(language, 'report.followUpUnavailable')]).map((item) => (
+            <li key={item} className="list-disc">
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
@@ -331,37 +639,78 @@ const WhisperSummary = ({ whisper, language }: { whisper: WhisperData | null; la
       {t(language, 'report.whisperContext')}
     </div>
     <p className="mt-3 text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
-      {whisper ? `${whisper.summary} ${t(language, 'report.whisperNotice')}` : t(language, 'report.whisperNotice')}
+      {whisper ? `${language === 'zh' ? t(language, 'report.whisperEnglishNotice') : whisper.summary} ${t(language, 'report.whisperNotice')}` : t(language, 'report.whisperNotice')}
     </p>
   </div>
 );
 
 interface ReportViewProps {
   language: Language;
+  selectedTicker: string;
+  onTickerChange: (ticker: string) => void;
+  cachedReport?: StockAnalysisReport | null;
+  onReportGenerated: (report: StockAnalysisReport) => void;
   onNavigate?: (view: ShellViewMode) => void;
 }
 
-const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
-  const [ticker, setTicker] = useState('NVDA');
+const normalizeReportTicker = (value: string) => (value || 'NVDA').trim().toUpperCase();
+
+const ReportView: React.FC<ReportViewProps> = ({
+  language,
+  selectedTicker,
+  onTickerChange,
+  cachedReport,
+  onReportGenerated,
+  onNavigate,
+}) => {
+  const [ticker, setTicker] = useState(() => normalizeReportTicker(cachedReport?.ticker || selectedTicker));
   const [loading, setLoading] = useState(false);
+  const [generationStage, setGenerationStage] = useState<ReportGenerationStage>('idle');
   const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<StockAnalysisReport | null>(null);
+  const [report, setReport] = useState<StockAnalysisReport | null>(() => cachedReport || null);
+
+  useEffect(() => {
+    if (cachedReport) {
+      setReport(cachedReport);
+      setTicker(normalizeReportTicker(cachedReport.ticker));
+      return;
+    }
+
+    if (!report) {
+      setTicker(normalizeReportTicker(selectedTicker));
+    }
+  }, [cachedReport, report, selectedTicker]);
 
   const loadReport = async (targetTicker?: string) => {
-    const symbol = (targetTicker || ticker).trim().toUpperCase();
+    const symbol = normalizeReportTicker(targetTicker || ticker);
     if (!symbol) return;
 
     setLoading(true);
+    setGenerationStage('quote');
     setError(null);
 
+    const stageTimers = [
+      window.setTimeout(() => setGenerationStage('fundamentals'), 900),
+      window.setTimeout(() => setGenerationStage('news'), 1800),
+      window.setTimeout(() => setGenerationStage('trust'), 3000),
+      window.setTimeout(() => setGenerationStage('ai'), 4800),
+      window.setTimeout(() => setGenerationStage('finalizing'), 16000),
+    ];
+
     try {
-      const result = await generateStockAnalysisReport(symbol);
+      const result = await generateStockAnalysisReport(symbol, language);
+      setGenerationStage('finalizing');
       setReport(result);
-      setTicker(symbol);
+      setTicker(result.ticker);
+      onTickerChange(result.ticker);
+      onReportGenerated(result);
+      setGenerationStage('done');
     } catch (err) {
       console.error(err);
+      setGenerationStage('error');
       setError(t(language, 'report.configHint'));
     } finally {
+      stageTimers.forEach((timer) => window.clearTimeout(timer));
       setLoading(false);
     }
   };
@@ -421,7 +770,7 @@ const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
                   style={{ backgroundColor: theme.colors.accent, boxShadow: theme.colors.shadowGlow }}
                 >
                   {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                  {t(language, 'common.generateReport')}
+                  {report ? t(language, 'report.regenerateReport') : t(language, 'common.generateReport')}
                 </button>
               </div>
             </div>
@@ -438,7 +787,14 @@ const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
         </div>
       )}
 
+      <GenerationProgress stage={generationStage} language={language} />
+
       {!report && !error && <NuxNotice tone="info">{t(language, 'report.configHint')}</NuxNotice>}
+      {report && report.isCached && !loading && !error && (
+        <NuxNotice tone="warning">
+          {t(language, 'report.cachedReportNotice', { time: formatReportDateTime(report.cachedAt || report.generatedAt) })}
+        </NuxNotice>
+      )}
 
       {!report && !loading && !error && (
         <section className="overflow-hidden rounded-[24px] border" style={shellCardStyle}>
@@ -467,8 +823,9 @@ const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
                 <NuxButton
                   key={item.view}
                   variant="secondary"
+                  disabled={loading}
                   onClick={() => {
-                    // TODO: pass report ticker when shared ticker state exists.
+                    onTickerChange(report.ticker);
                     onNavigate?.(item.view);
                   }}
                 >
@@ -477,6 +834,8 @@ const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
               ))}
             </div>
           </SectionCard>
+
+          <DataSourceStatusPanel items={report.dataSourceHealth} language={language} />
 
           <SectionCard icon={BarChart3} title={t(language, 'report.marketSnapshot')}>
             <MarketSnapshot quote={report.quote} language={language} />
@@ -493,14 +852,20 @@ const ReportView: React.FC<ReportViewProps> = ({ language, onNavigate }) => {
             </div>
           </SectionCard>
 
-          {report.verifiedNews && report.verifiedNews.length > 0 && (
-            <SectionCard icon={ShieldCheck} title={t(language, 'news.verifiedTitle')}>
-              <VerifiedNewsPanel items={report.verifiedNews} language={language} />
-            </SectionCard>
-          )}
-
-          <SectionCard icon={Landmark} title={t(language, 'sec.title')}>
-            <OfficialFilingsPanel verification={report.officialFilings} language={language} />
+          <SectionCard icon={ShieldCheck} title={t(language, 'sourceTrust.title')}>
+            <SourceTrustCenter
+              ticker={report.ticker}
+              summary={buildSourceTrustSummary({
+                ticker: report.ticker,
+                verifiedNews: report.verifiedNews,
+                officialFilings: report.officialFilings,
+                officialSources: report.officialSources,
+              })}
+              verifiedNews={report.verifiedNews}
+              officialFilings={report.officialFilings}
+              officialSources={report.officialSources}
+              language={language}
+            />
           </SectionCard>
 
           <SectionCard icon={BookOpen} title={t(language, 'report.aiReport')}>

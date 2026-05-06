@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { History, PlayCircle, Activity, TrendingUp, AlertTriangle, RefreshCw, ScrollText, ArrowUpRight, ArrowDownRight, Database, Eye, Globe, Layers } from 'lucide-react';
 import { runStrategyBacktest } from '../services/marketDataService';
 import { BacktestResult, OptionContract } from '../types';
@@ -8,8 +8,16 @@ import Backtest3DVisualizer from './Backtest3DVisualizer';
 import { Language, t } from '../i18n';
 import { NuxPageHeader, RiskDisclaimer } from './NuxPage';
 
-const BacktestView: React.FC<{ language: Language }> = ({ language }) => {
-  const [ticker, setTicker] = useState('SPY');
+interface BacktestViewProps {
+  language: Language;
+  selectedTicker?: string;
+}
+
+const normalizeTicker = (value: string | undefined) => (value || 'SPY').trim().toUpperCase();
+
+const BacktestView: React.FC<BacktestViewProps> = ({ language, selectedTicker }) => {
+  const [ticker, setTicker] = useState(() => normalizeTicker(selectedTicker));
+  const [tickerEdited, setTickerEdited] = useState(false);
   const [strategy, setStrategy] = useState<'Covered Call' | 'Long Call' | 'Short Put'>('Covered Call');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
@@ -23,6 +31,12 @@ const BacktestView: React.FC<{ language: Language }> = ({ language }) => {
       moneyness: number,
       expiration: string 
   } | null>(null);
+
+  useEffect(() => {
+      const normalized = normalizeTicker(selectedTicker);
+      if (tickerEdited || normalized === ticker) return;
+      setTicker(normalized);
+  }, [selectedTicker, ticker, tickerEdited]);
 
   const handleContractSelect = (ticker: string, expiration: string, contract: OptionContract, currentPrice: number) => {
       // Calculate implied Moneyness and DTE from the selected contract
@@ -102,7 +116,10 @@ const BacktestView: React.FC<{ language: Language }> = ({ language }) => {
                         <input 
                             type="text" 
                             value={ticker}
-                            onChange={(e) => setTicker(e.target.value.toUpperCase())}
+                            onChange={(e) => {
+                                setTickerEdited(true);
+                                setTicker(e.target.value.toUpperCase());
+                            }}
                             className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-white font-mono focus:border-indigo-500/50 outline-none"
                         />
                     </div>
