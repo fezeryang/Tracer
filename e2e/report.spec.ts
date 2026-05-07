@@ -19,13 +19,10 @@ const MOCK_REPORT = {
   dataAvailabilityAnalysis: 'Good quality.',
   priceAnalysis: 'Strong momentum.',
   newsAnalysis: 'Positive news.',
-  fundamentalsAnalysis: '122% YoY growth.',
   volatilityAnalysis: 'IV at 45%.',
   optionsEducation: 'Straddle strategies.',
   sourceTrustAnalysis: 'High confidence.',
-  followUpChecklist: ['Monitor Blackwell ramp'],
   risks: ['Concentration risk in AI infrastructure'],
-  conclusion: 'Maintain accumulate rating.',
   disclaimer: 'This is not financial advice.',
   dataAvailability: ['Quote data available'],
   dataSourceHealth: [
