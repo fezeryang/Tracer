@@ -305,8 +305,8 @@ export const AiResearchReportPanel: React.FC<AiResearchReportPanelProps> = ({ re
             <span style={{
               ...badgeStyle,
               backgroundColor: report.aiProvider === 'deepseek'
-                ? 'rgba(34, 197, 94, 0.15)'
-                : 'rgba(245, 158, 11, 0.15)',
+                ? theme.colors.success.soft
+                : theme.colors.warning.soft,
               color: report.aiProvider === 'deepseek'
                 ? theme.colors.semantic.up
                 : theme.colors.semantic.warn,
@@ -315,7 +315,11 @@ export const AiResearchReportPanel: React.FC<AiResearchReportPanelProps> = ({ re
             </span>
             <span style={{
               ...badgeStyle,
-              backgroundColor: `${qualityRating.color}20`,
+              backgroundColor: qualityRating.color === theme.colors.semantic.up
+                ? theme.colors.success.soft
+                : qualityRating.color === theme.colors.semantic.down
+                  ? theme.colors.danger.soft
+                  : theme.colors.warning.soft,
               color: qualityRating.color,
             }}>
               {qualityRating.label}
@@ -423,8 +427,8 @@ export const AiResearchReportPanel: React.FC<AiResearchReportPanelProps> = ({ re
       {/* Disclaimer */}
       <div style={{
         ...panelStyle,
-        backgroundColor: 'rgba(239, 68, 68, 0.06)',
-        borderColor: 'rgba(239, 68, 68, 0.15)',
+        backgroundColor: theme.colors.danger.soft,
+        borderColor: theme.colors.danger.default,
       }}>
         <div style={{
           fontSize: '12px',

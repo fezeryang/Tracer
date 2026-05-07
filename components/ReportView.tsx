@@ -43,7 +43,7 @@ import AiResearchReportPanel from './AiResearchReportPanel';
 const shellCardStyle = {
   backgroundColor: theme.colors.card.bg,
   borderColor: theme.colors.card.border,
-  boxShadow: '0 18px 44px rgba(0,0,0,0.24)',
+  boxShadow: '0 18px 44px var(--shadow-soft)',
 };
 
 const panelStyle = {
@@ -53,9 +53,9 @@ const panelStyle = {
 
 const reportHeroStyle = {
   background:
-    'linear-gradient(135deg, rgba(13,27,47,0.98), rgba(7,17,31,0.98) 58%, rgba(10,22,40,0.96))',
+    'linear-gradient(135deg, var(--background-elevated), var(--background) 58%, var(--background-soft))',
   borderColor: theme.colors.card.borderStrong,
-  boxShadow: '0 22px 54px rgba(0,0,0,0.30)',
+  boxShadow: '0 22px 54px var(--shadow-soft)',
 };
 
 const getQualityColor = (quality: ReturnType<typeof assessQuoteQuality>) => {
@@ -164,7 +164,7 @@ const SectionCard = ({
     <div className="flex items-center gap-3 border-b px-6 py-4" style={{ borderColor: theme.colors.card.border }}>
       <div
         className="flex h-9 w-9 items-center justify-center rounded-[12px]"
-        style={{ backgroundColor: 'rgba(59,130,246,0.10)', color: theme.colors.accentSoft }}
+        style={{ backgroundColor: theme.colors.primary.muted, color: theme.colors.accentSoft }}
       >
         <Icon className="h-4 w-4" />
       </div>
@@ -179,7 +179,7 @@ const SectionCard = ({
 const ResearchBadge = ({ label, color }: { label: string; color: string }) => (
   <span
     className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
-    style={{ borderColor: color, color, backgroundColor: `${color}14` }}
+    style={{ borderColor: color, color, backgroundColor: theme.colors.card.bgAlt }}
   >
     {label}
   </span>
@@ -269,7 +269,7 @@ const MarketSnapshot = ({ quote, language }: { quote: StockQuote | null; languag
   return (
     <div className="space-y-4">
       {isSimulatedOrFallback && (
-        <div className="rounded-[18px] border p-4 text-sm leading-6" style={{ ...panelStyle, borderColor: 'rgba(243,182,63,0.32)', color: theme.colors.warn }}>
+        <div className="rounded-[18px] border p-4 text-sm leading-6" style={{ ...panelStyle, backgroundColor: theme.colors.warning.soft, borderColor: theme.colors.warning.default, color: theme.colors.warn }}>
           {t(language, 'report.simulatedQuoteWarning')}
         </div>
       )}
@@ -426,9 +426,9 @@ const FundamentalsSnapshot = ({
 const NewsSentimentChart = ({ news, language }: { news: NewsItem[]; language: Language }) => {
   const counts = getSentimentCounts(news);
   const data = [
-    { label: t(language, 'report.sentimentPositive'), value: counts.Positive, color: theme.colors.up },
-    { label: t(language, 'report.sentimentNeutral'), value: counts.Neutral, color: theme.colors.warn },
-    { label: t(language, 'report.sentimentNegative'), value: counts.Negative, color: theme.colors.down },
+    { label: t(language, 'report.sentimentPositive'), value: counts.Positive, color: theme.colors.chart.green },
+    { label: t(language, 'report.sentimentNeutral'), value: counts.Neutral, color: theme.colors.chart.gold },
+    { label: t(language, 'report.sentimentNegative'), value: counts.Negative, color: theme.colors.chart.red },
   ];
 
   return (
@@ -442,7 +442,7 @@ const NewsSentimentChart = ({ news, language }: { news: NewsItem[]; language: La
             <XAxis dataKey="label" tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
             <YAxis allowDecimals={false} tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
             <Tooltip
-              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              cursor={{ fill: theme.colors.card.hover }}
               contentStyle={{ backgroundColor: theme.colors.cardBg, border: `1px solid ${theme.colors.borderSubtle}`, borderRadius: 12, color: theme.colors.textPrimary }}
             />
             <Bar dataKey="value" radius={[8, 8, 0, 0]}>
@@ -705,9 +705,9 @@ const ReportSections = ({ report, language }: { report: StockAnalysisReport; lan
         ))}
       </div>
 
-      <div className="rounded-[20px] border p-5" style={{ ...panelStyle, borderColor: 'rgba(243,182,63,0.24)' }}>
+      <div className="rounded-[20px] border p-5" style={{ ...panelStyle, borderColor: theme.colors.warning.default }}>
         <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'rgba(243,182,63,0.14)', color: theme.colors.warn }}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: theme.colors.warning.soft, color: theme.colors.warn }}>
             <ShieldAlert className="h-4 w-4" />
           </div>
           <h4 className="text-sm font-semibold tracking-tight" style={{ color: theme.colors.textPrimary }}>
@@ -845,7 +845,7 @@ const ReportView: React.FC<ReportViewProps> = ({
                       style={{
                         borderColor: report.aiProvider === 'deepseek' ? theme.colors.up : theme.colors.warn,
                         color: report.aiProvider === 'deepseek' ? theme.colors.up : theme.colors.warn,
-                        backgroundColor: report.aiProvider === 'deepseek' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                        backgroundColor: report.aiProvider === 'deepseek' ? theme.colors.success.soft : theme.colors.warning.soft,
                       }}
                     >
                       {report.aiProvider === 'deepseek' ? t(language, 'report.deepSeekBadge') : t(language, 'report.fallbackBadge')}
@@ -891,10 +891,10 @@ const ReportView: React.FC<ReportViewProps> = ({
                     }}
                     className="w-full rounded-[14px] border px-11 py-3 text-base font-semibold tracking-wide outline-none transition"
                     style={{
-                      backgroundColor: theme.colors.cardBg,
-                      borderColor: theme.colors.borderStrong,
+                      backgroundColor: theme.colors.input.bg,
+                      borderColor: theme.colors.input.border,
                       color: theme.colors.textPrimary,
-                      boxShadow: '0 0 0 1px rgba(59,130,246,0.12)',
+                      boxShadow: '0 0 0 1px var(--primary-glow)',
                     }}
                     placeholder="NVDA"
                   />
@@ -902,8 +902,8 @@ const ReportView: React.FC<ReportViewProps> = ({
                 <button
                   onClick={() => void loadReport()}
                   disabled={loading}
-                  className="inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{ backgroundColor: theme.colors.accent }}
+                  className="inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3 text-sm font-semibold shadow-md transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ backgroundColor: theme.colors.primary.default, color: theme.colors.textPrimary, boxShadow: '0 10px 28px var(--blue-glow-shadow)' }}
                 >
                   {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {report ? t(language, 'report.regenerateReport') : t(language, 'common.generateReport')}
@@ -915,7 +915,7 @@ const ReportView: React.FC<ReportViewProps> = ({
       </section>
 
       {error && (
-        <div className="rounded-[20px] border px-5 py-4 text-sm" style={{ ...panelStyle, borderColor: 'rgba(255,92,122,0.24)', color: theme.colors.down }}>
+        <div className="rounded-[20px] border px-5 py-4 text-sm" style={{ ...panelStyle, backgroundColor: theme.colors.danger.soft, borderColor: theme.colors.danger.default, color: theme.colors.down }}>
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div>{error}</div>

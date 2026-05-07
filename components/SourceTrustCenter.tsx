@@ -75,7 +75,7 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
                 / 100 {t(language, 'sourceTrust.overallScore')}
               </div>
             </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: theme.colors.card.borderSoft }}>
               <div
                 className="h-full rounded-full transition-all"
                 style={{ width: `${summary.overallScore}%`, backgroundColor: levelColor }}

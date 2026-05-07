@@ -16,6 +16,132 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+      :root {
+        /* =========================
+           Core Background
+        ========================= */
+
+        --background: hsl(222 47% 5%);
+        --background-soft: hsl(222 42% 7%);
+        --background-elevated: hsl(222 36% 9%);
+        --background-glass: hsl(222 34% 11% / 0.72);
+
+        /* =========================
+           Card / Panel
+        ========================= */
+
+        --card: hsl(222 34% 10%);
+        --card-hover: hsl(222 32% 13%);
+        --card-border: hsl(220 28% 18%);
+        --card-border-soft: hsl(220 25% 14%);
+
+        /* =========================
+           Text
+        ========================= */
+
+        --foreground: hsl(210 40% 96%);
+        --foreground-soft: hsl(215 24% 82%);
+        --muted-foreground: hsl(217 16% 60%);
+        --subtle-foreground: hsl(218 14% 45%);
+
+        /* =========================
+           Primary Blue
+        ========================= */
+
+        --primary: hsl(219 92% 58%);
+        --primary-hover: hsl(219 92% 64%);
+        --primary-muted: hsl(219 70% 20%);
+        --primary-glow: hsl(219 100% 62% / 0.35);
+
+        /* =========================
+           Luxury Gold
+        ========================= */
+
+        --gold: hsl(43 88% 56%);
+        --gold-hover: hsl(43 92% 63%);
+        --gold-muted: hsl(43 62% 20%);
+        --gold-glow: hsl(43 95% 58% / 0.28);
+
+        /* =========================
+           Positive / Negative
+        ========================= */
+
+        --success: hsl(145 72% 45%);
+        --success-soft: hsl(145 58% 18%);
+        --success-glow: hsl(145 78% 45% / 0.28);
+
+        --danger: hsl(0 78% 58%);
+        --danger-soft: hsl(0 58% 18%);
+        --danger-glow: hsl(0 82% 60% / 0.28);
+
+        /* =========================
+           Warning / Risk
+        ========================= */
+
+        --warning: hsl(38 92% 55%);
+        --warning-soft: hsl(38 62% 18%);
+        --warning-glow: hsl(38 92% 55% / 0.25);
+
+        /* =========================
+           Purple / AI Accent
+        ========================= */
+
+        --ai-purple: hsl(262 85% 64%);
+        --ai-purple-soft: hsl(262 48% 20%);
+        --ai-purple-glow: hsl(262 90% 65% / 0.3);
+
+        /* =========================
+           Cyan / Data Accent
+        ========================= */
+
+        --cyan: hsl(190 92% 55%);
+        --cyan-soft: hsl(190 58% 18%);
+        --cyan-glow: hsl(190 92% 55% / 0.28);
+
+        /* =========================
+           Sidebar
+        ========================= */
+
+        --sidebar: hsl(222 48% 6%);
+        --sidebar-border: hsl(220 28% 16%);
+        --sidebar-active: hsl(219 78% 24%);
+        --sidebar-active-border: hsl(219 92% 58%);
+        --sidebar-text: hsl(214 32% 82%);
+        --sidebar-muted: hsl(217 16% 55%);
+
+        /* =========================
+           Inputs / Search / Controls
+        ========================= */
+
+        --input: hsl(222 34% 9%);
+        --input-border: hsl(220 28% 18%);
+        --input-focus: hsl(219 92% 58%);
+        --button-secondary: hsl(222 30% 12%);
+        --button-secondary-hover: hsl(222 28% 16%);
+
+        /* =========================
+           Chart Colors
+        ========================= */
+
+        --chart-blue: hsl(219 92% 58%);
+        --chart-green: hsl(145 72% 45%);
+        --chart-red: hsl(0 78% 58%);
+        --chart-gold: hsl(43 88% 56%);
+        --chart-purple: hsl(262 85% 64%);
+        --chart-cyan: hsl(190 92% 55%);
+        --chart-orange: hsl(25 92% 56%);
+        --chart-muted: hsl(220 16% 35%);
+
+        /* =========================
+           Shadows / Glow
+        ========================= */
+
+        --shadow-soft: hsl(222 80% 2% / 0.45);
+        --shadow-strong: hsl(222 90% 1% / 0.75);
+        --blue-glow-shadow: hsl(219 100% 62% / 0.25);
+        --gold-glow-shadow: hsl(43 95% 58% / 0.25);
+      }
+
       /* Custom scrollbar for chat area */
       .scrollbar-hide::-webkit-scrollbar {
           display: none;
@@ -25,8 +151,8 @@
           scrollbar-width: none;
       }
       body {
-        background-color: #050b14; /* Deep void */
-        color: #e2e8f0; 
+        background-color: var(--background);
+        color: var(--foreground-soft);
       }
     </style>
 <script type="importmap">

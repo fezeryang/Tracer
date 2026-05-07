@@ -72,10 +72,10 @@ export const NuxButton = ({
 }) => {
   const variantClass =
     variant === 'primary'
-      ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
+      ? 'bg-[var(--primary)] text-[var(--foreground)] shadow-[0_10px_28px_var(--blue-glow-shadow)] hover:bg-[var(--primary-hover)]'
       : variant === 'danger'
-        ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/20'
-        : 'bg-slate-900/70 hover:bg-slate-800 text-slate-200 border border-white/10';
+        ? 'bg-[var(--danger)] text-[var(--foreground)] shadow-[0_10px_28px_var(--danger-glow)]'
+        : 'border bg-[var(--button-secondary)] text-[var(--foreground-soft)] hover:bg-[var(--button-secondary-hover)]';
 
   return (
     <button
@@ -98,12 +98,12 @@ export const NuxNotice = ({
 }) => {
   const toneStyle =
     tone === 'danger'
-      ? { borderColor: 'rgba(255,92,122,0.28)', color: theme.colors.down }
+      ? { backgroundColor: theme.colors.danger.soft, borderColor: theme.colors.danger.default, color: theme.colors.down }
       : tone === 'warning'
-        ? { borderColor: 'rgba(243,182,63,0.28)', color: theme.colors.warn }
+        ? { backgroundColor: theme.colors.warning.soft, borderColor: theme.colors.warning.default, color: theme.colors.warn }
         : tone === 'success'
-          ? { borderColor: 'rgba(31,209,138,0.28)', color: theme.colors.up }
-          : { borderColor: 'rgba(76,141,255,0.28)', color: theme.colors.accentSoft };
+          ? { backgroundColor: theme.colors.success.soft, borderColor: theme.colors.success.default, color: theme.colors.up }
+          : { backgroundColor: theme.colors.primary.muted, borderColor: theme.colors.primary.default, color: theme.colors.accentSoft };
 
   return (
     <div className="rounded-[18px] border px-4 py-3 text-sm leading-6" style={{ ...nuxInsetStyle, ...toneStyle }}>

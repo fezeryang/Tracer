@@ -1,51 +1,129 @@
 export const theme = {
   colors: {
-    // Existing - keep for backward compatibility
-    appBg: '#07111F',
-    shellBg: '#081423',
-    cardBg: '#0F1E33',
-    cardAltBg: '#0B1A2D',
+    // Legacy aliases retained for existing component references.
+    appBg: 'var(--background)',
+    shellBg: 'var(--sidebar)',
+    cardBg: 'var(--card)',
+    cardAltBg: 'var(--background-elevated)',
 
-    // Updated accent colors (more professional blue)
-    accent: '#2563EB',  // Updated from #2F6BFF
-    accentSoft: '#3B82F6',  // Updated from #4C8DFF
+    accent: 'var(--primary)',
+    accentSoft: 'var(--primary-hover)',
 
-    // Updated semantic colors
-    up: '#22C55E',  // Updated from #1FD18A
-    down: '#EF4444',  // Updated from #FF5C7A
-    warn: '#F59E0B',  // Updated from #F3B63F
+    up: 'var(--success)',
+    down: 'var(--danger)',
+    warn: 'var(--warning)',
 
-    // Updated text colors
-    textPrimary: '#F8FAFC',  // Updated from #F4F7FB
-    textSecondary: '#CBD5E1',  // Updated from #A8B3C7
-    textMuted: '#64748B',  // Updated from #74819A
+    textPrimary: 'var(--foreground)',
+    textSecondary: 'var(--foreground-soft)',
+    textMuted: 'var(--muted-foreground)',
 
-    borderSubtle: 'rgba(255,255,255,0.06)',
-    borderStrong: 'rgba(148,163,184,0.14)',  // NEW
-    accentBg: 'rgba(37,99,235,0.12)',  // NEW: accent background with opacity
-    accentBgSoft: 'rgba(59,130,246,0.14)',  // NEW: accentSoft background with opacity
-    accentFillStart: 'rgba(59,130,246,0.45)',  // NEW: for gradient fills
+    borderSubtle: 'var(--card-border-soft)',
+    borderStrong: 'var(--card-border)',
+    accentBg: 'var(--primary-muted)',
+    accentBgSoft: 'var(--primary-muted)',
+    accentFillStart: 'var(--primary-glow)',
 
-    shadowCard: '0 18px 40px rgba(0,0,0,0.28)',
-    shadowGlow: '0 0 0 1px rgba(37,99,235,0.08), 0 10px 30px rgba(37,99,235,0.08)',  // Updated accent color
+    shadowCard: '0 18px 40px var(--shadow-soft)',
+    shadowGlow: '0 0 0 1px var(--blue-glow-shadow), 0 10px 30px var(--blue-glow-shadow)',
 
-    // NEW: Structured color layers
     background: {
-      deepest: '#050B14',
-      primary: '#07111F',
-      secondary: '#0A1628',
-      elevated: '#0D1B2F',
+      deepest: 'var(--background)',
+      primary: 'var(--background)',
+      secondary: 'var(--background-soft)',
+      elevated: 'var(--background-elevated)',
+      default: 'var(--background)',
+      soft: 'var(--background-soft)',
+      glass: 'var(--background-glass)',
     },
     card: {
-      bg: '#0F1E33',
-      bgAlt: '#111C2E',
-      border: 'rgba(255,255,255,0.06)',
-      borderStrong: 'rgba(148,163,184,0.14)',
+      bg: 'var(--card)',
+      bgAlt: 'var(--background-elevated)',
+      border: 'var(--card-border)',
+      borderStrong: 'var(--card-border)',
+      default: 'var(--card)',
+      hover: 'var(--card-hover)',
+      borderSoft: 'var(--card-border-soft)',
+    },
+    text: {
+      primary: 'var(--foreground)',
+      secondary: 'var(--foreground-soft)',
+      muted: 'var(--muted-foreground)',
+      subtle: 'var(--subtle-foreground)',
+    },
+    primary: {
+      default: 'var(--primary)',
+      hover: 'var(--primary-hover)',
+      muted: 'var(--primary-muted)',
+      glow: 'var(--primary-glow)',
+    },
+    gold: {
+      default: 'var(--gold)',
+      hover: 'var(--gold-hover)',
+      muted: 'var(--gold-muted)',
+      glow: 'var(--gold-glow)',
+    },
+    success: {
+      default: 'var(--success)',
+      soft: 'var(--success-soft)',
+      glow: 'var(--success-glow)',
+    },
+    danger: {
+      default: 'var(--danger)',
+      soft: 'var(--danger-soft)',
+      glow: 'var(--danger-glow)',
+    },
+    warning: {
+      default: 'var(--warning)',
+      soft: 'var(--warning-soft)',
+      glow: 'var(--warning-glow)',
+    },
+    ai: {
+      purple: 'var(--ai-purple)',
+      soft: 'var(--ai-purple-soft)',
+      glow: 'var(--ai-purple-glow)',
+    },
+    cyan: {
+      default: 'var(--cyan)',
+      soft: 'var(--cyan-soft)',
+      glow: 'var(--cyan-glow)',
+    },
+    chart: {
+      blue: 'var(--chart-blue)',
+      green: 'var(--chart-green)',
+      red: 'var(--chart-red)',
+      gold: 'var(--chart-gold)',
+      purple: 'var(--chart-purple)',
+      cyan: 'var(--chart-cyan)',
+      orange: 'var(--chart-orange)',
+      muted: 'var(--chart-muted)',
+    },
+    shadow: {
+      soft: 'var(--shadow-soft)',
+      strong: 'var(--shadow-strong)',
+      blueGlow: 'var(--blue-glow-shadow)',
+      goldGlow: 'var(--gold-glow-shadow)',
     },
     semantic: {
-      up: '#22C55E',
-      down: '#EF4444',
-      warn: '#F59E0B',
+      up: 'var(--success)',
+      down: 'var(--danger)',
+      warn: 'var(--warning)',
+    },
+    sidebar: {
+      bg: 'var(--sidebar)',
+      border: 'var(--sidebar-border)',
+      active: 'var(--sidebar-active)',
+      activeBorder: 'var(--sidebar-active-border)',
+      text: 'var(--sidebar-text)',
+      muted: 'var(--sidebar-muted)',
+    },
+    input: {
+      bg: 'var(--input)',
+      border: 'var(--input-border)',
+      focus: 'var(--input-focus)',
+    },
+    button: {
+      secondary: 'var(--button-secondary)',
+      secondaryHover: 'var(--button-secondary-hover)',
     },
   },
   radius: {
@@ -61,26 +139,21 @@ export const theme = {
     innerPadding: '1.5rem',
   },
   typography: {
-    // Display
     displayLg: { fontSize: 'clamp(1.75rem, 1rem + 4vw, 2.5rem)', fontWeight: 600, lineHeight: 1.2, letterSpacing: '-0.02em' },
     displayMd: { fontSize: 'clamp(1.5rem, 0.8rem + 3vw, 2rem)', fontWeight: 600, lineHeight: 1.25 },
     displaySm: { fontSize: '1.5rem', fontWeight: 600, lineHeight: 1.3 },
 
-    // Headings
     headingXl: { fontSize: '1.25rem', fontWeight: 600, lineHeight: 1.4 },
     headingLg: { fontSize: '1.125rem', fontWeight: 600, lineHeight: 1.4 },
     headingMd: { fontSize: '1rem', fontWeight: 500, lineHeight: 1.5 },
     headingSm: { fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.5 },
 
-    // Body
     bodyLg: { fontSize: '1rem', fontWeight: 400, lineHeight: 1.7 },
     bodyMd: { fontSize: '0.9375rem', fontWeight: 400, lineHeight: 1.6 },
     bodySm: { fontSize: '0.875rem', fontWeight: 400, lineHeight: 1.6 },
 
-    // Caption
     caption: { fontSize: '0.75rem', fontWeight: 500, lineHeight: 1.4, letterSpacing: '0.08em' },
 
-    // Chinese-specific
     chineseBody: { fontSize: '0.9375rem', fontWeight: 400, lineHeight: 1.8, letterSpacing: '0.02em' },
     chineseHeading: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.5 },
   },
