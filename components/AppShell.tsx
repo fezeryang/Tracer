@@ -60,18 +60,18 @@ const AppShell: React.FC<AppShellProps> = ({
     <div
       className="flex h-screen overflow-hidden"
       style={{
-        background: `radial-gradient(circle at top left, ${theme.colors.accentBg}, transparent 24%), ${theme.colors.appBg}`,
+        background: `radial-gradient(circle at top left, ${theme.colors.primary.muted}, transparent 24%), ${theme.colors.appBg}`,
         color: theme.colors.textPrimary,
       }}
     >
       <aside
         className="flex w-[250px] flex-shrink-0 flex-col overflow-y-auto border-r p-4"
-        style={{ backgroundColor: theme.colors.shellBg, borderColor: theme.colors.borderSubtle }}
+        style={{ backgroundColor: theme.colors.sidebar.bg, borderColor: theme.colors.sidebar.border }}
       >
         <div className="mb-6 flex items-center gap-3 px-2">
           <div
             className="flex h-11 w-11 items-center justify-center rounded-[16px] text-xl font-bold"
-            style={{ background: `linear-gradient(135deg, ${theme.colors.warn}, ${theme.colors.accent})`, color: theme.colors.textPrimary }}
+            style={{ background: `linear-gradient(135deg, ${theme.colors.gold.default}, ${theme.colors.primary.default})`, color: theme.colors.textPrimary }}
           >
             N
           </div>
@@ -93,10 +93,10 @@ const AppShell: React.FC<AppShellProps> = ({
                 onClick={() => onChangeView(item.view)}
                 className="flex w-full items-center gap-3 rounded-[16px] px-4 py-3 text-left text-sm font-medium transition-all"
                 style={{
-                  backgroundColor: active ? theme.colors.accentBg : 'transparent',
-                  color: active ? theme.colors.textPrimary : theme.colors.textSecondary,
+                  backgroundColor: active ? theme.colors.sidebar.active : 'transparent',
+                  color: active ? theme.colors.textPrimary : theme.colors.sidebar.text,
                   boxShadow: active ? theme.colors.shadowGlow : 'none',
-                  border: active ? `1px solid ${theme.colors.accentSoft}38` : '1px solid transparent',
+                  border: active ? `1px solid ${theme.colors.sidebar.activeBorder}` : '1px solid transparent',
                 }}
               >
                 <Icon className="h-4 w-4" />

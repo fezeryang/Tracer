@@ -57,7 +57,7 @@ const TopBar: React.FC<TopBarProps> = ({ language, onToggleLanguage }) => {
           style={{
             color: theme.colors.textPrimary,
             borderColor: theme.colors.borderSubtle,
-            backgroundColor: 'rgba(255,255,255,0.02)',
+            backgroundColor: theme.colors.input.bg,
           }}
         />
       </div>
@@ -65,9 +65,12 @@ const TopBar: React.FC<TopBarProps> = ({ language, onToggleLanguage }) => {
       <div className="flex flex-wrap items-center gap-3 lg:justify-end">
         <div
           className="flex items-center gap-3 rounded-[14px] border px-4 py-2"
-          style={{ borderColor: theme.colors.borderSubtle, backgroundColor: 'rgba(255,255,255,0.02)' }}
+          style={{ borderColor: theme.colors.borderSubtle, backgroundColor: theme.colors.background.elevated }}
         >
-          <span className={`h-2.5 w-2.5 rounded-full ${marketStatus.isOpen ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: marketStatus.isOpen ? theme.colors.success.default : theme.colors.danger.default }}
+          />
           <div className="text-xs leading-tight">
             <div style={{ color: theme.colors.textPrimary }}>
               {marketStatus.isOpen ? t(language, 'topbar.marketOpen') : t(language, 'topbar.marketClosed')}

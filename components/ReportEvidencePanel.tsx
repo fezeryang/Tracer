@@ -130,7 +130,7 @@ const PriceTrend = ({ evidencePack, language }: { evidencePack?: ReportEvidenceP
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={history}>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+              <CartesianGrid stroke={theme.colors.chart.muted} vertical={false} />
               <XAxis dataKey="date" tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={24} />
               <YAxis tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={54} />
               <Tooltip
@@ -138,7 +138,7 @@ const PriceTrend = ({ evidencePack, language }: { evidencePack?: ReportEvidenceP
                 labelStyle={{ color: theme.colors.textPrimary }}
                 formatter={(value) => [`$${Number(value).toFixed(2)}`, t(language, 'report.priceAnalysis')]}
               />
-              <Line type="monotone" dataKey="close" stroke={theme.colors.accentSoft} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+              <Line type="monotone" dataKey="close" stroke={theme.colors.chart.blue} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -154,9 +154,9 @@ const PriceTrend = ({ evidencePack, language }: { evidencePack?: ReportEvidenceP
 const SentimentDistribution = ({ report, evidencePack, language }: { report: StockAnalysisReport; evidencePack?: ReportEvidencePack; language: Language }) => {
   const summary = evidencePack?.sentimentSummary || buildSentimentFallback(report);
   const data = [
-    { label: t(language, 'evidence.positive'), value: summary.positive, color: theme.colors.up },
-    { label: t(language, 'evidence.neutral'), value: summary.neutral, color: theme.colors.warn },
-    { label: t(language, 'evidence.negative'), value: summary.negative, color: theme.colors.down },
+    { label: t(language, 'evidence.positive'), value: summary.positive, color: theme.colors.chart.green },
+    { label: t(language, 'evidence.neutral'), value: summary.neutral, color: theme.colors.chart.gold },
+    { label: t(language, 'evidence.negative'), value: summary.negative, color: theme.colors.chart.red },
   ];
 
   return (
@@ -174,7 +174,7 @@ const SentimentDistribution = ({ report, evidencePack, language }: { report: Sto
               <XAxis dataKey="label" tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis allowDecimals={false} tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip
-                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+                cursor={{ fill: theme.colors.card.hover }}
                 contentStyle={{ backgroundColor: theme.colors.cardBg, border: `1px solid ${theme.colors.borderSubtle}`, borderRadius: 12, color: theme.colors.textPrimary }}
               />
               <Bar dataKey="value" radius={[8, 8, 0, 0]}>
