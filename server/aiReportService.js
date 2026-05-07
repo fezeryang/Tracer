@@ -1,7 +1,7 @@
 const DEFAULT_DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
 const DEFAULT_DEEPSEEK_MODEL = 'deepseek-v4-flash';
 const REPORT_DISCLAIMER = 'For educational and research use only. Not financial advice.';
-const DEEPSEEK_REPORT_TIMEOUT_MS = 55000;
+const DEEPSEEK_REPORT_TIMEOUT_MS = 300000;
 
 export const isDeepSeekReportConfigured = () => Boolean(process.env.DEEPSEEK_API_KEY);
 

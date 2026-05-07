@@ -16,6 +16,7 @@ import {
   OfficialSourceVerification,
   PriceHistoryPoint,
   ReportEvidencePack,
+  ReportGenerationStage,
   SecFilingVerification,
   StockAnalysisReport,
   StockQuote,
@@ -45,7 +46,7 @@ const SOURCE_TIMEOUTS = {
   officialSources: 10000,
   priceHistory: 8000,
   whisper: 5000,
-  ai: 60000,
+  ai: 310000,
 };
 
 const normalizeTicker = (ticker: string) => ticker.trim().toUpperCase();
@@ -633,41 +634,71 @@ const requestDeepSeekReport = async ({
   return payload;
 };
 
-export const generateStockAnalysisReport = async (tickerInput: string, language: Language = 'en'): Promise<StockAnalysisReport> => {
+export const generateStockAnalysisReport = async (
+  tickerInput: string,
+  language: Language = 'en',
+  onProgress?: (stage: ReportGenerationStage) => void,
+): Promise<StockAnalysisReport> => {
   const ticker = normalizeTicker(tickerInput || 'NVDA');
+
+  // Track reported stages so each is only emitted once (parallel fetches finish in any order)
+  const emitted = new Set<ReportGenerationStage>();
+  const reportStage = (stage: ReportGenerationStage) => {
+    if (!emitted.has(stage)) {
+      emitted.add(stage);
+      onProgress?.(stage);
+    }
+  };
+
+  // Progress sequence driven by real source completion:
+  //   quote → fundamentals → news → trust → (later: ai → finalizing)
+  const sourceStage: Record<string, ReportGenerationStage> = {
+    quote: 'fundamentals',
+    fundamentals: 'news',
+    news: 'trust',
+    officialFilings: 'trust',
+    officialSources: 'trust',
+  };
+
+  const wrapSource = <T>(key: string, promise: Promise<T>): Promise<T> =>
+    promise.then((result) => {
+      const stage = sourceStage[key];
+      if (stage) reportStage(stage);
+      return result;
+    });
 
   const [quoteResult, fundamentalsResult, newsResult, secFilingsResult, officialSourcesResult, priceHistoryResult, whisperResult] = await Promise.all([
     safeResolveSource({
       key: 'quote',
       label: 'Quote',
-      promise: fetchStockQuote(ticker),
+      promise: wrapSource('quote', fetchStockQuote(ticker)),
       timeoutMs: SOURCE_TIMEOUTS.quote,
       getSuccessMessage: (quote) => quote.source,
     }),
     safeResolveSource({
       key: 'fundamentals',
       label: 'Fundamentals',
-      promise: fetchCompanyFundamentals(ticker),
+      promise: wrapSource('fundamentals', fetchCompanyFundamentals(ticker)),
       timeoutMs: SOURCE_TIMEOUTS.fundamentals,
     }),
     safeResolveSource({
       key: 'news',
       label: 'News',
-      promise: fetchStockNews(ticker),
+      promise: wrapSource('news', fetchStockNews(ticker)),
       timeoutMs: SOURCE_TIMEOUTS.news,
       getSuccessMessage: (news) => `${news.length} items`,
     }),
     safeResolveSource({
       key: 'officialFilings',
       label: 'SEC Filings',
-      promise: fetchSecFilingsForTicker(ticker),
+      promise: wrapSource('officialFilings', fetchSecFilingsForTicker(ticker)),
       timeoutMs: SOURCE_TIMEOUTS.officialFilings,
       getSuccessMessage: (filings) => filings.status,
     }),
     safeResolveSource({
       key: 'officialSources',
       label: 'Official Sources',
-      promise: fetchOfficialSources(ticker),
+      promise: wrapSource('officialSources', fetchOfficialSources(ticker)),
       timeoutMs: SOURCE_TIMEOUTS.officialSources,
       getSuccessMessage: (sources) => sources.status,
     }),
@@ -786,6 +817,8 @@ export const generateStockAnalysisReport = async (tickerInput: string, language:
   const availabilityNotes = fallbackReport.dataAvailability || [];
 
   try {
+    reportStage('ai');
+
     const aiResult = await safeResolveSource({
       key: 'ai',
       label: 'AI Analysis',
@@ -805,6 +838,8 @@ export const generateStockAnalysisReport = async (tickerInput: string, language:
       timeoutMs: SOURCE_TIMEOUTS.ai,
       getSuccessMessage: (value) => value.model || value.provider,
     });
+
+    reportStage('finalizing');
 
     if (!aiResult.value) {
       return {

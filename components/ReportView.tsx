@@ -800,16 +800,8 @@ const ReportView: React.FC<ReportViewProps> = ({
     setGenerationStage('quote');
     setError(null);
 
-    const stageTimers = [
-      window.setTimeout(() => setGenerationStage('fundamentals'), 900),
-      window.setTimeout(() => setGenerationStage('news'), 1800),
-      window.setTimeout(() => setGenerationStage('trust'), 3000),
-      window.setTimeout(() => setGenerationStage('ai'), 4800),
-      window.setTimeout(() => setGenerationStage('finalizing'), 16000),
-    ];
-
     try {
-      const result = await generateStockAnalysisReport(symbol, language);
+      const result = await generateStockAnalysisReport(symbol, language, setGenerationStage);
       setGenerationStage('finalizing');
       setReport(result);
       setTicker(result.ticker);
@@ -821,7 +813,6 @@ const ReportView: React.FC<ReportViewProps> = ({
       setGenerationStage('error');
       setError(t(language, 'report.configHint'));
     } finally {
-      stageTimers.forEach((timer) => window.clearTimeout(timer));
       setLoading(false);
     }
   };
