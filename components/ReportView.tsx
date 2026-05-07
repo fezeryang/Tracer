@@ -37,22 +37,46 @@ import { Language, t } from '../i18n';
 import { theme } from '../designTokens';
 import { NuxButton, NuxNotice } from './NuxPage';
 import SourceTrustCenter from './SourceTrustCenter';
+import ReportEvidencePanel from './ReportEvidencePanel';
+import AiResearchReportPanel from './AiResearchReportPanel';
 
 const shellCardStyle = {
-  backgroundColor: theme.colors.cardBg,
-  borderColor: theme.colors.borderSubtle,
-  boxShadow: theme.colors.shadowCard,
+  backgroundColor: theme.colors.card.bg,
+  borderColor: theme.colors.card.border,
+  boxShadow: '0 18px 44px rgba(0,0,0,0.24)',
 };
 
 const panelStyle = {
-  backgroundColor: theme.colors.cardAltBg,
-  borderColor: theme.colors.borderSubtle,
+  backgroundColor: theme.colors.card.bgAlt,
+  borderColor: theme.colors.card.border,
+};
+
+const reportHeroStyle = {
+  background:
+    'linear-gradient(135deg, rgba(13,27,47,0.98), rgba(7,17,31,0.98) 58%, rgba(10,22,40,0.96))',
+  borderColor: theme.colors.card.borderStrong,
+  boxShadow: '0 22px 54px rgba(0,0,0,0.30)',
 };
 
 const getQualityColor = (quality: ReturnType<typeof assessQuoteQuality>) => {
   if (quality === 'realtime' || quality === 'delayed') return theme.colors.up;
   if (quality === 'fallback' || quality === 'simulation') return theme.colors.warn;
   return theme.colors.down;
+};
+
+const formatMarketCapValue = (num?: number) => {
+  if (!num || !Number.isFinite(num)) return 'N/A';
+  if (num >= 1e12) return `$${(num / 1e12).toFixed(2)}T`;
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+  return `$${num.toLocaleString()}`;
+};
+
+const getSourceTrustLevelColor = (level: string | undefined) => {
+  if (level === 'high') return theme.colors.up;
+  if (level === 'medium') return theme.colors.warn;
+  if (level === 'low') return theme.colors.down;
+  return theme.colors.textMuted;
 };
 
 const getSentimentLabel = (language: Language, sentiment: NewsItem['sentiment']) => {
@@ -87,14 +111,24 @@ const getDataSourceStatusLabel = (language: Language, status: DataSourceStatus) 
     simulation: 'report.dataSourceSimulation',
     fallback: 'report.dataSourceFallback',
   };
-
-  return t(language, keyByStatus[status]);
+  const key = keyByStatus[status] || 'report.dataSourceSuccess';
+  const result = t(language, key);
+  return result;
 };
 
 const getDataSourceStatusColor = (status: DataSourceStatus) => {
   if (status === 'success') return theme.colors.up;
   if (status === 'simulation' || status === 'fallback' || status === 'rate_limited' || status === 'timeout') return theme.colors.warn;
   return theme.colors.down;
+};
+
+const getDataSourceStatusMessage = (language: Language, item: DataSourceHealth) => {
+  if (item.status === 'rate_limited') {
+    return language === 'zh'
+      ? '数据源请求过于频繁，已触发限流。请稍后重试。'
+      : 'Market data provider is rate limited. Please retry later.';
+  }
+  return item.message;
 };
 
 const formatReportDateTime = (value: string | undefined) => {
@@ -127,10 +161,10 @@ const SectionCard = ({
   children: React.ReactNode;
 }) => (
   <section className="overflow-hidden rounded-[24px] border" style={shellCardStyle}>
-    <div className="flex items-center gap-3 border-b px-6 py-4" style={{ borderColor: theme.colors.borderSubtle }}>
+    <div className="flex items-center gap-3 border-b px-6 py-4" style={{ borderColor: theme.colors.card.border }}>
       <div
-        className="flex h-10 w-10 items-center justify-center rounded-[14px]"
-        style={{ backgroundColor: 'rgba(47,107,255,0.14)', color: theme.colors.accentSoft }}
+        className="flex h-9 w-9 items-center justify-center rounded-[12px]"
+        style={{ backgroundColor: 'rgba(59,130,246,0.10)', color: theme.colors.accentSoft }}
       >
         <Icon className="h-4 w-4" />
       </div>
@@ -141,6 +175,82 @@ const SectionCard = ({
     <div className="p-6">{children}</div>
   </section>
 );
+
+const ResearchBadge = ({ label, color }: { label: string; color: string }) => (
+  <span
+    className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
+    style={{ borderColor: color, color, backgroundColor: `${color}14` }}
+  >
+    {label}
+  </span>
+);
+
+const SummaryMetricCard = ({
+  label,
+  value,
+  detail,
+  color = theme.colors.textPrimary,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  color?: string;
+}) => (
+  <div className="rounded-[18px] border p-5" style={panelStyle}>
+    <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+      {label}
+    </div>
+    <div className="mt-3 truncate text-2xl font-semibold tracking-tight" style={{ color }}>
+      {value}
+    </div>
+    <p className="mt-2 line-clamp-2 text-sm leading-6" style={{ color: theme.colors.textSecondary }}>
+      {detail}
+    </p>
+  </div>
+);
+
+const ReportSummaryGrid = ({ report, language }: { report: StockAnalysisReport; language: Language }) => {
+  const quality = assessQuoteQuality(report.quote);
+  const qualityColor = getQualityColor(quality);
+  const trustSummary = buildSourceTrustSummary({
+    ticker: report.ticker,
+    verifiedNews: report.verifiedNews,
+    officialFilings: report.officialFilings,
+    officialSources: report.officialSources,
+  });
+  const health = report.dataSourceHealth || [];
+  const successCount = health.filter((item) => item.status === 'success').length;
+  const limitedCount = health.filter((item) => item.status !== 'success').length;
+  const trustColor = getSourceTrustLevelColor(trustSummary.confidenceLevel);
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <SummaryMetricCard
+        label={t(language, 'report.marketSnapshot')}
+        value={report.quote ? `$${report.quote.price.toFixed(2)}` : t(language, 'common.unavailable')}
+        detail={report.quote ? `${report.quote.symbol} / ${t(language, `report.quality.${quality}`)}` : t(language, 'report.unavailableQuote')}
+        color={qualityColor}
+      />
+      <SummaryMetricCard
+        label={t(language, 'report.fundamentals')}
+        value={formatMarketCapValue(report.fundamentals?.marketCap)}
+        detail={report.fundamentals?.sector || t(language, 'report.unavailableFundamentals')}
+      />
+      <SummaryMetricCard
+        label={t(language, 'sourceTrust.title')}
+        value={`${trustSummary.overallScore}/100`}
+        detail={t(language, `sourceTrust.${trustSummary.confidenceLevel}`)}
+        color={trustColor}
+      />
+      <SummaryMetricCard
+        label={t(language, 'report.dataSourceStatus')}
+        value={`${successCount}/${health.length || 0}`}
+        detail={limitedCount > 0 ? t(language, 'report.dataSourceLimitedSummary') : t(language, 'report.dataSourceHealthySummary')}
+        color={limitedCount > 0 ? theme.colors.warn : theme.colors.up}
+      />
+    </div>
+  );
+};
 
 const MarketSnapshot = ({ quote, language }: { quote: StockQuote | null; language: Language }) => {
   if (!quote) {
@@ -481,7 +591,7 @@ const GenerationProgress = ({ stage, language }: { stage: ReportGenerationStage;
               style={{
                 borderColor: complete ? theme.colors.accentSoft : theme.colors.borderSubtle,
                 color: complete ? theme.colors.accentSoft : theme.colors.textMuted,
-                backgroundColor: complete ? 'rgba(47,107,255,0.08)' : theme.colors.cardAltBg,
+                backgroundColor: complete ? theme.colors.accentBg : theme.colors.cardAltBg,
               }}
             >
               {getGenerationStageLabel(language, item)}
@@ -504,6 +614,7 @@ const DataSourceStatusPanel = ({ items, language }: { items: DataSourceHealth[] 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {items.map((item) => {
           const color = getDataSourceStatusColor(item.status);
+          const message = getDataSourceStatusMessage(language, item);
           return (
             <div key={`${item.key}-${item.updatedAt}`} className="rounded-[16px] border p-4" style={panelStyle}>
               <div className="flex items-start justify-between gap-3">
@@ -517,9 +628,9 @@ const DataSourceStatusPanel = ({ items, language }: { items: DataSourceHealth[] 
                 </div>
                 <span className="h-2.5 w-2.5 flex-shrink-0 rounded-full" style={{ backgroundColor: color }} />
               </div>
-              {item.message && (
+              {message && (
                 <p className="mt-3 line-clamp-2 text-xs leading-5" style={{ color: theme.colors.textMuted }}>
-                  {item.message}
+                  {message}
                 </p>
               )}
             </div>
@@ -579,7 +690,7 @@ const ReportSections = ({ report, language }: { report: StockAnalysisReport; lan
             <div className="mb-3 flex items-center gap-3">
               <div
                 className="flex h-9 w-9 items-center justify-center rounded-[12px]"
-                style={{ backgroundColor: 'rgba(47,107,255,0.14)', color: theme.colors.accentSoft }}
+                style={{ backgroundColor: theme.colors.accentBgSoft, color: theme.colors.accentSoft }}
               >
                 <section.icon className="h-4 w-4" />
               </div>
@@ -614,7 +725,7 @@ const ReportSections = ({ report, language }: { report: StockAnalysisReport; lan
 
       <div className="rounded-[20px] border p-5" style={panelStyle}>
         <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: 'rgba(47,107,255,0.14)', color: theme.colors.accentSoft }}>
+          <div className="flex h-9 w-9 items-center justify-center rounded-[12px]" style={{ backgroundColor: theme.colors.accentBgSoft, color: theme.colors.accentSoft }}>
             <ArrowRight className="h-4 w-4" />
           </div>
           <h4 className="text-sm font-semibold tracking-tight" style={{ color: theme.colors.textPrimary }}>
@@ -721,10 +832,12 @@ const ReportView: React.FC<ReportViewProps> = ({
         <div className="px-6 py-6 md:px-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: theme.colors.down }} />
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: theme.colors.warn }} />
-                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: theme.colors.up }} />
+              {/* NUX wordmark accent line */}
+              <div className="mb-3 flex items-center gap-3">
+                <span className="h-px flex-1 max-w-[48px]" style={{ backgroundColor: theme.colors.accentSoft }} />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: theme.colors.accentSoft }}>
+                  NUX
+                </span>
               </div>
               <h2 className="text-3xl font-semibold tracking-tight md:text-4xl" style={{ color: theme.colors.textPrimary }}>
                 {t(language, 'report.title')}
@@ -732,10 +845,31 @@ const ReportView: React.FC<ReportViewProps> = ({
               <p className="mt-3 max-w-3xl text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
                 {t(language, 'report.subtitle')}
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <div className="rounded-full border px-3 py-1 text-[11px] font-medium" style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textSecondary }}>
-                  premium dark fintech dashboard
-                </div>
+              {/* Badges row */}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                {report && (
+                  <>
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em]"
+                      style={{
+                        borderColor: report.aiProvider === 'deepseek' ? theme.colors.up : theme.colors.warn,
+                        color: report.aiProvider === 'deepseek' ? theme.colors.up : theme.colors.warn,
+                        backgroundColor: report.aiProvider === 'deepseek' ? 'rgba(34,197,94,0.1)' : 'rgba(245,158,11,0.1)',
+                      }}
+                    >
+                      {report.aiProvider === 'deepseek' ? t(language, 'report.deepSeekBadge') : t(language, 'report.fallbackBadge')}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.1em]"
+                      style={{
+                        borderColor: theme.colors.borderSubtle,
+                        color: theme.colors.textSecondary,
+                      }}
+                    >
+                      {report.ticker} {t(language, 'common.currentResearchTarget')}
+                    </span>
+                  </>
+                )}
                 <div className="rounded-full border px-3 py-1 text-[11px] font-medium" style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textSecondary }}>
                   {t(language, 'common.disclaimer')}
                 </div>
@@ -743,6 +877,12 @@ const ReportView: React.FC<ReportViewProps> = ({
             </div>
 
             <div className="flex w-full flex-col gap-3 rounded-[20px] border p-3 shadow-sm lg:w-auto lg:min-w-[420px]" style={panelStyle}>
+              {/* Cached notice above input */}
+              {report && report.isCached && !loading && (
+                <div className="text-[11px]" style={{ color: theme.colors.warn }}>
+                  {t(language, 'report.cachedReport')}
+                </div>
+              )}
               <label className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: theme.colors.textMuted }}>
                 {t(language, 'report.tickerLabel')}
               </label>
@@ -759,15 +899,20 @@ const ReportView: React.FC<ReportViewProps> = ({
                       }
                     }}
                     className="w-full rounded-[14px] border px-11 py-3 text-base font-semibold tracking-wide outline-none transition"
-                    style={{ ...panelStyle, color: theme.colors.textPrimary }}
+                    style={{
+                      backgroundColor: theme.colors.cardBg,
+                      borderColor: theme.colors.borderStrong,
+                      color: theme.colors.textPrimary,
+                      boxShadow: '0 0 0 1px rgba(59,130,246,0.12)',
+                    }}
                     placeholder="NVDA"
                   />
                 </div>
                 <button
                   onClick={() => void loadReport()}
                   disabled={loading}
-                  className="inline-flex items-center justify-center gap-2 rounded-[14px] px-5 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
-                  style={{ backgroundColor: theme.colors.accent, boxShadow: theme.colors.shadowGlow }}
+                  className="inline-flex items-center justify-center gap-2 rounded-[14px] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ backgroundColor: theme.colors.accent }}
                 >
                   {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {report ? t(language, 'report.regenerateReport') : t(language, 'common.generateReport')}
@@ -868,9 +1013,11 @@ const ReportView: React.FC<ReportViewProps> = ({
             />
           </SectionCard>
 
-          <SectionCard icon={BookOpen} title={t(language, 'report.aiReport')}>
-            <ReportSections report={report} language={language} />
+          <SectionCard icon={BarChart3} title={t(language, 'evidence.title')}>
+            <ReportEvidencePanel report={report} language={language} />
           </SectionCard>
+
+          <AiResearchReportPanel report={report} language={language} />
 
           <SectionCard icon={AlertTriangle} title={t(language, 'report.riskDisclaimer')}>
             <div className="space-y-3 text-sm leading-7" style={{ color: theme.colors.textSecondary }}>

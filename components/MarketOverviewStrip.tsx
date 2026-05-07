@@ -4,7 +4,9 @@ import { fetchStockQuote } from '../services/marketDataService';
 import { theme } from '../designTokens';
 import { Language } from '../i18n';
 
-const symbols = ['SPY', 'QQQ', 'DIA', 'GLD', 'USO', 'BTC'];
+const symbols = ['SPY', 'QQQ', 'DIA'];
+const deferredSymbols = ['GLD', 'USO', 'BTC'];
+const quoteLoadDelayMs = 500;
 
 const labelMap: Record<string, string> = {
   SPY: 'S&P 500',
@@ -31,9 +33,18 @@ const MarketOverviewStrip: React.FC<{ language: Language }> = () => {
 
   useEffect(() => {
     let active = true;
+    let deferredTimer: number | undefined;
 
-    const load = async () => {
-      const results = await Promise.allSettled(symbols.map((symbol) => fetchStockQuote(symbol)));
+    const load = async (targetSymbols = symbols) => {
+      const results = [];
+      for (const symbol of targetSymbols) {
+        try {
+          results.push({ status: 'fulfilled' as const, value: await fetchStockQuote(symbol) });
+        } catch (reason) {
+          results.push({ status: 'rejected' as const, reason });
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, quoteLoadDelayMs));
+      }
       if (!active) return;
 
       setQuotes(
@@ -42,7 +53,7 @@ const MarketOverviewStrip: React.FC<{ language: Language }> = () => {
             ? [result.value]
             : [
                 {
-                  symbol: symbols[index],
+                  symbol: targetSymbols[index],
                   price: 0,
                   change: 0,
                   changePercent: 0,
@@ -55,9 +66,15 @@ const MarketOverviewStrip: React.FC<{ language: Language }> = () => {
     };
 
     void load();
-    const interval = window.setInterval(load, 15000);
+    deferredTimer = window.setTimeout(() => {
+      void (async () => {
+        await load([...symbols, ...deferredSymbols]);
+      })();
+    }, 300000);
+    const interval = window.setInterval(load, 120000);
     return () => {
       active = false;
+      if (deferredTimer) window.clearTimeout(deferredTimer);
       window.clearInterval(interval);
     };
   }, []);

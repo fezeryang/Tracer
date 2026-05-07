@@ -60,9 +60,9 @@ export const classifyError = (error: unknown): ClassifiedSourceError => {
     return { status: 'timeout', message };
   }
   if (statusCode === 429 || normalized.includes('429') || normalized.includes('rate limit')) {
-    return { status: 'rate_limited', message };
+    return { status: 'rate_limited', message: 'Market data provider is rate limited. Please retry later.' };
   }
-  if (statusCode === 403 || normalized.includes('403') || normalized.includes('forbidden')) {
+  if (statusCode === 401 || statusCode === 403 || normalized.includes('403') || normalized.includes('forbidden')) {
     return { status: 'forbidden', message };
   }
   if (statusCode === 502 || statusCode === 503 || statusCode === 504 || normalized.includes('network')) {

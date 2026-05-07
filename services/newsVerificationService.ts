@@ -201,6 +201,10 @@ export const summarizeNewsVerification = (
 
 export const fetchVerifiedStockNews = async (ticker: string): Promise<VerifiedNewsItem[]> => {
   const news = await fetchStockNews(ticker);
+  return verifyStockNewsItems(ticker, news);
+};
+
+export const verifyStockNewsItems = (ticker: string, news: NewsItem[]): VerifiedNewsItem[] => {
   const verifiedItems = news.map((item) => toVerifiedNewsItem(item, ticker));
   return deduplicateNews(verifiedItems);
 };

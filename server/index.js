@@ -11,6 +11,13 @@ import { createServer as createViteServer } from 'vite';
 import { getSecFilingsForTicker } from './secService.js';
 import { getOfficialSourcesForTicker } from './officialSourceService.js';
 import { generateDeepSeekReport } from './aiReportService.js';
+import {
+    getPolygonCompatibleBaseUrl,
+    getPolygonCompatibleKey,
+    getPolygonCompatibleProviderName,
+    withCacheSourceLabel,
+} from './marketDataKeys.js';
+import { cachedMarketDataGet, sendMarketDataError } from './marketDataRequestCache.js';
 
 dotenv.config();
 
@@ -25,11 +32,30 @@ async function startServer() {
     app.use(express.json());
 
     // Secrets from Environment
-    const POLYGON_KEY = process.env.POLYGON_KEY || '_jZsuxjLnWGqIBGTmI39mw5xO16vMAoS';
+    const POLYGON_KEY = getPolygonCompatibleKey();
     const FINNHUB_KEY = process.env.FINNHUB_KEY || 'd4t2hehr01qhr5tnsgp0d4t2hehr01qhr5tnsgpg';
     const ALPACA_KEY = process.env.ALPACA_API_KEY;
     const ALPACA_SECRET = process.env.ALPACA_SECRET_KEY;
     const EIA_KEY = process.env.EIA_API_KEY;
+    const MASSIVE_KEY = process.env.MASSIVE_API_KEY;
+    const POLYGON_COMPATIBLE_BASE_URL = getPolygonCompatibleBaseUrl();
+    const POLYGON_COMPATIBLE_PROVIDER = getPolygonCompatibleProviderName();
+    const MARKET_DATA_TTL = {
+        quote: 45 * 1000,
+        history: 20 * 60 * 1000,
+        fundamentals: 12 * 60 * 60 * 1000,
+        news: 7 * 60 * 1000,
+    };
+
+    const buildPolygonCompatibleUrl = (pathName, params = {}) => {
+        const url = new URL(pathName, POLYGON_COMPATIBLE_BASE_URL);
+        Object.entries({ ...params, apiKey: POLYGON_KEY }).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                url.searchParams.set(key, String(value));
+            }
+        });
+        return url.toString();
+    };
 
     // Config State
     let activeProvider = ALPACA_KEY ? 'ALPACA' : 'POLYGON';
@@ -52,7 +78,7 @@ app.get('/api/admin/provider', (req, res) => {
 
 app.post('/api/admin/provider', (req, res) => {
     const { provider } = req.body;
-    if (['POLYGON', 'FINNHUB', 'YAHOO', 'GOOGLE', 'SIMULATION', 'ALPACA'].includes(provider)) {
+    if (['POLYGON', 'FINNHUB', 'YAHOO', 'GOOGLE', 'SIMULATION', 'ALPACA', 'MASSIVE'].includes(provider)) {
         activeProvider = provider;
         console.log(`[Config] Market Data Provider switched to: ${activeProvider}`);
         res.json({ success: true, provider: activeProvider });
@@ -69,8 +95,13 @@ app.get('/api/admin/test/:provider', async (req, res) => {
     try {
         let data = {};
         if (provider === 'POLYGON') {
-             const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${POLYGON_KEY}`;
-             const response = await axios.get(url, { timeout: 5000 });
+             const url = buildPolygonCompatibleUrl(`/v2/aggs/ticker/${ticker}/prev`, { adjusted: true });
+             const response = await cachedMarketDataGet({
+                 cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:admin-test:${ticker}`,
+                 ttlMs: MARKET_DATA_TTL.quote,
+                 url,
+                 timeout: 5000,
+             });
              data = response.data;
         } else if (provider === 'FINNHUB') {
              const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_KEY}`;
@@ -98,6 +129,18 @@ app.get('/api/admin/test/:provider', async (req, res) => {
         } else if (provider === 'SIMULATION') {
              await new Promise(r => setTimeout(r, 50)); // Fake latency
              data = { result: 'Mock Data OK' };
+        } else if (provider === 'MASSIVE') {
+             if (!MASSIVE_KEY) {
+                 throw new Error('MASSIVE_API_KEY not configured');
+             }
+             const url = buildPolygonCompatibleUrl(`/v2/aggs/ticker/${ticker}/prev`);
+             const response = await cachedMarketDataGet({
+                 cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:admin-test:${ticker}`,
+                 ttlMs: MARKET_DATA_TTL.quote,
+                 url,
+                 timeout: 5000,
+             });
+             data = response.data;
         } else {
              throw new Error('Unknown Provider');
         }
@@ -212,7 +255,7 @@ app.get('/api/quote/:ticker', async (req, res) => {
           const url = `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${FINNHUB_KEY}`;
           const response = await axios.get(url, { timeout: 5000 });
           const data = response.data;
-          
+
           if (data.c === 0 && data.pc === 0) throw new Error('Symbol not found');
 
           return res.json({
@@ -229,15 +272,65 @@ app.get('/api/quote/:ticker', async (req, res) => {
       }
   }
 
-  // Default: POLYGON
-  try {
-    console.log(`[API] Fetching Quote for ${ticker} via Polygon (Prev Aggs)...`);
-    
-    const prevUrl = `https://api.polygon.io/v2/aggs/ticker/${ticker}/prev?adjusted=true&apiKey=${POLYGON_KEY}`;
-    const response = await axios.get(prevUrl, { timeout: 5000 });
+  if (activeProvider === 'MASSIVE' && MASSIVE_KEY) {
+      try {
+          console.log(`[API] Fetching Quote for ${ticker} via Massive...`);
+          const url = buildPolygonCompatibleUrl(`/v2/aggs/ticker/${ticker}/prev`);
+          const { data, cached } = await cachedMarketDataGet({
+              cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:quote:${ticker}`,
+              ttlMs: MARKET_DATA_TTL.quote,
+              url,
+              timeout: 5000,
+          });
 
-    if (response.data && response.data.results && response.data.results.length > 0) {
-        const result = response.data.results[0];
+          if (!data.results || data.results.length === 0) {
+              throw new Error('No data returned from Massive');
+          }
+
+          const quote = data.results[0];
+          const close = quote.c;  // Close price
+          const open = quote.o;   // Open price
+
+          // Calculate change from open (as we don't have prev_close in prev endpoint)
+          const change = close - open;
+          const changePercent = (change / open) * 100;
+
+          return res.json({
+              symbol: ticker,
+              price: close,
+              previousClose: open,
+              change: change,
+              changePercent: changePercent,
+              source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached)
+          });
+      } catch (e) {
+          console.warn(`[API] Massive failed for ${ticker}: ${e.message}`);
+          if (e.providerStatus) {
+              return sendMarketDataError(res, e);
+          }
+          return res.json(generateSimulatedQuote(ticker, 'Massive Error -> Sim'));
+      }
+  }
+
+  // Default: POLYGON
+  if (!POLYGON_KEY) {
+    console.warn('[API] MASSIVE_API_KEY/POLYGON_KEY not configured');
+    return res.json(generateSimulatedQuote(ticker, 'No Market Data Key -> Sim'));
+  }
+
+  try {
+    console.log(`[API] Fetching Quote for ${ticker} via ${POLYGON_COMPATIBLE_PROVIDER} (Prev Aggs)...`);
+    
+    const prevUrl = buildPolygonCompatibleUrl(`/v2/aggs/ticker/${ticker}/prev`, { adjusted: true });
+    const { data, cached } = await cachedMarketDataGet({
+        cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:quote:${ticker}`,
+        ttlMs: MARKET_DATA_TTL.quote,
+        url: prevUrl,
+        timeout: 5000,
+    });
+
+    if (data && data.results && data.results.length > 0) {
+        const result = data.results[0];
         const price = result.c;
         const open = result.o;
         const change = price - open; 
@@ -249,19 +342,27 @@ app.get('/api/quote/:ticker', async (req, res) => {
             previousClose: open, 
             change: change,
             changePercent: changePercent,
-            source: 'Polygon.io'
+            source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached)
         });
     }
 
     throw new Error('No data in Prev endpoint');
 
   } catch (prevError) {
-    console.warn(`[API] Polygon Prev failed for ${ticker} (${prevError.message}). Trying Snapshot...`);
+    console.warn(`[API] ${POLYGON_COMPATIBLE_PROVIDER} Prev failed for ${ticker} (${prevError.message}). Trying Snapshot...`);
+    if (prevError.providerStatus) {
+        return sendMarketDataError(res, prevError);
+    }
 
     try {
-        const snapshotUrl = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${ticker}?apiKey=${POLYGON_KEY}`;
-        const response = await axios.get(snapshotUrl, { timeout: 5000 });
-        const data = response.data?.ticker;
+        const snapshotUrl = buildPolygonCompatibleUrl(`/v2/snapshot/locale/us/markets/stocks/tickers/${ticker}`);
+        const { data: snapshotData, cached } = await cachedMarketDataGet({
+            cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:quote-snapshot:${ticker}`,
+            ttlMs: MARKET_DATA_TTL.quote,
+            url: snapshotUrl,
+            timeout: 5000,
+        });
+        const data = snapshotData?.ticker;
 
         if (!data) throw new Error('Polygon Snapshot returned no data');
 
@@ -273,12 +374,15 @@ app.get('/api/quote/:ticker', async (req, res) => {
             previousClose: data.prevDay?.c,
             change: data.todaysChange,
             changePercent: data.todaysChangePerc,
-            source: 'Polygon.io (Snap)'
+            source: withCacheSourceLabel(`${POLYGON_COMPATIBLE_PROVIDER} (Snap)`, cached)
         });
 
     } catch (snapError) {
-        console.error(`[API] All Polygon endpoints failed for ${ticker}:`, snapError.message);
-        return res.json(generateSimulatedQuote(ticker, 'Polygon Error -> Sim'));
+        console.error(`[API] All ${POLYGON_COMPATIBLE_PROVIDER} endpoints failed for ${ticker}:`, snapError.message);
+        if (snapError.providerStatus) {
+            return sendMarketDataError(res, snapError);
+        }
+        return res.json(generateSimulatedQuote(ticker, `${POLYGON_COMPATIBLE_PROVIDER} Error -> Sim`));
     }
   }
 });
@@ -286,13 +390,62 @@ app.get('/api/quote/:ticker', async (req, res) => {
 // 2. Fundamentals (Polygon Only for now, Finnhub free tier limits fundamentals)
 app.get('/api/fundamentals/:ticker', async (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
-  
+
+  // If MASSIVE is active, try MASSIVE first
+  if (activeProvider === 'MASSIVE' && MASSIVE_KEY) {
+      try {
+          console.log(`[API] Fetching Fundamentals for ${ticker} via Massive...`);
+          const url = buildPolygonCompatibleUrl(`/v3/reference/tickers/${ticker}`);
+          const { data, cached } = await cachedMarketDataGet({
+              cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:fundamentals:${ticker}`,
+              ttlMs: MARKET_DATA_TTL.fundamentals,
+              url,
+              timeout: 5000,
+          });
+          const result = data?.results;
+
+          if (result) {
+              const fundamentals = [{
+                  symbol: result.ticker || ticker,
+                  companyName: result.name || ticker,
+                  description: result.description || '',
+                  sector: result.sic_description || 'Technology',
+                  industry: result.sic_description || 'Consumer Electronics',
+                  mktCap: result.market_cap || 0,
+                  priceEarnings: 0,
+                  beta: 0,
+                  website: result.homepage_url || '',
+                  dividendYield: 0,
+                  eps: 0,
+                  bookValue: 0,
+                  source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached),
+              }];
+              return res.json(fundamentals);
+          }
+      } catch (e) {
+          console.warn(`[API] Massive Fundamentals failed for ${ticker}: ${e.message}`);
+          if (e.providerStatus) {
+              return sendMarketDataError(res, e);
+          }
+      }
+  }
+
   // Always use Polygon for fundamentals as it has better free tier coverage for company profiles
+  if (!POLYGON_KEY) {
+    console.warn('[API] MASSIVE_API_KEY/POLYGON_KEY not configured for fundamentals');
+    return res.json([]);
+  }
+
   try {
-    console.log(`[API] Fetching Fundamentals for ${ticker} via Polygon...`);
-    const url = `https://api.polygon.io/v3/reference/tickers/${ticker}?apiKey=${POLYGON_KEY}`;
-    const response = await axios.get(url, { timeout: 5000 });
-    const result = response.data?.results;
+    console.log(`[API] Fetching Fundamentals for ${ticker} via ${POLYGON_COMPATIBLE_PROVIDER}...`);
+    const url = buildPolygonCompatibleUrl(`/v3/reference/tickers/${ticker}`);
+    const { data: responseData, cached } = await cachedMarketDataGet({
+        cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:fundamentals:${ticker}`,
+        ttlMs: MARKET_DATA_TTL.fundamentals,
+        url,
+        timeout: 5000,
+    });
+    const result = responseData?.results;
 
     if (!result) throw new Error('No fundamentals found');
 
@@ -300,17 +453,21 @@ app.get('/api/fundamentals/:ticker', async (req, res) => {
         symbol: result.ticker,
         companyName: result.name,
         description: result.description,
-        sector: result.sic_description || 'Technology', 
+        sector: result.sic_description || 'Technology',
         industry: result.sic_description || 'Consumer Electronics',
         mktCap: result.market_cap,
-        priceEarnings: 0, 
-        beta: 0, 
-        website: result.homepage_url
+        priceEarnings: 0,
+        beta: 0,
+        website: result.homepage_url,
+        source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached),
     }];
 
     res.json(data);
   } catch (error) {
     console.error(`[API] Fundamentals failed for ${ticker}:`, error.message);
+    if (error.providerStatus) {
+        return sendMarketDataError(res, error);
+    }
     res.json([]);
   }
 });
@@ -325,10 +482,10 @@ app.get('/api/news/:ticker', async (req, res) => {
           const today = new Date();
           const yesterday = new Date(today);
           yesterday.setDate(yesterday.getDate() - 2); // Last 48 hours
-          
+
           const toStr = today.toISOString().split('T')[0];
           const fromStr = yesterday.toISOString().split('T')[0];
-          
+
           const url = `https://finnhub.io/api/v1/company-news?symbol=${ticker}&from=${fromStr}&to=${toStr}&token=${FINNHUB_KEY}`;
           const response = await axios.get(url, { timeout: 5000 });
           const results = response.data || [];
@@ -348,18 +505,59 @@ app.get('/api/news/:ticker', async (req, res) => {
       }
   }
 
+  if (activeProvider === 'MASSIVE' && MASSIVE_KEY) {
+      try {
+          console.log(`[API] Fetching News for ${ticker} via Massive...`);
+          const url = buildPolygonCompatibleUrl('/v2/reference/news', { ticker, limit: 5 });
+          const { data, cached } = await cachedMarketDataGet({
+              cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:news:${ticker}`,
+              ttlMs: MARKET_DATA_TTL.news,
+              url,
+              timeout: 5000,
+          });
+          const results = data?.results || [];
+
+          if (results.length > 0) {
+              const news = results.map(item => ({
+                  title: item.title,
+                  image: item.image_url,
+                  site: withCacheSourceLabel(item.publisher?.name || POLYGON_COMPATIBLE_PROVIDER, cached),
+                  text: item.description,
+                  url: item.article_url,
+                  publishedDate: item.published_utc
+              }));
+              return res.json(news);
+          }
+      } catch (e) {
+          console.warn(`[API] Massive News failed: ${e.message}`);
+          if (e.providerStatus) {
+              return sendMarketDataError(res, e);
+          }
+      }
+  }
+
   // Fallback / Default: POLYGON
+  if (!POLYGON_KEY) {
+    console.warn('[API] MASSIVE_API_KEY/POLYGON_KEY not configured for news');
+    return res.json([]);
+  }
+
   try {
-    console.log(`[API] Fetching News for ${ticker} via Polygon...`);
-    const url = `https://api.polygon.io/v2/reference/news?ticker=${ticker}&limit=5&apiKey=${POLYGON_KEY}`;
-    const response = await axios.get(url, { timeout: 5000 });
+    console.log(`[API] Fetching News for ${ticker} via ${POLYGON_COMPATIBLE_PROVIDER}...`);
+    const url = buildPolygonCompatibleUrl('/v2/reference/news', { ticker, limit: 5 });
+    const { data: responseData, cached } = await cachedMarketDataGet({
+        cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:news:${ticker}`,
+        ttlMs: MARKET_DATA_TTL.news,
+        url,
+        timeout: 5000,
+    });
     
-    const results = response.data?.results || [];
+    const results = responseData?.results || [];
 
     const news = results.map(item => ({
         title: item.title,
         image: item.image_url,
-        site: item.publisher?.name || 'Polygon',
+        site: withCacheSourceLabel(item.publisher?.name || POLYGON_COMPATIBLE_PROVIDER, cached),
         text: item.description,
         url: item.article_url,
         publishedDate: item.published_utc
@@ -368,6 +566,9 @@ app.get('/api/news/:ticker', async (req, res) => {
     res.json(news);
   } catch (error) {
     console.error(`[API] News failed for ${ticker}:`, error.message);
+    if (error.providerStatus) {
+        return sendMarketDataError(res, error);
+    }
     res.json([]);
   }
 });
@@ -429,7 +630,7 @@ app.get('/api/history/:ticker', async (req, res) => {
           const toDate = new Date();
           const fromDate = new Date();
           fromDate.setFullYear(fromDate.getFullYear() - 1);
-          
+
           const url = `https://data.alpaca.markets/v2/stocks/${ticker}/bars?start=${fromDate.toISOString()}&end=${toDate.toISOString()}&timeframe=1Day`;
           const response = await axios.get(url, {
               headers: {
@@ -438,7 +639,7 @@ app.get('/api/history/:ticker', async (req, res) => {
               },
               timeout: 6000
           });
-          
+
           if (response.data && response.data.bars) {
               const historical = response.data.bars.map(bar => ({
                   date: bar.t.split('T')[0],
@@ -460,8 +661,56 @@ app.get('/api/history/:ticker', async (req, res) => {
       }
   }
 
+  if (activeProvider === 'MASSIVE' && MASSIVE_KEY) {
+      try {
+          console.log(`[API] Fetching History for ${ticker} via Massive...`);
+          const toDate = new Date();
+          const fromDate = new Date();
+          fromDate.setFullYear(fromDate.getFullYear() - 2);
+
+          // Polygon-style date format: YYYY-MM-DD
+          const toStr = toDate.toISOString().split('T')[0];
+          const fromStr = fromDate.toISOString().split('T')[0];
+
+          const url = buildPolygonCompatibleUrl(`/v2/aggs/ticker/${ticker}/range/1/day/${fromStr}/${toStr}`);
+          const { data, cached } = await cachedMarketDataGet({
+              cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:history:${ticker}`,
+              ttlMs: MARKET_DATA_TTL.history,
+              url,
+              timeout: 6000,
+          });
+
+          if (data.results && data.results.length > 0) {
+              const historical = data.results.map(bar => ({
+                  date: new Date(bar.t).toISOString().split('T')[0],
+                  open: bar.o,
+                  high: bar.h,
+                  low: bar.l,
+                  close: bar.c,
+                  volume: bar.v
+              }));
+
+              return res.json({
+                  symbol: ticker,
+                  historical,
+                  source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached),
+              });
+          }
+          throw new Error('No bars returned from Massive');
+      } catch (e) {
+          console.warn(`[API] Massive History failed for ${ticker}: ${e.message}`);
+          if (e.providerStatus) {
+              return sendMarketDataError(res, e);
+          }
+      }
+  }
+
   try {
-    console.log(`[API] Fetching History for ${ticker} via Polygon...`);
+    console.log(`[API] Fetching History for ${ticker} via ${POLYGON_COMPATIBLE_PROVIDER}...`);
+    if (!POLYGON_KEY) {
+      console.warn('[API] MASSIVE_API_KEY/POLYGON_KEY not configured for history');
+      return res.json({ symbol: ticker, historical: [] });
+    }
     const toDate = new Date();
     const fromDate = new Date();
     fromDate.setFullYear(fromDate.getFullYear() - 2);
@@ -469,12 +718,21 @@ app.get('/api/history/:ticker', async (req, res) => {
     const toStr = toDate.toISOString().split('T')[0];
     const fromStr = fromDate.toISOString().split('T')[0];
 
-    const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${fromStr}/${toStr}?adjusted=true&sort=desc&limit=5000&apiKey=${POLYGON_KEY}`;
+    const url = buildPolygonCompatibleUrl(`/v2/aggs/ticker/${ticker}/range/1/day/${fromStr}/${toStr}`, {
+        adjusted: true,
+        sort: 'desc',
+        limit: 5000,
+    });
     
-    const response = await axios.get(url, { timeout: 6000 });
+    const { data: responseData, cached } = await cachedMarketDataGet({
+        cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:history:${ticker}`,
+        ttlMs: MARKET_DATA_TTL.history,
+        url,
+        timeout: 6000,
+    });
     
-    if (response.data && response.data.results) {
-        const historical = response.data.results.map(bar => ({
+    if (responseData && responseData.results) {
+        const historical = responseData.results.map(bar => ({
             date: new Date(bar.t).toISOString().split('T')[0],
             open: bar.o,
             high: bar.h,
@@ -485,7 +743,8 @@ app.get('/api/history/:ticker', async (req, res) => {
 
         return res.json({
             symbol: ticker,
-            historical
+            historical,
+            source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached),
         });
     }
 
@@ -493,6 +752,9 @@ app.get('/api/history/:ticker', async (req, res) => {
 
   } catch (error) {
     console.error("History Fetch Error:", error.message);
+    if (error.providerStatus) {
+        return sendMarketDataError(res, error);
+    }
     res.status(500).json({ error: 'Failed to fetch history' });
   }
 });

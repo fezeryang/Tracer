@@ -4,6 +4,38 @@ import { StockQuote, CompanyFundamentals, OptionsChain, OptionContract, NewsItem
 // NOTE: Keys are now securely stored in server/index.js
 // We fetch from our local backend proxy /api/...
 
+const createBackendError = async (response: Response, fallback: string) => {
+  let message = fallback;
+  try {
+    const data = await response.json();
+    message = data?.error || data?.message || fallback;
+  } catch {
+    // Keep the HTTP status fallback when the backend response is not JSON.
+  }
+
+  const error = new Error(message) as Error & { status?: number };
+  error.status = response.status;
+  return error;
+};
+
+const shouldPropagateMarketDataStatus = (error: unknown) => {
+  const status = (error as { status?: number })?.status;
+  return status === 429 || status === 401 || status === 403 || status === 502 || status === 503 || status === 504;
+};
+
+const throwIfProviderStatus = (data: any) => {
+  if (!data?.status || data.status === 'success') return;
+
+  const statusByProviderStatus: Record<string, number> = {
+    rate_limited: 429,
+    forbidden: 403,
+    unavailable: 503,
+  };
+  const error = new Error(data.error || 'Market data provider unavailable.') as Error & { status?: number };
+  error.status = statusByProviderStatus[data.status] || 500;
+  throw error;
+};
+
 export const fetchStockQuote = async (ticker: string): Promise<StockQuote> => {
   const upperTicker = ticker.toUpperCase();
   
@@ -13,11 +45,10 @@ export const fetchStockQuote = async (ticker: string): Promise<StockQuote> => {
     // Call local backend (proxies to Yahoo Finance)
     const response = await fetch(`/api/quote/${upperTicker}`);
     
-    if (!response.ok) {
-      throw new Error(`Backend API Error: ${response.status}`);
-    }
+    if (!response.ok) throw await createBackendError(response, `Backend API Error: ${response.status}`);
 
     const data = await response.json();
+    throwIfProviderStatus(data);
     
     if (data.error) throw new Error(data.error);
 
@@ -49,6 +80,8 @@ export const fetchStockQuote = async (ticker: string): Promise<StockQuote> => {
     };
 
   } catch (error) {
+    if (shouldPropagateMarketDataStatus(error)) throw error;
+
     console.warn(`[MarketService] Backend fetch failed for ${upperTicker}. Falling back to simulation.`, error);
     
     const hash = upperTicker.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -70,9 +103,10 @@ export const fetchCompanyFundamentals = async (ticker: string): Promise<CompanyF
   try {
     const response = await fetch(`/api/fundamentals/${upperTicker}`);
     
-    if (!response.ok) throw new Error(`Backend Error: ${response.status}`);
+    if (!response.ok) throw await createBackendError(response, `Backend Error: ${response.status}`);
 
     const data = await response.json();
+    throwIfProviderStatus(data);
     
     if (data && data.length > 0) {
         const profile = data[0];
@@ -90,6 +124,8 @@ export const fetchCompanyFundamentals = async (ticker: string): Promise<CompanyF
     }
     return null;
   } catch (error) {
+    if (shouldPropagateMarketDataStatus(error)) throw error;
+
     console.warn(`[MarketService] Failed to fetch fundamentals for ${upperTicker}`, error);
     return null;
   }
@@ -123,9 +159,10 @@ export const fetchStockNews = async (ticker: string): Promise<NewsItem[]> => {
     const upperTicker = ticker.toUpperCase();
     try {
         const response = await fetch(`/api/news/${upperTicker}`);
-        if (!response.ok) throw new Error(`Backend Error: ${response.status}`);
+        if (!response.ok) throw await createBackendError(response, `Backend Error: ${response.status}`);
         
         const data = await response.json();
+        throwIfProviderStatus(data);
         
         return data.map((item: any) => {
             const { sentiment, score } = analyzeSentiment(item.title + ' ' + item.text);
@@ -141,6 +178,8 @@ export const fetchStockNews = async (ticker: string): Promise<NewsItem[]> => {
             };
         });
     } catch (error) {
+        if (shouldPropagateMarketDataStatus(error)) throw error;
+
         console.warn(`[MarketService] Failed to fetch news for ${upperTicker}`, error);
         return [];
     }

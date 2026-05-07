@@ -60,7 +60,7 @@ const AppShell: React.FC<AppShellProps> = ({
     <div
       className="flex h-screen overflow-hidden"
       style={{
-        background: `radial-gradient(circle at top left, rgba(47,107,255,0.12), transparent 24%), ${theme.colors.appBg}`,
+        background: `radial-gradient(circle at top left, ${theme.colors.accentBg}, transparent 24%), ${theme.colors.appBg}`,
         color: theme.colors.textPrimary,
       }}
     >
@@ -93,10 +93,10 @@ const AppShell: React.FC<AppShellProps> = ({
                 onClick={() => onChangeView(item.view)}
                 className="flex w-full items-center gap-3 rounded-[16px] px-4 py-3 text-left text-sm font-medium transition-all"
                 style={{
-                  backgroundColor: active ? 'rgba(47,107,255,0.16)' : 'transparent',
+                  backgroundColor: active ? theme.colors.accentBg : 'transparent',
                   color: active ? theme.colors.textPrimary : theme.colors.textSecondary,
                   boxShadow: active ? theme.colors.shadowGlow : 'none',
-                  border: active ? `1px solid rgba(76,141,255,0.22)` : '1px solid transparent',
+                  border: active ? `1px solid ${theme.colors.accentSoft}38` : '1px solid transparent',
                 }}
               >
                 <Icon className="h-4 w-4" />

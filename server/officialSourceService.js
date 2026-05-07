@@ -1,4 +1,10 @@
 import axios from 'axios';
+import {
+  getPolygonCompatibleBaseUrl,
+  getPolygonCompatibleKey,
+  getPolygonCompatibleProviderName,
+} from './marketDataKeys.js';
+import { cachedMarketDataGet } from './marketDataRequestCache.js';
 import { findCikByTicker, normalizeTicker } from './secService.js';
 import { isDeepSeekConfigured, reviewOfficialSourceAuthority } from './deepseekReviewService.js';
 
@@ -167,13 +173,21 @@ const dedupeSources = (sources) => {
 };
 
 const fetchFundamentalsWebsite = async (ticker) => {
-  const polygonKey = process.env.POLYGON_KEY;
+  const polygonKey = getPolygonCompatibleKey();
   if (!polygonKey) return null;
 
   try {
-    const url = `https://api.polygon.io/v3/reference/tickers/${ticker}?apiKey=${polygonKey}`;
-    const response = await axios.get(url, { timeout: 5000 });
-    const result = response.data?.results;
+    const baseUrl = getPolygonCompatibleBaseUrl();
+    const provider = getPolygonCompatibleProviderName();
+    const url = new URL(`/v3/reference/tickers/${ticker}`, baseUrl);
+    url.searchParams.set('apiKey', polygonKey);
+    const { data } = await cachedMarketDataGet({
+      cacheKey: `${provider}:fundamentals:${ticker}`,
+      ttlMs: 12 * 60 * 60 * 1000,
+      url: url.toString(),
+      timeout: 5000,
+    });
+    const result = data?.results;
     if (!result?.homepage_url) return null;
 
     return {

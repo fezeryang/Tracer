@@ -258,6 +258,35 @@ export interface SourceTrustSummary {
   notes: string[];
 }
 
+export interface PriceHistoryPoint {
+  date: string;
+  close: number;
+  volume?: number;
+}
+
+export interface ReportEvidencePack {
+  ticker: string;
+  generatedAt: string;
+  priceHistory?: PriceHistoryPoint[];
+  priceHistoryStatus: 'available' | 'unavailable' | 'simulation' | 'fallback' | 'error';
+  sentimentSummary: {
+    positive: number;
+    neutral: number;
+    negative: number;
+    total: number;
+  };
+  fundamentalsSnapshot?: {
+    marketCap?: number;
+    peRatio?: number;
+    beta?: number;
+    sector?: string;
+    industry?: string;
+  };
+  sourceTrustScore?: number;
+  sourceTrustLevel?: 'high' | 'medium' | 'low' | 'unknown';
+  dataQualityNotes: string[];
+}
+
 // --- News Impact Predictor Types ---
 export interface HistoricalEvent {
     event: string;
@@ -430,6 +459,22 @@ export interface AiReportSections {
   conclusion: string;
 }
 
+// NEW: Expanded AI report sections for upgraded report structure
+export interface AiReportSectionsExpanded {
+  investmentContext?: string;
+  executiveSummary?: string;
+  dataQualityAssessment?: string;
+  priceActionAnalysis?: string;
+  fundamentalsAnalysis?: string;
+  newsAndEventsAnalysis?: string;
+  sourceTrustAnalysis?: string;
+  volatilityAndOptionsAnalysis?: string;
+  keyRisks?: string[];
+  followUpChecklist?: string[];
+  conclusion: string;
+  disclaimer: string;
+}
+
 // --- Report Types ---
 export interface StockAnalysisReport {
   ticker: string;
@@ -455,8 +500,17 @@ export interface StockAnalysisReport {
   disclaimer: string;
   dataAvailability?: string[];
   dataSourceHealth?: DataSourceHealth[];
+  evidencePack?: ReportEvidencePack;
   isCached?: boolean;
   cachedAt?: string;
   aiProvider?: 'deepseek' | 'gemini' | 'fallback';
   aiModel?: string;
+  // NEW: Upgraded AI report fields (optional for backward compatibility)
+  investmentContext?: string;
+  executiveSummary?: string;
+  dataQualityAssessment?: string;
+  priceActionAnalysis?: string;
+  newsAndEventsAnalysis?: string;
+  volatilityAndOptionsAnalysis?: string;
+  keyRisks?: string[];
 }

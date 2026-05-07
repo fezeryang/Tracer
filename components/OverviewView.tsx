@@ -7,7 +7,9 @@ import { NewsItem, StockQuote } from '../types';
 import MarketOverviewStrip from './MarketOverviewStrip';
 import WatchlistPanel from './WatchlistPanel';
 
-const overviewSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA'];
+const overviewSymbols = ['AAPL', 'NVDA'];
+const deferredOverviewSymbols = ['MSFT', 'GOOGL', 'AMZN'];
+const quoteLoadDelayMs = 500;
 
 const Card = ({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) => (
   <section
@@ -38,26 +40,53 @@ const OverviewView: React.FC<{ language: Language }> = ({ language }) => {
 
   useEffect(() => {
     let active = true;
+    let deferredTimer: number | undefined;
 
     const load = async () => {
-      const [quoteResults, newsResults] = await Promise.all([
-        Promise.allSettled(overviewSymbols.map((symbol) => fetchStockQuote(symbol))),
-        Promise.allSettled([fetchStockNews('SPY')]),
-      ]);
+      const newsPromise = fetchStockNews('SPY');
+      const quotes: StockQuote[] = [];
+
+      for (const symbol of overviewSymbols) {
+        try {
+          quotes.push(await fetchStockQuote(symbol));
+        } catch (error) {
+          console.warn(`[Overview] Quote unavailable for ${symbol}`, error);
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, quoteLoadDelayMs));
+      }
+
+      const newsResults = await Promise.allSettled([newsPromise]);
 
       if (!active) return;
 
-      setWatchlist(
-        quoteResults.flatMap((result, index) => (result.status === 'fulfilled' ? [result.value] : []))
-      );
+      setWatchlist(quotes);
 
       const firstNews = newsResults[0];
       setNews(firstNews.status === 'fulfilled' ? firstNews.value.slice(0, 3) : []);
+
+      deferredTimer = window.setTimeout(() => {
+        void (async () => {
+          if (!active) return;
+          const deferredQuotes: StockQuote[] = [];
+          for (const symbol of deferredOverviewSymbols) {
+            try {
+              deferredQuotes.push(await fetchStockQuote(symbol));
+            } catch (error) {
+              console.warn(`[Overview] Deferred quote unavailable for ${symbol}`, error);
+            }
+            await new Promise((resolve) => window.setTimeout(resolve, quoteLoadDelayMs));
+          }
+          if (active && deferredQuotes.length > 0) {
+            setWatchlist((current) => [...current, ...deferredQuotes]);
+          }
+        })();
+      }, 300000);
     };
 
     void load();
     return () => {
       active = false;
+      if (deferredTimer) window.clearTimeout(deferredTimer);
     };
   }, []);
 
@@ -110,8 +139,8 @@ const OverviewView: React.FC<{ language: Language }> = ({ language }) => {
               <svg viewBox="0 0 480 220" className="h-[260px] w-full">
                 <defs>
                   <linearGradient id="overviewLineFill" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="rgba(47,107,255,0.45)" />
-                    <stop offset="100%" stopColor="rgba(47,107,255,0)" />
+                    <stop offset="0%" stopColor={theme.colors.accentFillStart} />
+                    <stop offset="100%" stopColor="rgba(59,130,246,0)" />
                   </linearGradient>
                 </defs>
                 <path d="M0 200 H480" stroke="rgba(255,255,255,0.06)" strokeDasharray="4 6" />
@@ -138,8 +167,7 @@ const OverviewView: React.FC<{ language: Language }> = ({ language }) => {
               <div
                 className="relative flex h-44 w-44 items-center justify-center rounded-full"
                 style={{
-                  background:
-                    'conic-gradient(#2F6BFF 0 58%, #4C8DFF 58% 74%, #1FD18A 74% 84%, #F3B63F 84% 92%, #74819A 92% 100%)',
+                  background: `conic-gradient(${theme.colors.accent} 0 58%, ${theme.colors.accentSoft} 58% 74%, ${theme.colors.up} 74% 84%, ${theme.colors.warn} 84% 92%, ${theme.colors.textMuted} 92% 100%)`,
                 }}
               >
                 <div
@@ -246,7 +274,7 @@ const OverviewView: React.FC<{ language: Language }> = ({ language }) => {
         <div className="space-y-6">
           <Card title={t(language, 'overview.aiInsight')}>
             <div className="flex items-start gap-3">
-              <div className="rounded-[16px] p-3" style={{ backgroundColor: 'rgba(47,107,255,0.14)', color: theme.colors.accentSoft }}>
+              <div className="rounded-[16px] p-3" style={{ backgroundColor: theme.colors.accentBgSoft, color: theme.colors.accentSoft }}>
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>

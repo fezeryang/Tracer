@@ -50,6 +50,7 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
 }) => {
   const levelColor = getLevelColor(summary.confidenceLevel);
   const hasAnyData = summary.officialSourceCount + summary.secFilingCount + summary.verifiedNewsCount > 0;
+  const [detailsExpanded, setDetailsExpanded] = React.useState(false);
 
   const metrics = [
     { label: t(language, 'sourceTrust.officialSources'), value: summary.officialSourceCount },
@@ -67,14 +68,14 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
               {ticker} / {t(language, 'sourceTrust.title')}
             </div>
             <div className="mt-3 flex flex-wrap items-end gap-3">
-              <div className="text-5xl font-semibold tracking-tight" style={{ color: theme.colors.textPrimary }}>
+              <div className="text-4xl font-semibold tracking-tight" style={{ color: levelColor }}>
                 {summary.overallScore}
               </div>
               <div className="pb-1 text-sm" style={{ color: theme.colors.textMuted }}>
                 / 100 {t(language, 'sourceTrust.overallScore')}
               </div>
             </div>
-            <div className="mt-4 h-2 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
               <div
                 className="h-full rounded-full transition-all"
                 style={{ width: `${summary.overallScore}%`, backgroundColor: levelColor }}
@@ -87,7 +88,7 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
               <Gauge className="h-3.5 w-3.5" />
               {t(language, `sourceTrust.${summary.confidenceLevel}`)}
             </span>
-            <span className="rounded-full border px-3 py-1.5" style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.accentSoft }}>
+            <span className="rounded-full border px-3 py-1.5" style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.semantic.up }}>
               {t(language, 'sourceTrust.mode')}: {summary.mode === 'rule_plus_ai' ? t(language, 'sourceTrust.rulePlusAi') : t(language, 'sourceTrust.ruleOnly')}
             </span>
           </div>
@@ -99,13 +100,13 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
           </div>
         )}
 
-        <div className="mt-5 grid gap-3 md:grid-cols-4">
+        <div className="mt-4 grid gap-2 md:grid-cols-4">
           {metrics.map((metric) => (
-            <div key={metric.label} className="rounded-[18px] border p-4" style={panelStyle}>
+            <div key={metric.label} className="rounded-[16px] border p-3" style={panelStyle}>
               <div className="text-[11px] uppercase tracking-[0.16em]" style={{ color: theme.colors.textMuted }}>
                 {metric.label}
               </div>
-              <div className="mt-2 text-2xl font-semibold" style={{ color: theme.colors.textPrimary }}>
+              <div className="mt-1 text-xl font-semibold" style={{ color: theme.colors.textPrimary }}>
                 {metric.value}
               </div>
             </div>
@@ -115,13 +116,13 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
 
       <NuxNotice tone="info">{t(language, 'sourceTrust.researchOnlyNotice')}</NuxNotice>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="rounded-[18px] border p-4" style={panelStyle}>
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
+      <div className="grid gap-3 lg:grid-cols-3">
+        <div className="rounded-[18px] border p-3" style={panelStyle}>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
             <CheckCircle2 className="h-4 w-4" style={{ color: theme.colors.up }} />
             {t(language, 'sourceTrust.strengths')}
           </div>
-          <ul className="space-y-1.5 pl-4 text-xs leading-5" style={{ color: theme.colors.textSecondary }}>
+          <ul className="space-y-1 pl-4 text-[11px] leading-4" style={{ color: theme.colors.textSecondary }}>
             {summary.strengths.length > 0 ? (
               summary.strengths.map((item) => (
                 <li key={item} className="list-disc">
@@ -134,12 +135,12 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
           </ul>
         </div>
 
-        <div className="rounded-[18px] border p-4" style={panelStyle}>
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
+        <div className="rounded-[18px] border p-3" style={panelStyle}>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
             <AlertTriangle className="h-4 w-4" style={{ color: theme.colors.warn }} />
             {t(language, 'sourceTrust.warnings')}
           </div>
-          <ul className="space-y-1.5 pl-4 text-xs leading-5" style={{ color: theme.colors.textSecondary }}>
+          <ul className="space-y-1 pl-4 text-[11px] leading-4" style={{ color: theme.colors.textSecondary }}>
             {summary.warnings.length > 0 ? (
               summary.warnings.map((item) => (
                 <li key={item} className="list-disc">
@@ -152,12 +153,12 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
           </ul>
         </div>
 
-        <div className="rounded-[18px] border p-4" style={panelStyle}>
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
-            <ShieldCheck className="h-4 w-4" style={{ color: theme.colors.accentSoft }} />
+        <div className="rounded-[18px] border p-3" style={panelStyle}>
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
+            <ShieldCheck className="h-4 w-4" style={{ color: theme.colors.semantic.up }} />
             {t(language, 'sourceTrust.notes')}
           </div>
-          <ul className="space-y-1.5 pl-4 text-xs leading-5" style={{ color: theme.colors.textSecondary }}>
+          <ul className="space-y-1 pl-4 text-[11px] leading-4" style={{ color: theme.colors.textSecondary }}>
             {summary.notes.map((item) => (
               <li key={item} className="list-disc">
                 {formatSignal(language, item)}
@@ -167,10 +168,29 @@ const SourceTrustCenter: React.FC<SourceTrustCenterProps> = ({
         </div>
       </div>
 
-      <div className="space-y-5">
-        <OfficialSourcesPanel verification={officialSources} language={language} />
-        <OfficialFilingsPanel verification={officialFilings} language={language} />
-        <VerifiedNewsPanel items={verifiedNews || []} language={language} />
+      <div>
+        <div
+          className="flex items-center justify-between rounded-[16px] border px-4 py-3 cursor-pointer"
+          style={{
+            backgroundColor: theme.colors.card.bg,
+            borderColor: theme.colors.borderSubtle,
+          }}
+          onClick={() => setDetailsExpanded(!detailsExpanded)}
+        >
+          <span className="text-sm font-medium" style={{ color: theme.colors.textSecondary }}>
+            {t(language, 'sourceTrust.detailedSourceData')}
+          </span>
+          <span className="text-xs" style={{ color: theme.colors.textMuted }}>
+            {detailsExpanded ? '−' : '+'}
+          </span>
+        </div>
+        {detailsExpanded && (
+          <div className="mt-3 space-y-5">
+            <OfficialSourcesPanel verification={officialSources} language={language} />
+            <OfficialFilingsPanel verification={officialFilings} language={language} />
+            <VerifiedNewsPanel items={verifiedNews || []} language={language} />
+          </div>
+        )}
       </div>
     </div>
   );
