@@ -274,7 +274,7 @@ export const createChatSession = (): ChatSession => {
           else if (call.name === 'getWhisperData') {
             const { ticker } = call.args as any;
             const whisper = await fetchWhisperData(ticker);
-            fetchedWhisper = whisper;
+            fetchedWhisper = whisper ?? undefined;
             toolParts.push({ functionResponse: { name: call.name, id: call.id, response: { whisper } } });
           }
           else if (call.name === 'predictNewsImpact') {

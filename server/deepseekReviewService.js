@@ -63,7 +63,7 @@ export const reviewOfficialSourceAuthority = async (source) => {
           {
             role: 'system',
             content:
-              'You review whether an existing company source candidate appears authoritative. Do not generate URLs. Do not browse. Do not judge whether any news is true. Return JSON only.',
+              'You review whether an existing company source candidate appears authoritative. Assess: (1) domain-company alignment — does the domain plausibly belong to the company? (2) URL structure signals — does the path pattern match known IR/newsroom conventions? (3) type classification appropriateness — is the assigned source type reasonable? (4) known patterns — have similar URL patterns been seen for other companies? Flag auto-generated or unverified candidates. Do not generate URLs. Do not browse. Do not judge whether any news is true. Return JSON only.',
           },
           {
             role: 'user',

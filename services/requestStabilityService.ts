@@ -97,6 +97,8 @@ export const safeResolveSource = async <T>({
   timeoutMs,
   successStatus = 'success',
   getSuccessMessage,
+  isUnavailableValue,
+  getUnavailableMessage,
 }: {
   key: string;
   label: string;
@@ -104,9 +106,23 @@ export const safeResolveSource = async <T>({
   timeoutMs: number;
   successStatus?: DataSourceStatus;
   getSuccessMessage?: (value: T) => string | undefined;
+  isUnavailableValue?: (value: T) => boolean;
+  getUnavailableMessage?: (value: T) => string | undefined;
 }): Promise<SafeSourceResult<T>> => {
   try {
     const value = await withTimeout(promise, timeoutMs, label);
+    if (isUnavailableValue?.(value)) {
+      return {
+        value: null,
+        health: buildDataSourceHealth({
+          key,
+          label,
+          status: 'unavailable',
+          message: getUnavailableMessage?.(value) || `${label} unavailable.`,
+        }),
+      };
+    }
+
     return {
       value,
       health: buildDataSourceHealth({

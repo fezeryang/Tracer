@@ -415,11 +415,54 @@ app.get('/api/fundamentals/:ticker', async (req, res) => {
                   priceEarnings: 0,
                   beta: 0,
                   website: result.homepage_url || '',
-                  dividendYield: 0,
                   eps: 0,
+                  revenue: 0,
+                  dividendYield: 0,
                   bookValue: 0,
                   source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached),
               }];
+
+              // Enrichment: fetch real P/E, Beta, EPS, Revenue (same as Polygon path)
+              let peRatioValue = 0;
+              let betaValue = 0;
+              if (FINNHUB_KEY) {
+                try {
+                  const finnhubUrl = `https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${FINNHUB_KEY}`;
+                  const metricsResp = await axios.get(finnhubUrl, { timeout: 5000 });
+                  const metric = metricsResp.data?.metric;
+                  if (metric) {
+                    peRatioValue = metric.peBasicExclExtraTTM || metric.peExclExtraTTM || 0;
+                    betaValue = metric.beta || 0;
+                  }
+                } catch (e) {
+                  console.warn(`[API] Finnhub metrics enrichment failed for ${ticker}: ${e.message}`);
+                }
+              }
+
+              let epsValue = 0;
+              let revenueValue = 0;
+              try {
+                const finUrl = buildPolygonCompatibleUrl(`/vX/reference/financials?ticker=${encodeURIComponent(ticker)}&limit=1`);
+                const { data: finData } = await cachedMarketDataGet({
+                  cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:financials:${ticker}`,
+                  ttlMs: MARKET_DATA_TTL.fundamentals,
+                  url: finUrl,
+                  timeout: 5000,
+                });
+                const finResult = finData?.results?.[0]?.financials;
+                if (finResult) {
+                  epsValue = finResult?.income_statement?.basic_earnings_per_share?.value || 0;
+                  revenueValue = finResult?.income_statement?.revenues?.value || 0;
+                }
+              } catch (e) {
+                console.warn(`[API] Financials enrichment failed for ${ticker}: ${e.message}`);
+              }
+
+              fundamentals[0].priceEarnings = peRatioValue;
+              fundamentals[0].beta = betaValue;
+              fundamentals[0].eps = epsValue;
+              fundamentals[0].revenue = revenueValue;
+
               return res.json(fundamentals);
           }
       } catch (e) {
@@ -449,6 +492,43 @@ app.get('/api/fundamentals/:ticker', async (req, res) => {
 
     if (!result) throw new Error('No fundamentals found');
 
+    // Fetch real P/E and Beta from Finnhub metrics
+    let peRatioValue = 0;
+    let betaValue = 0;
+    if (FINNHUB_KEY) {
+      try {
+        const finnhubUrl = `https://finnhub.io/api/v1/stock/metric?symbol=${ticker}&metric=all&token=${FINNHUB_KEY}`;
+        const metricsResp = await axios.get(finnhubUrl, { timeout: 5000 });
+        const metric = metricsResp.data?.metric;
+        if (metric) {
+          peRatioValue = metric.peBasicExclExtraTTM || metric.peExclExtraTTM || 0;
+          betaValue = metric.beta || 0;
+        }
+      } catch (e) {
+        console.warn(`[API] Finnhub metrics failed for ${ticker}: ${e.message}`);
+      }
+    }
+
+    // Fetch real EPS and Revenue from Polygon financials
+    let epsValue = 0;
+    let revenueValue = 0;
+    try {
+      const finUrl = buildPolygonCompatibleUrl(`/vX/reference/financials?ticker=${encodeURIComponent(ticker)}&limit=1`);
+      const { data: finData } = await cachedMarketDataGet({
+        cacheKey: `${POLYGON_COMPATIBLE_PROVIDER}:financials:${ticker}`,
+        ttlMs: MARKET_DATA_TTL.fundamentals,
+        url: finUrl,
+        timeout: 5000,
+      });
+      const finResult = finData?.results?.[0]?.financials;
+      if (finResult) {
+        epsValue = finResult?.income_statement?.basic_earnings_per_share?.value || 0;
+        revenueValue = finResult?.income_statement?.revenues?.value || 0;
+      }
+    } catch (e) {
+      console.warn(`[API] Financials lookup failed for ${ticker}: ${e.message}`);
+    }
+
     const data = [{
         symbol: result.ticker,
         companyName: result.name,
@@ -456,9 +536,11 @@ app.get('/api/fundamentals/:ticker', async (req, res) => {
         sector: result.sic_description || 'Technology',
         industry: result.sic_description || 'Consumer Electronics',
         mktCap: result.market_cap,
-        priceEarnings: 0,
-        beta: 0,
+        priceEarnings: peRatioValue,
+        beta: betaValue,
         website: result.homepage_url,
+        eps: epsValue,
+        revenue: revenueValue,
         source: withCacheSourceLabel(POLYGON_COMPATIBLE_PROVIDER, cached),
     }];
 
@@ -616,6 +698,33 @@ app.post('/api/ai/report', async (req, res) => {
       ok: false,
       provider: 'deepseek',
       error: e instanceof Error ? e.message : 'AI report generation failed.',
+    });
+  }
+});
+
+// Whisper / Social Sentiment (Finnhub)
+app.get('/api/whisper/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+  try {
+    const url = `https://finnhub.io/api/v1/stock/social-sentiment?symbol=${ticker}&token=${FINNHUB_KEY}`;
+    const response = await axios.get(url, { timeout: 5000 });
+    const data = response.data;
+    const hasData = (data?.reddit?.length || 0) > 0 || (data?.twitter?.length || 0) > 0;
+    res.json({
+      ticker,
+      reddit: data?.reddit || [],
+      twitter: data?.twitter || [],
+      fetchedAt: new Date().toISOString(),
+      source: hasData ? 'Finnhub' : 'unavailable',
+    });
+  } catch (e) {
+    res.json({
+      ticker,
+      reddit: [],
+      twitter: [],
+      fetchedAt: new Date().toISOString(),
+      source: 'unavailable',
+      error: e instanceof Error ? e.message : 'Failed to fetch social sentiment.',
     });
   }
 });

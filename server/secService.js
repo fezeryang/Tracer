@@ -1,4 +1,7 @@
 import axios from 'axios';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 // Phase 3B extension points:
 // - GDELT global news coverage
@@ -7,6 +10,9 @@ import axios from 'axios';
 // - Article extraction with Trafilatura
 // - Event clustering
 // - LLM-based cross-source consistency analysis
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const TICKER_MAP_URL = 'https://www.sec.gov/files/company_tickers.json';
 const SEC_SUBMISSIONS_URL = 'https://data.sec.gov/submissions';
@@ -20,6 +26,20 @@ let tickerMapCache = null;
 let tickerMapCachedAt = 0;
 let lastSecRequestAt = 0;
 const filingsCache = new Map();
+
+let cikFallbackMap = null;
+const loadCikFallbackMap = () => {
+  if (cikFallbackMap) return cikFallbackMap;
+  try {
+    const fallbackPath = resolve(__dirname, 'cikFallbackMap.json');
+    cikFallbackMap = JSON.parse(readFileSync(fallbackPath, 'utf-8'));
+    return cikFallbackMap;
+  } catch (e) {
+    console.warn(`[SEC] Failed to load CIK fallback map: ${e.message}`);
+    cikFallbackMap = {};
+    return cikFallbackMap;
+  }
+};
 
 export const normalizeTicker = (ticker) => String(ticker || '').trim().toUpperCase();
 
@@ -48,15 +68,44 @@ export const getCompanyTickerMap = async () => {
     return tickerMapCache;
   }
 
-  const response = await secGet(TICKER_MAP_URL);
-  tickerMapCache = Object.values(response.data || {}).map((entry) => ({
-    ticker: normalizeTicker(entry.ticker),
-    cik: String(entry.cik_str),
-    title: entry.title,
-  }));
-  tickerMapCachedAt = now;
+  // Tier 1: Live SEC.gov fetch
+  try {
+    console.log('[SEC] Fetching live company ticker map from SEC.gov...');
+    const response = await secGet(TICKER_MAP_URL);
+    tickerMapCache = Object.values(response.data || {}).map((entry) => ({
+      ticker: normalizeTicker(entry.ticker),
+      cik: String(entry.cik_str),
+      title: entry.title,
+    }));
+    tickerMapCachedAt = now;
+    console.log(`[SEC] Ticker map loaded from SEC.gov: ${tickerMapCache.length} entries`);
+    return tickerMapCache;
+  } catch (e) {
+    console.warn(`[SEC] Live SEC.gov fetch failed: ${e.message}`);
+  }
 
-  return tickerMapCache;
+  // Tier 2: Stale in-memory cache
+  if (tickerMapCache && tickerMapCache.length > 0) {
+    console.warn(`[SEC] Using stale in-memory cache (${tickerMapCache.length} entries, ${Math.round((now - tickerMapCachedAt) / 1000 / 60)}min old)`);
+    tickerMapCachedAt = now; // Extend TTL to avoid repeated warnings
+    return tickerMapCache;
+  }
+
+  // Tier 3: Local CIK fallback map
+  const fallback = loadCikFallbackMap();
+  if (Object.keys(fallback).length > 0) {
+    console.warn(`[SEC] Using local CIK fallback map (${Object.keys(fallback).length} entries)`);
+    tickerMapCache = Object.entries(fallback).map(([ticker, data]) => ({
+      ticker: normalizeTicker(ticker),
+      cik: String(data.cik),
+      title: data.title,
+    }));
+    tickerMapCachedAt = now;
+    return tickerMapCache;
+  }
+
+  console.error('[SEC] All ticker map sources exhausted; CIK lookup will fail');
+  return [];
 };
 
 export const findCikByTicker = async (ticker) => {

@@ -232,6 +232,8 @@ const FundamentalsSnapshot = ({ report, evidencePack, language }: { report: Stoc
     { label: t(language, 'evidence.marketCap'), value: formatMarketCap(snapshot?.marketCap, fallback) },
     { label: t(language, 'evidence.peRatio'), value: typeof snapshot?.peRatio === 'number' && Number.isFinite(snapshot.peRatio) ? snapshot.peRatio.toFixed(1) : fallback },
     { label: t(language, 'evidence.beta'), value: typeof snapshot?.beta === 'number' && Number.isFinite(snapshot.beta) ? snapshot.beta.toFixed(2) : fallback },
+    { label: t(language, 'evidence.eps'), value: typeof snapshot?.eps === 'number' && Number.isFinite(snapshot.eps) ? `$${snapshot.eps.toFixed(2)}` : fallback },
+    { label: t(language, 'evidence.revenue'), value: formatMarketCap(snapshot?.revenue, fallback) },
     { label: t(language, 'evidence.sector'), value: formatMetric(snapshot?.sector, fallback) },
     { label: t(language, 'evidence.industry'), value: formatMetric(snapshot?.industry, fallback) },
   ];

@@ -119,7 +119,9 @@ export const fetchCompanyFundamentals = async (ticker: string): Promise<CompanyF
             marketCap: profile.mktCap,
             peRatio: profile.priceEarnings,
             beta: profile.beta,
-            website: profile.website
+            website: profile.website,
+            eps: profile.eps,
+            revenue: profile.revenue,
         };
     }
     return null;
@@ -467,88 +469,100 @@ export const fetchOptionsChain = async (ticker: string, expirationDate?: string)
   };
 };
 
-// --- Whisper / Alternative Data Simulation ---
+// --- Whisper / Alternative Data ---
 
-export const fetchWhisperData = async (ticker: string): Promise<WhisperData> => {
-    // In a real app, this would call an MCP aggregator for Twitter, Reddit, Glassdoor, etc.
-    // Here we simulate the "Whisper" signals based on ticker characteristics.
-    const t = ticker.toUpperCase();
-    
-    // Deterministic simulation based on ticker chars
-    const hash = t.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const scoreBase = (hash % 60) + 20; // Base score 20-80
-    
-    // Bias for popular stocks
-    let score = scoreBase;
-    if (['NVDA', 'TSLA', 'PLTR', 'GME', 'AMD'].includes(t)) score += 15;
-    if (['AMC', 'INTC', 'PYPL'].includes(t)) score -= 15;
-    
-    // Clamp
-    score = Math.max(10, Math.min(98, score));
+interface FinnhubSocialEntry {
+  atTime?: string;
+  mention?: number;
+  positiveMention?: number;
+  negativeMention?: number;
+  positiveScore?: number;
+  negativeScore?: number;
+  score?: number;
+}
 
-    let sentiment: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell' = 'Hold';
-    if (score > 80) sentiment = 'Strong Buy';
-    else if (score > 60) sentiment = 'Buy';
-    else if (score < 40) sentiment = 'Sell';
-    else if (score < 20) sentiment = 'Strong Sell';
+const deriveSentimentLabel = (score: number): WhisperData['sentimentLabel'] => {
+  if (score > 80) return 'Strong Buy';
+  if (score > 60) return 'Buy';
+  if (score < 20) return 'Strong Sell';
+  if (score < 40) return 'Sell';
+  return 'Hold';
+};
 
-    // Generate Sources
-    const sources: WhisperSource[] = [
-        {
-            source: 'Reddit',
-            score: Math.min(100, score + (Math.random()*20 - 10)),
-            trend: Math.random() > 0.4 ? 'up' : 'down',
-            sentiment: score > 60 ? 'Bullish' : 'Bearish',
-            insight: score > 60 ? "High mention volume on r/WSB. 'YOLO' sentiment rising." : "Sentiment turning negative on discussion boards."
-        },
-        {
-            source: 'Twitter',
-            score: Math.min(100, score + (Math.random()*20 - 10)),
-            trend: Math.random() > 0.5 ? 'up' : 'flat',
-            sentiment: score > 50 ? 'Bullish' : 'Neutral',
-            insight: "FinTwit influencers posting technical breakouts."
-        },
-        {
-            source: 'Glassdoor',
-            score: Math.floor(Math.random() * 20) + 60, // 60-80 generally
-            trend: 'flat',
-            sentiment: 'Neutral',
-            insight: "Employee sentiment stable. No major layoffs detected."
-        },
-        {
-            source: 'Google Trends',
-            score: Math.floor(Math.random() * 100),
-            trend: Math.random() > 0.3 ? 'up' : 'down',
-            sentiment: 'Neutral',
-            insight: "Search volume for product lines is trending upwards."
-        }
-    ];
+const mapFinnhubSource = (
+  entries: FinnhubSocialEntry[],
+  sourceLabel: 'Reddit' | 'Twitter',
+): WhisperSource | null => {
+  if (!entries || entries.length === 0) return null;
+  const latest = entries[0];
+  const mention = latest.mention ?? 0;
+  const positiveMention = latest.positiveMention ?? 0;
+  const negativeMention = latest.negativeMention ?? 0;
+  const totalMention = positiveMention + negativeMention || 1;
+  const rawScore = Math.min(100, mention * 3 + Math.round((positiveMention / totalMention) * 50));
+  const score = Math.max(5, Math.min(98, rawScore));
 
-    // Special logic for Tech/Growth
-    if (['NVDA', 'MSFT', 'GOOGL', 'PLTR', 'META'].includes(t)) {
-        sources.push({
-            source: 'LinkedIn',
-            score: 85,
-            trend: 'up',
-            sentiment: 'Bullish',
-            insight: "Engineering headcount up 12% MoM. Aggressive AI hiring."
-        });
-        sources.push({
-            source: 'App Store',
-            score: 75,
-            trend: 'up',
-            sentiment: 'Bullish',
-            insight: "App ranking climbed to #4 in Productivity."
-        });
+  let sentiment: WhisperSource['sentiment'] = 'Neutral';
+  const bullishPct = totalMention > 0 ? positiveMention / totalMention : 0.5;
+  if (bullishPct > 0.6) sentiment = 'Bullish';
+  else if (bullishPct < 0.4) sentiment = 'Bearish';
+
+  let trend: WhisperSource['trend'] = 'flat';
+  if (mention > 20) trend = 'up';
+  else if (mention < 5) trend = 'down';
+
+  const insight =
+    sourceLabel === 'Reddit'
+      ? `r/WallStreetBets: ${mention} mentions in the last 48h, ${positiveMention} positive / ${negativeMention} negative`
+      : `FinTwit: ${mention} tweets, ${positiveMention} bullish / ${negativeMention} bearish`;
+
+  return { source: sourceLabel, score, trend, sentiment, insight };
+};
+
+export const fetchWhisperData = async (ticker: string): Promise<WhisperData | null> => {
+  const t = ticker.toUpperCase();
+
+  try {
+    const resp = await fetch(`/api/whisper/${t}`);
+    const data = await resp.json();
+
+    if (data?.source === 'unavailable') {
+      console.warn('[Whisper] Finnhub social sentiment unavailable for', t);
+      return null;
     }
 
+    const redditSource = mapFinnhubSource(data?.reddit, 'Reddit');
+    const twitterSource = mapFinnhubSource(data?.twitter, 'Twitter');
+    const realSources: WhisperSource[] = [];
+    if (redditSource) realSources.push(redditSource);
+    if (twitterSource) realSources.push(twitterSource);
+
+    const allSources = realSources;
+
+    const realScores = realSources.map((s) => s.score);
+    const avgRealScore = realScores.length > 0
+      ? realScores.reduce((a, b) => a + b, 0) / realScores.length
+      : 50;
+    const overallScore = Math.floor(avgRealScore);
+
+    const sentimentLabel = deriveSentimentLabel(overallScore);
+
+    const mentionTotal = realSources.reduce((sum, s) => sum + s.score, 0);
+    const mood = overallScore > 60 ? 'bullish' : overallScore < 40 ? 'bearish' : 'neutral';
+
     return {
-        ticker: t,
-        overallScore: Math.floor(score),
-        sentimentLabel: sentiment,
-        sources: sources,
-        summary: `Aggregated signals suggest a ${sentiment.toUpperCase()} outlook. Social momentum is ${sources[0].trend === 'up' ? 'accelerating' : 'decelerating'} while alternative datasets show ${score > 50 ? 'strength' : 'weakness'}.`
+      ticker: t,
+      overallScore,
+      sentimentLabel,
+      sources: allSources,
+      summary: `Finnhub social sentiment: ${realSources.length} real sources with ${mentionTotal} total signal strength. Overall mood is ${mood}. ${
+        realSources.length === 0 ? 'No real social data available for this ticker.' : ''
+      }`,
     };
+  } catch (err) {
+    console.warn('[Whisper] Network error fetching Finnhub social sentiment:', err);
+    return null;
+  }
 };
 
 

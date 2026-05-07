@@ -81,6 +81,8 @@ export interface CompanyFundamentals {
   peRatio: number;
   beta: number; // Volatility measure
   website: string;
+  eps?: number;
+  revenue?: number;
 }
 
 export interface NewsItem {
@@ -281,6 +283,8 @@ export interface ReportEvidencePack {
     beta?: number;
     sector?: string;
     industry?: string;
+    eps?: number;
+    revenue?: number;
   };
   sourceTrustScore?: number;
   sourceTrustLevel?: 'high' | 'medium' | 'low' | 'unknown';

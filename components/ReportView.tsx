@@ -373,7 +373,7 @@ const FundamentalsSnapshot = ({
             {fundamentals.symbol}
           </p>
           <p className="mt-4 max-w-3xl text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
-            {fundamentals.description || 'No company description available.'}
+            {fundamentals.description || t(language, 'report.noDescription')}
           </p>
         </div>
         {fundamentals.website ? (
@@ -408,6 +408,8 @@ const FundamentalsSnapshot = ({
             label: t(language, 'report.betaPe'),
             value: `${fundamentals.beta ? fundamentals.beta.toFixed(2) : 'N/A'} / ${fundamentals.peRatio ? fundamentals.peRatio.toFixed(1) : 'N/A'}`,
           },
+          ...(fundamentals.eps ? [{ label: t(language, 'report.eps'), value: `$${fundamentals.eps.toFixed(2)}` }] : []),
+          ...(fundamentals.revenue ? [{ label: t(language, 'report.revenue'), value: formatMarketCap(fundamentals.revenue) }] : []),
         ].map((item) => (
           <div key={item.label} className="rounded-[18px] border p-4" style={panelStyle}>
             <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
@@ -750,7 +752,7 @@ const WhisperSummary = ({ whisper, language }: { whisper: WhisperData | null; la
       {t(language, 'report.whisperContext')}
     </div>
     <p className="mt-3 text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
-      {whisper ? `${language === 'zh' ? t(language, 'report.whisperEnglishNotice') : whisper.summary} ${t(language, 'report.whisperNotice')}` : t(language, 'report.whisperNotice')}
+      {whisper ? `${whisper.summary} ${t(language, 'report.whisperNotice')}` : t(language, 'report.whisperNotice')}
     </p>
   </div>
 );

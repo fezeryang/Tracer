@@ -163,14 +163,15 @@ const buildAvailabilityNotes = (
   if (!fundamentals) notes.push('Company fundamentals were unavailable or incomplete for this run.');
   if (news.length === 0) notes.push('No recent news items were available, so news coverage is limited.');
   if (officialFilings.status !== 'available') notes.push('SEC EDGAR official filings were unavailable or empty for this report.');
-  if (officialSources.status === 'not_found' || officialSources.status === 'error') notes.push('Official source discovery was unavailable or returned no candidates for this report.');
+  if (officialSources.status === 'not_found') notes.push('No official source candidates were found for this ticker through automated discovery.');
+  if (officialSources.status === 'error') notes.push('Official source discovery encountered an error for this ticker.');
   if (!evidencePack || evidencePack.priceHistoryStatus !== 'available') {
     notes.push('Real historical price data was unavailable, so no price trend chart should be treated as market evidence.');
   }
   if (!whisper) {
     notes.push('Experimental Whisper alternative signal data was unavailable for this report.');
   } else {
-    notes.push('Whisper signals are experimental, simulated-style alternative indicators and not a complete or verified social media dataset.');
+    notes.push('Whisper social sentiment data is from Finnhub and reflects social media signals.');
   }
 
   if (failedSources.length > 0) {
@@ -221,32 +222,101 @@ const buildFallbackReport = (
       : `${fundamentals.companyName} operates in ${fundamentals.sector || 'an unspecified sector'}. Market cap and business profile were available, but some fields may remain sparse in the current backend feed.`
     : zh ? '公司基本面资料暂时不可用，因此业务背景应视为不完整。' : 'Fundamental company profile data was unavailable, so business context should be treated as incomplete.';
 
+  const sourceNamesForReport = officialSources.sources.slice(0, 8).map((s) => {
+    const tier = s.sourceTier === 'official' ? '★' : s.sourceTier === 'official_channel' ? '◆' : '○';
+    return `${tier} ${s.name} (${s.authorityScore})`;
+  });
+  const sourceNamesText = sourceNamesForReport.length > 0
+    ? (zh
+        ? `已识别来源：${sourceNamesForReport.join('；')}`
+        : `Identified sources: ${sourceNamesForReport.join('; ')}`)
+    : '';
+
+  const verificationSourceNames = verifiedNews.slice(0, 4).map((v) =>
+    `${v.source} (置信度${v.confidenceScore})`
+  );
+  const verificationSourceText = verificationSourceNames.length > 0
+    ? (zh
+        ? `已验证新闻来源：${verificationSourceNames.join('；')}`
+        : `Verified news sources: ${verificationSourceNames.join('; ')}`)
+    : '';
+
+  const autoGenWarning = officialSources.sources.some((s) =>
+    s.notes?.some((n) => n.includes('Auto-generated'))
+  )
+    ? (zh
+        ? '注意：部分来源为自动生成候选，需人工确认。'
+        : 'Note: Some sources are auto-generated candidates requiring manual confirmation.')
+    : '';
+
   const sourceTrustSummary = zh
-    ? `来源核验发现 ${officialSources.sources.length} 个官方来源候选、${officialFilings.filings.length} 条近期 SEC 文件和 ${verifiedNews.length} 条可信新闻。这些信号用于提升来源透明度，但不等于验证任何投资结论。`
-    : `Source checks found ${officialSources.sources.length} official source candidates, ${officialFilings.filings.length} recent SEC filings, and ${verifiedNews.length} verified news items. These signals support source transparency but do not validate any investment conclusion.`;
+    ? `来源核验发现 ${officialSources.sources.length} 个官方来源候选、${officialFilings.filings.length} 条近期 SEC 文件和 ${verifiedNews.length} 条可信新闻。${sourceNamesText}${verificationSourceText ? ` ${verificationSourceText}` : ''}${autoGenWarning ? ` ${autoGenWarning}` : ''}这些信号用于提升来源透明度，但不等于验证任何投资结论。`
+    : `Source checks found ${officialSources.sources.length} official source candidates, ${officialFilings.filings.length} recent SEC filings, and ${verifiedNews.length} verified news items. ${sourceNamesText}${verificationSourceText ? ` ${verificationSourceText}` : ''}${autoGenWarning ? ` ${autoGenWarning}` : ''}These signals support source transparency but do not validate any investment conclusion.`;
   const sourceTrustAnalysisText = zh
     ? `【来源可信度概览】${sourceTrustSummary}
 
-【证据链强项】当前来源核验覆盖了官方来源候选、SEC 文件和可信新闻三个维度。若官方来源或 SEC 文件数量较高，报告的事实核验基础更稳；若这些数据缺失，则应降低对新闻和二手摘要的依赖。
+【证据链强项】当前来源核验覆盖了官方来源候选、SEC 文件和可信新闻三个维度。${sourceNamesForReport.length > 0 ? `具体包含${sourceNamesForReport.length}个已命名来源，权威分数范围为${Math.min(...officialSources.sources.slice(0, 8).map(s => s.authorityScore)) || 'N/A'}–${Math.max(...officialSources.sources.slice(0, 8).map(s => s.authorityScore)) || 'N/A'}分。` : ''}若官方来源或 SEC 文件数量较高，报告的事实核验基础更稳；若这些数据缺失，则应降低对新闻和二手摘要的依赖。
 
-【证据链弱项】新闻来源即使被归类为可信，也不等于事实已经完全确认。涉及财报、监管、重大合同、诉讼或管理层变化的信息，应继续回到公司公告、SEC EDGAR、投资者关系页面或交易所公告交叉核验。`
+【证据链弱项】新闻来源即使被归类为可信，也不等于事实已经完全确认。涉及财报、监管、重大合同、诉讼或管理层变化的信息，应继续回到公司公告、SEC EDGAR、投资者关系页面或交易所公告交叉核验。${autoGenWarning ? ` ${autoGenWarning}` : ''}${officialSources.sources.length <= 2 ? '来源覆盖面有限，结论可靠性相应降低。' : ''}`
     : `Source Trust Overview: ${sourceTrustSummary}
 
-Evidence strengths: The source review covers official source candidates, SEC filings, and verified news. When official sources or SEC filings are available, the factual verification base is stronger; when they are missing, reliance on headlines and secondary summaries should be reduced.
+Evidence strengths: The source review covers official source candidates, SEC filings, and verified news.${sourceNamesForReport.length > 0 ? ` Specifically ${sourceNamesForReport.length} named sources, with authority scores ranging from ${Math.min(...officialSources.sources.slice(0, 8).map(s => s.authorityScore)) || 'N/A'}–${Math.max(...officialSources.sources.slice(0, 8).map(s => s.authorityScore)) || 'N/A'}.` : ''} When official sources or SEC filings are available, the factual verification base is stronger; when they are missing, reliance on headlines and secondary summaries should be reduced.
 
-Evidence weaknesses: A credible news source does not mean every claim is fully verified. Earnings, regulatory matters, material contracts, litigation, or management changes should be cross-checked against company announcements, SEC EDGAR, investor relations pages, or exchange notices.`;
+Evidence weaknesses: A credible news source does not mean every claim is fully verified. Earnings, regulatory matters, material contracts, litigation, or management changes should be cross-checked against company announcements, SEC EDGAR, investor relations pages, or exchange notices.${autoGenWarning ? ` ${autoGenWarning}` : ''}${officialSources.sources.length <= 2 ? ' Source coverage is limited, reducing conclusion reliability accordingly.' : ''}`;
+  const fundamentalsAvailableMetrics = fundamentals
+    ? {
+        marketCap: typeof fundamentals.marketCap === 'number' && fundamentals.marketCap > 0 ? fundamentals.marketCap.toLocaleString() : null,
+        peRatio: typeof fundamentals.peRatio === 'number' && fundamentals.peRatio > 0 ? fundamentals.peRatio.toFixed(1) : null,
+        beta: typeof fundamentals.beta === 'number' && fundamentals.beta > 0 ? fundamentals.beta.toFixed(2) : null,
+        eps: typeof fundamentals.eps === 'number' && fundamentals.eps > 0 ? fundamentals.eps.toFixed(2) : null,
+        revenue: typeof fundamentals.revenue === 'number' && fundamentals.revenue > 0 ? fundamentals.revenue.toLocaleString() : null,
+      }
+    : null;
+
+  const buildMetricsText = (zh: boolean) => {
+    if (!fundamentalsAvailableMetrics) return '';
+    const m = fundamentalsAvailableMetrics;
+    const parts: string[] = [];
+    if (zh) {
+      parts.push(`市值${m.marketCap ? `（${m.marketCap}）` : '（缺失或为0）'}`);
+      parts.push(`P/E${m.peRatio ? `（${m.peRatio}）` : '（缺失或为0）'}`);
+      parts.push(`Beta${m.beta ? `（${m.beta}）` : '（缺失或为0）'}`);
+      parts.push(`EPS${m.eps ? `（${m.eps}）` : '（缺失或为0）'}`);
+      parts.push(`营收${m.revenue ? `（${m.revenue}）` : '（缺失或为0）'}`);
+    } else {
+      parts.push(`market cap${m.marketCap ? ` (${m.marketCap})` : ' (missing or zero)'}`);
+      parts.push(`P/E${m.peRatio ? ` (${m.peRatio})` : ' (missing or zero)'}`);
+      parts.push(`beta${m.beta ? ` (${m.beta})` : ' (missing or zero)'}`);
+      parts.push(`EPS${m.eps ? ` (${m.eps})` : ' (missing or zero)'}`);
+      parts.push(`revenue${m.revenue ? ` (${m.revenue})` : ' (missing or zero)'}`);
+    }
+    return parts.join('、');
+  };
+
+  const buildLimitationText = (zh: boolean) => {
+    if (!fundamentalsAvailableMetrics) return '';
+    const m = fundamentalsAvailableMetrics;
+    const missingMetrics: string[] = [];
+    if (!m.eps) missingMetrics.push(zh ? 'EPS' : 'EPS');
+    if (!m.revenue) missingMetrics.push(zh ? '营收' : 'revenue');
+    if (zh) {
+      return `当前没有完整利润率、现金流、资产负债表和同业估值数据，因此不能据此判断增长质量、财务稳健性或相对估值高低。${missingMetrics.length > 0 ? `具体缺失：${missingMetrics.join('、')}数据在当前数据源不可用。` : 'EPS和营收数据可用，但完整的财务报表仍需额外数据源。'}`;
+    }
+    return `Full margin, cash flow, balance sheet, and peer valuation data are not available in this snapshot, so the report cannot judge growth quality, financial resilience, or relative valuation from those missing inputs.${missingMetrics.length > 0 ? ` Specifically missing: ${missingMetrics.join(', ')} data unavailable from the current provider.` : ' EPS and revenue data are available, but full financial statements require additional data sources.'}`;
+  };
+
   const fundamentalsAnalysisText = fundamentals
     ? zh
       ? `【公司背景】${fundamentalsSummary}
 
-【可用指标】当前基本面快照包含市值${typeof fundamentals.marketCap === 'number' && fundamentals.marketCap > 0 ? `（${fundamentals.marketCap.toLocaleString()}）` : '（缺失或为0）'}、P/E${typeof fundamentals.peRatio === 'number' && fundamentals.peRatio > 0 ? `（${fundamentals.peRatio.toFixed(1)}）` : '（缺失或为0）'}、Beta${typeof fundamentals.beta === 'number' && fundamentals.beta > 0 ? `（${fundamentals.beta.toFixed(2)}）` : '（缺失或为0）'}、板块和行业字段。这些字段有助于理解公司规模、估值口径和价格波动属性，但不能替代完整财务报表。
+【可用指标】当前基本面快照包含${buildMetricsText(true)}、板块和行业字段。这些字段有助于理解公司规模、估值口径和价格波动属性，但不能替代完整财务报表。
 
-【限制说明】当前没有完整营收、利润率、现金流、资产负债表和同业估值数据，因此不能据此判断增长质量、财务稳健性或相对估值高低。`
+【限制说明】${buildLimitationText(true)}`
       : `Company context: ${fundamentalsSummary}
 
-Available metrics: The fundamentals snapshot includes market cap${typeof fundamentals.marketCap === 'number' && fundamentals.marketCap > 0 ? ` (${fundamentals.marketCap.toLocaleString()})` : ' (missing or zero)'}, P/E${typeof fundamentals.peRatio === 'number' && fundamentals.peRatio > 0 ? ` (${fundamentals.peRatio.toFixed(1)})` : ' (missing or zero)'}, beta${typeof fundamentals.beta === 'number' && fundamentals.beta > 0 ? ` (${fundamentals.beta.toFixed(2)})` : ' (missing or zero)'}, sector, and industry fields. These fields help frame company scale, valuation context, and price sensitivity, but they do not replace full financial statements.
+Available metrics: The fundamentals snapshot includes ${buildMetricsText(false)}, sector, and industry fields. These fields help frame company scale, valuation context, and price sensitivity, but they do not replace full financial statements.
 
-Limitations: Full revenue, margin, cash flow, balance sheet, and peer valuation data are not available in this snapshot, so the report cannot judge growth quality, financial resilience, or relative valuation from those missing inputs.`
+Limitations: ${buildLimitationText(false)}`
     : zh
       ? `【公司背景】公司基本面资料暂时不可用，因此无法确认公司规模、板块、行业、估值倍数或 Beta。
 
@@ -328,14 +398,14 @@ Follow-up requirement: Company official materials, financial statements, SEC fil
     conclusion: zh
       ? `【研究综合】本报告对 ${ticker} 进行了多维度分析，涵盖行情表现、基本面背景、新闻情绪、来源可信度和波动率观察。${availabilityNotes.length === 0 ? '当前数据质量相对较高，分析基于多个数据源的交叉信息。' : `由于存在${availabilityNotes.length}个数据限制，分析可靠性受到影响，建议通过官方渠道核验关键信息。`}
 
-【关键观点】${quoteIsReliable ? `当前观测价格为 $${quote?.price.toFixed(2)}。` : '当前行情数据为模拟或回退值。'}${fundamentals ? `${fundamentals.companyName} 属于${fundamentals.sector || '相关'}板块。` : ''}${news.length > 0 ? `新闻情绪样本显示${evidencePack.sentimentSummary.positive > evidencePack.sentimentSummary.negative ? '偏正面' : evidencePack.sentimentSummary.negative > evidencePack.sentimentSummary.positive ? '偏负面' : '中性'}情绪。` : '新闻数据有限。'}
+【关键观点】${quoteIsReliable ? `当前观测价格为 $${quote?.price.toFixed(2)}。` : '当前行情数据为模拟或回退值。'}${fundamentals ? `${fundamentals.companyName} 属于${fundamentals.sector || '相关'}板块。` : ''}${news.length > 0 ? `新闻情绪样本显示${evidencePack.sentimentSummary.positive > evidencePack.sentimentSummary.negative ? '偏正面' : evidencePack.sentimentSummary.negative > evidencePack.sentimentSummary.positive ? '偏负面' : '中性'}情绪。` : '新闻数据有限。'}${officialSources.sources.length > 0 ? `来源可信度分析识别${officialSources.sources.length}个官方来源候选，整体可信度分数${evidencePack.sourceTrustScore}/100（${evidencePack.sourceTrustLevel === 'high' ? '高' : evidencePack.sourceTrustLevel === 'medium' ? '中' : '低'}）。` : '来源可信度数据有限。'}
 
 【后续观察重点】1) 核实数据源状态和覆盖范围；2) 监控 SEC 文件和公司官方公告的更新；3) 交叉验证关键新闻信息；4) 观察流动性和波动率变化；5) 关注即将到来的事件催化剂（如财报日期）。
 
 【免责声明】本报告为算法生成的研究快照，基于当前可获得的公开信息。仅供学习研究使用，不构成投资建议。金融市场存在风险，过去表现不能保证未来结果。用户应基于自身判断做出投资决策，并对自己的决策承担全部责任。`
       : `【Research Synthesis】This report conducted a multi-dimensional analysis of ${ticker}, covering price action, fundamental context, news sentiment, source credibility, and volatility observations.${availabilityNotes.length === 0 ? ' Current data quality is relatively good, with analysis based on cross-information from multiple data sources.' : ` Due to ${availabilityNotes.length} data limitations, analysis reliability is affected; verifying key information through official channels is recommended.`}
 
-【Key Perspectives】${quoteIsReliable ? `Current observed price is $${quote?.price.toFixed(2)}.` : 'Current quote data is simulated or fallback.'}${fundamentals ? ` ${fundamentals.companyName} operates in the ${fundamentals.sector || 'related'} sector.` : ''}${news.length > 0 ? ` News sentiment sample shows ${evidencePack.sentimentSummary.positive > evidencePack.sentimentSummary.negative ? 'leaning positive' : evidencePack.sentimentSummary.negative > evidencePack.sentimentSummary.positive ? 'leaning negative' : 'neutral'} sentiment.` : ' News data is limited.'}
+【Key Perspectives】${quoteIsReliable ? `Current observed price is $${quote?.price.toFixed(2)}.` : 'Current quote data is simulated or fallback.'}${fundamentals ? ` ${fundamentals.companyName} operates in the ${fundamentals.sector || 'related'} sector.` : ''}${news.length > 0 ? ` News sentiment sample shows ${evidencePack.sentimentSummary.positive > evidencePack.sentimentSummary.negative ? 'leaning positive' : evidencePack.sentimentSummary.negative > evidencePack.sentimentSummary.positive ? 'leaning negative' : 'neutral'} sentiment.` : ' News data is limited.'}${officialSources.sources.length > 0 ? ` Source trust analysis found ${officialSources.sources.length} official source candidates, overall trust score ${evidencePack.sourceTrustScore}/100 (${evidencePack.sourceTrustLevel}).` : ' Source trust data is limited.'}
 
 【Focus for Next Steps】1) Verify data source status and coverage; 2) Monitor SEC filings and company official announcements for updates; 3) Cross-verify key news information; 4) Observe liquidity and volatility changes; 5) Pay attention to upcoming event catalysts (such as earnings dates).
 
@@ -547,6 +617,8 @@ const buildEvidencePack = ({
             beta: fundamentals.beta,
             sector: fundamentals.sector,
             industry: fundamentals.industry,
+            eps: fundamentals.eps,
+            revenue: fundamentals.revenue,
           },
         }
       : {}),
@@ -566,16 +638,59 @@ const buildSourceTrustSummaryForAi = ({
   verifiedNews: VerifiedNewsItem[];
   officialFilings: SecFilingVerification;
   officialSources: OfficialSourceVerification;
-}) => ({
-  ticker,
-  officialSourceCount: officialSources.sources.length,
-  secFilingCount: officialFilings.filings.length,
-  verifiedNewsCount: verifiedNews.length,
-  highConfidenceNewsCount: verifiedNews.filter((item) => item.confidenceScore >= 75).length,
-  officialSourceStatus: officialSources.status,
-  secFilingStatus: officialFilings.status,
-  mode: officialSources.mode,
-});
+}) => {
+  // Enriched source details (max 20)
+  const officialSourceDetails = officialSources.sources.slice(0, 20).map((src) => ({
+    name: src.name,
+    type: src.type,
+    sourceTier: src.sourceTier,
+    authorityScore: src.authorityScore,
+    aiAssessment: src.aiAssessment || null,
+    aiConfidence: src.aiConfidence || null,
+    domain: src.domain || null,
+    warnings: src.warnings || [],
+    notes: (src.notes || []).filter((n) => n.includes('Auto-generated') || n.includes('manual confirmation')),
+  }));
+
+  // SEC filing details (max 10)
+  const secFilingDetails = officialFilings.filings.slice(0, 10).map((f) => ({
+    form: f.form,
+    filingDate: f.filingDate,
+    description: f.description || '',
+  }));
+
+  // Verified news details (max 10)
+  const verifiedNewsDetails = verifiedNews.slice(0, 10).map((v) => ({
+    source: v.source || '',
+    sourceTier: v.sourceTier || 'unknown',
+    confidenceScore: v.confidenceScore,
+    title: v.title,
+    url: v.url || '',
+  }));
+
+  // Aggregate summary
+  const aggregate = {
+    ticker,
+    officialSourceCount: officialSources.sources.length,
+    secFilingCount: officialFilings.filings.length,
+    verifiedNewsCount: verifiedNews.length,
+    highConfidenceNewsCount: verifiedNews.filter((item) => item.confidenceScore >= 75).length,
+    officialSourceStatus: officialSources.status,
+    secFilingStatus: officialFilings.status,
+    mode: officialSources.mode,
+    distinctSourceTypes: [...new Set(officialSources.sources.map((s) => s.type))],
+    autoGeneratedCount: officialSources.sources.filter((s) =>
+      s.notes?.some((n) => n.includes('Auto-generated'))
+    ).length,
+  };
+
+  return {
+    ...aggregate,
+    officialSourceDetails,
+    secFilingDetails,
+    verifiedNewsDetails,
+  };
+};
 
 const requestDeepSeekReport = async ({
   ticker,
@@ -714,6 +829,8 @@ export const generateStockAnalysisReport = async (
       label: 'Whisper',
       promise: fetchWhisperData(ticker),
       timeoutMs: SOURCE_TIMEOUTS.whisper,
+      isUnavailableValue: (whisper) => !whisper,
+      getUnavailableMessage: () => 'Whisper alternative signal data is unavailable for this ticker.',
     }),
   ]);
 

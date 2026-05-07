@@ -99,7 +99,16 @@ const SourceCard = ({ source, language }: { source: OfficialCompanySource; langu
           <div className="mb-1 font-semibold uppercase tracking-[0.16em]" style={{ color: theme.colors.textMuted }}>
             {t(language, 'officialSources.aiReasoning')}
           </div>
-          {language === 'zh' ? t(language, 'officialSources.aiReasoningSummary') : source.aiReasoning}
+          <div>
+            <p className="text-sm leading-relaxed" style={{ color: theme.colors.textSecondary }}>
+              {source.aiReasoning}
+            </p>
+            {language === 'zh' && (
+              <p className="mt-1 text-xs italic" style={{ color: theme.colors.textMuted }}>
+                {t(language, 'officialSources.aiReasoningNote')}
+              </p>
+            )}
+          </div>
         </div>
       )}
 

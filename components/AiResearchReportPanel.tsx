@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ChevronDown } from 'lucide-react';
 import { theme } from '../designTokens';
 import type { StockAnalysisReport } from '../types';
@@ -41,45 +42,110 @@ export const AiResearchReportPanel: React.FC<AiResearchReportPanelProps> = ({ re
   const insufficientText = t(language, 'report.insufficientSectionData');
 
   const renderRichText = (contentStr: string) => {
-    const lines = contentStr.split('\n').map((line) => line.trim()).filter(Boolean);
-    if (lines.length === 0) return <p>{insufficientText}</p>;
-
-    const bulletPattern = /^([-*•]|\d+[.)]|[（(]?\d+[）)])\s*/;
-    const allBullets = lines.length > 1 && lines.every((line) => bulletPattern.test(line));
+    if (!contentStr?.trim()) return <p style={{ opacity: 0.5 }}>{insufficientText}</p>;
     const isZh = language === 'zh';
 
-    if (allBullets) {
-      return (
-        <ul style={{ margin: 0, paddingLeft: '20px' }}>
-          {lines.map((line, idx) => (
-            <li
-              key={idx}
+    return (
+      <ReactMarkdown
+        components={{
+          p: ({ children, ...props }) => (
+            <p
               style={{
-                marginBottom: idx < lines.length - 1 ? (isZh ? '8px' : '10px') : 0,
+                marginBottom: '12px',
+                lineHeight: 1.7,
                 ...(isZh ? theme.typography.chineseBody : {}),
               }}
+              {...props}
             >
-              {line.replace(bulletPattern, '')}
+              {children}
+            </p>
+          ),
+          strong: ({ children, ...props }) => (
+            <strong style={{ fontWeight: 600, color: theme.colors.textPrimary }} {...props}>
+              {children}
+            </strong>
+          ),
+          em: ({ children, ...props }) => (
+            <em style={{ fontStyle: 'italic', color: theme.colors.textSecondary }} {...props}>
+              {children}
+            </em>
+          ),
+          a: ({ children, href, ...props }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: theme.colors.accentSoft, textDecoration: 'underline' }}
+              {...props}
+            >
+              {children}
+            </a>
+          ),
+          ul: ({ children, ...props }) => (
+            <ul
+              style={{
+                margin: '8px 0 12px 0',
+                paddingLeft: '20px',
+                listStyle: 'disc',
+              }}
+              {...props}
+            >
+              {children}
+            </ul>
+          ),
+          ol: ({ children, ...props }) => (
+            <ol
+              style={{
+                margin: '8px 0 12px 0',
+                paddingLeft: '20px',
+              }}
+              {...props}
+            >
+              {children}
+            </ol>
+          ),
+          li: ({ children, ...props }) => (
+            <li
+              style={{
+                marginBottom: isZh ? '6px' : '8px',
+                lineHeight: 1.5,
+                ...(isZh ? theme.typography.chineseBody : {}),
+              }}
+              {...props}
+            >
+              {children}
             </li>
-          ))}
-        </ul>
-      );
-    }
-
-    return (
-      <>
-        {lines.map((line, idx) => (
-          <p
-            key={idx}
-            style={{
-              marginBottom: idx < lines.length - 1 ? (isZh ? '14px' : '12px') : '0',
-              ...(isZh ? theme.typography.chineseBody : {}),
-            }}
-          >
-            {line.replace(bulletPattern, '')}
-          </p>
-        ))}
-      </>
+          ),
+          h3: ({ children, ...props }) => (
+            <h3
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: theme.colors.textPrimary,
+                margin: '16px 0 8px 0',
+              }}
+              {...props}
+            >
+              {children}
+            </h3>
+          ),
+          h4: ({ children, ...props }) => (
+            <h4
+              style={{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: theme.colors.textPrimary,
+                margin: '12px 0 6px 0',
+              }}
+              {...props}
+            >
+              {children}
+            </h4>
+          ),
+        }}
+      >
+        {contentStr}
+      </ReactMarkdown>
     );
   };
 

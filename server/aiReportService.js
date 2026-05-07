@@ -251,6 +251,7 @@ const LANGUAGE_CONSISTENCY = `
 - For Chinese: use natural Chinese financial writing style, not translated English structure
 - For English: use professional financial journalism style
 - DO NOT mix languages within the same paragraph
+- Every single sentence must be in the target language. If the target is Chinese, every sentence must be in Chinese, including financial commentary and analysis. There is no exception for "but the source data was in English".
 `;
 
 const buildPrompt = (context) => {
@@ -260,7 +261,7 @@ const buildPrompt = (context) => {
   return JSON.stringify({
     instruction: [
       `Generate a structured equity research report in ${language}.`,
-      'Return strict JSON only. Do not use markdown.',
+      'Return strict JSON only. You MAY use **bold**, *italic*, [links](url), - bullet lists, numbered lists, and ## section headers inside string fields for readability. This is valid because the JSON string values will be rendered as Markdown.',
       'Use only the provided data. Do not invent prices, metrics, filings, news, official sources, or events.',
       'Use evidencePack as the primary structured evidence for data availability, price history, sentiment, fundamentals, and source trust.',
       'Do not provide investment advice. Do not output Buy, Sell, Strong Buy, Entry Point, or Target Price.',
@@ -304,16 +305,16 @@ const buildPrompt = (context) => {
         : 'For priceActionAnalysis: 2-4 paragraphs OR 5-7 bullet points. If real quote and history are available, analyze price, change, trend context, volatility, and volume. If unavailable, explain specifically what data is missing and its impact. Do not write support levels, resistance levels, target prices, entry points, or real market conclusions from simulation/fallback.',
 
       isZh
-        ? '对于基本面分析(fundamentalsAnalysis): 3-4段或5-7个要点。只引用已提供的marketCap、P/E、beta、sector、industry、公司描述和官网。若营收、利润、资产负债表、同业比较缺失，必须明确说明，不能编造。'
-        : 'For fundamentalsAnalysis: 3-4 paragraphs OR 5-7 bullet points. Use only provided marketCap, P/E, beta, sector, industry, description, and website. If revenue, profit, balance sheet, or peer comparison data is missing, state that explicitly and do not invent it.',
+        ? '对于基本面分析(fundamentalsAnalysis): 3-4段或5-7个要点。只引用已提供的marketCap、P/E、beta、EPS、revenue、sector、industry、公司描述和官网。若EPS或revenue为零，说明数据可能从当前数据源不可用。若营收、利润、资产负债表、同业比较缺失，必须明确说明，不能编造。'
+        : 'For fundamentalsAnalysis: 3-4 paragraphs OR 5-7 bullet points. Use only provided marketCap, P/E, beta, EPS, revenue, sector, industry, description, and website. If EPS or revenue are zero, note data may be unavailable from the current provider. If revenue, profit, balance sheet, or peer comparison data is missing, state that explicitly and do not invent it.',
 
       isZh
         ? '对于新闻与事件分析(newsAndEventsAnalysis): 2-3段或4-6个要点。使用verifiedNews和普通news，分析近期头条影响、情绪分布（具体数量）、即将到来的催化剂（财报、事件、文件）。'
         : 'For newsAndEventsAnalysis: 2-3 paragraphs OR 4-6 bullet points. Use verifiedNews and regular news, analyze recent headline impact, sentiment breakdown (specific counts), upcoming catalysts (earnings, events, filings).',
 
       isZh
-        ? '对于来源可信度分析(sourceTrustAnalysis): 2-3段或3-5个要点。官方来源可用性（SEC文件、公司IR、官网）、新闻来源可信度评估、误信息风险、已验证新闻数量。'
-        : 'For sourceTrustAnalysis: 2-3 paragraphs OR 3-5 bullet points. Official source availability (SEC filings, company IR, official website), news source credibility, misinformation risk, verified news count.',
+        ? '对于来源可信度分析(sourceTrustAnalysis): 2-3段或3-5个要点。必须分析：(1)来源多样性 — 引用具体来源名称和权威分数，源类型分布；(2)权威深度 — SEC文件、IR渠道、官方渠道是否可用；(3)交叉验证 — 多个官方来源是否一致、已验证新闻质量；(4)AI审查评估 — DeepSeek审查发现、自动生成来源的警告。必须引用具体来源名称和分数。如存在自动生成的来源候选，必须说明需要人工确认。数据缺口对结论可靠性的影响必须量化为具体影响。'
+        : 'For sourceTrustAnalysis: 2-3 paragraphs OR 3-5 bullet points. Must analyze: (1) source diversity — reference specific source names and authority scores, source type distribution; (2) authority depth — SEC filings, IR channels, official channels availability; (3) cross-verification — multiple official source agreement, verified news quality; (4) AI review assessments — DeepSeek review findings, warnings about auto-generated sources. Must reference specific source names and scores. If auto-generated source candidates exist, must note they require manual confirmation. Data gap impact on conclusion reliability must be quantified as specific impact.',
 
       isZh
         ? '对于波动率与期权观察(volatilityAndOptionsAnalysis): 2-3段或4-5个要点。只做教育性说明。若没有实时期权链，必须明确说明无法进行完整期权判断；不得给具体交易指令。'
