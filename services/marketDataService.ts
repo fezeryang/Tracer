@@ -100,14 +100,19 @@ export const fetchStockQuote = async (ticker: string): Promise<StockQuote> => {
 
 export const fetchCompanyFundamentals = async (ticker: string): Promise<CompanyFundamentals | null> => {
   const upperTicker = ticker.toUpperCase();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
   try {
-    const response = await fetch(`/api/fundamentals/${upperTicker}`);
-    
+    const response = await fetch(`/api/fundamentals/${upperTicker}`, {
+      signal: controller.signal,
+    });
+
     if (!response.ok) throw await createBackendError(response, `Backend Error: ${response.status}`);
 
     const data = await response.json();
     throwIfProviderStatus(data);
-    
+
     if (data && data.length > 0) {
         const profile = data[0];
         return {
@@ -130,6 +135,8 @@ export const fetchCompanyFundamentals = async (ticker: string): Promise<CompanyF
 
     console.warn(`[MarketService] Failed to fetch fundamentals for ${upperTicker}`, error);
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 
@@ -485,6 +492,7 @@ type WhisperUnavailableReason =
   | 'missing_key'
   | 'no_social_data'
   | 'rate_limited'
+  | 'premium_required'
   | 'provider_auth_failed'
   | 'provider_unavailable'
   | 'provider_error'
@@ -527,7 +535,7 @@ const deriveSentimentLabel = (score: number): WhisperData['sentimentLabel'] => {
 
 const mapFinnhubSource = (
   entries: FinnhubSocialEntry[],
-  sourceLabel: 'Reddit' | 'Twitter',
+  sourceLabel: string,
 ): WhisperSource | null => {
   if (!entries || entries.length === 0) return null;
   const latest = entries[0];
@@ -547,12 +555,16 @@ const mapFinnhubSource = (
   if (mention > 20) trend = 'up';
   else if (mention < 5) trend = 'down';
 
-  const insight =
-    sourceLabel === 'Reddit'
-      ? `r/WallStreetBets: ${mention} mentions in the last 48h, ${positiveMention} positive / ${negativeMention} negative`
-      : `FinTwit: ${mention} tweets, ${positiveMention} bullish / ${negativeMention} bearish`;
+  let insight: string;
+  if (sourceLabel === 'Reddit') {
+    insight = `r/WallStreetBets: ${mention} mentions in the last 48h, ${positiveMention} positive / ${negativeMention} negative`;
+  } else if (sourceLabel === 'Stocktwits') {
+    insight = `Stocktwits: ${mention} messages, ${positiveMention} bullish / ${negativeMention} bearish`;
+  } else {
+    insight = `FinTwit: ${mention} tweets, ${positiveMention} bullish / ${negativeMention} bearish`;
+  }
 
-  return { source: sourceLabel, score, trend, sentiment, insight };
+  return { source: sourceLabel as WhisperSource['source'], score, trend, sentiment, insight };
 };
 
 export const fetchWhisperData = async (
@@ -579,8 +591,10 @@ export const fetchWhisperData = async (
       return null;
     }
 
+    const isStocktwits = data?.provider?.startsWith('StockTwits');
+    const twitterLabel = isStocktwits ? 'Stocktwits' : 'Twitter';
     const redditSource = mapFinnhubSource(data?.reddit || [], 'Reddit');
-    const twitterSource = mapFinnhubSource(data?.twitter || [], 'Twitter');
+    const twitterSource = mapFinnhubSource(data?.twitter || [], twitterLabel);
     const realSources: WhisperSource[] = [];
     if (redditSource) realSources.push(redditSource);
     if (twitterSource) realSources.push(twitterSource);
@@ -616,11 +630,11 @@ export const fetchWhisperData = async (
       fetchedAt: data.fetchedAt,
     };
   } catch (err) {
-    console.warn('[Whisper] Error fetching Finnhub social sentiment:', err);
+    console.warn('[Whisper] Error fetching social sentiment:', err);
     if (options.throwOnUnavailable) {
       throw err instanceof Error
         ? err
-        : createWhisperError('error', 'network_error', 'Network error fetching Finnhub social sentiment.');
+        : createWhisperError('error', 'network_error', 'Network error fetching social sentiment.');
     }
     return null;
   }

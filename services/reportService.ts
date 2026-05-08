@@ -40,13 +40,13 @@ const REPORT_DISCLAIMER = 'For educational and research use only. Not financial 
 
 const SOURCE_TIMEOUTS = {
   quote: 8000,
-  fundamentals: 8000,
+  fundamentals: 20000,
   news: 8000,
   verifiedNews: 8000,
   officialFilings: 10000,
   officialSources: 10000,
   priceHistory: 8000,
-  whisper: 5000,
+  whisper: 15000,
   insiderTrading: 12000,
   ai: 310000,
 };
@@ -165,6 +165,7 @@ const buildAvailabilityNotes = (
   evidencePack: ReportEvidencePack | null,
   failedSources: string[],
   insiderTrading?: InsiderTradingSummary | null,
+  zh = false,
 ): string[] => {
   const notes: string[] = [];
   const quoteQuality = assessQuoteQuality(quote);
@@ -183,6 +184,10 @@ const buildAvailabilityNotes = (
   }
   if (!whisper) {
     notes.push('Experimental Whisper alternative signal data was unavailable for this report.');
+  } else if (whisper.provider && whisper.provider.startsWith('StockTwits')) {
+    notes.push(zh
+      ? 'Whisper 社交情绪数据来自 Stocktwits (RapidAPI)，反映交易者社区的实时讨论情绪。'
+      : 'Whisper social sentiment data is sourced from Stocktwits (RapidAPI), reflecting real-time trader community sentiment.');
   } else {
     notes.push('Whisper social sentiment data is from Finnhub and reflects social media signals.');
   }
@@ -214,7 +219,7 @@ const buildFallbackReport = (
   insiderTrading?: InsiderTradingSummary | null,
 ): StockAnalysisReport => {
   const zh = isZh(language);
-  const availabilityNotes = buildAvailabilityNotes(quote, fundamentals, news, officialFilings, officialSources, whisper, evidencePack, failedSources, insiderTrading);
+  const availabilityNotes = buildAvailabilityNotes(quote, fundamentals, news, officialFilings, officialSources, whisper, evidencePack, failedSources, insiderTrading, zh);
   const quoteQuality = assessQuoteQuality(quote);
   const quoteIsReliable = isQuoteReliableForMarketConclusion(quote);
   const newsHeadlineSummary =

@@ -713,7 +713,6 @@ app.post('/api/ai/report', async (req, res) => {
 app.get('/api/stocktwits/:ticker', async (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
   const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-  const STOCKTWITS_HOST = process.env.STOCKTWITS_RAPIDAPI_HOST || 'stocktwits.p.rapidapi.com';
 
   if (!RAPIDAPI_KEY) {
     return res.status(400).json({
@@ -724,77 +723,8 @@ app.get('/api/stocktwits/:ticker', async (req, res) => {
   }
 
   try {
-    // Official endpoint: /streams/symbol/{ticker}.json
-    const url = `https://${STOCKTWITS_HOST}/streams/symbol/${ticker}.json?limit=30`;
-    const response = await axios.get(url, {
-      headers: {
-        'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': STOCKTWITS_HOST,
-        'Content-Type': 'application/json'
-      },
-      timeout: 8000
-    });
-
-    const data = response.data;
-    const messages = data?.messages || [];
-
-    if (messages.length === 0) {
-      return res.json({
-        status: 'no_data',
-        message: `No StockTwits messages found for ${ticker}`
-      });
-    }
-
-    // Calculate Bullish/Bearish statistics
-    let bullish = 0, bearish = 0, neutral = 0;
-    messages.forEach(msg => {
-      const sentiment = msg?.entities?.sentiment;
-      if (sentiment) {
-        if (sentiment.basic === 'Bullish') bullish++;
-        else if (sentiment.basic === 'Bearish') bearish++;
-      } else {
-        neutral++;
-      }
-    });
-
-    const total = bullish + bearish + neutral;
-    const opinionated = bullish + bearish;
-
-    // Improved scoring: base on opinionated sentiment (bullish % of those who expressed opinion)
-    // This gives a clearer signal from actual traders vs neutral posts
-    let sentimentScore;
-    if (opinionated > 0) {
-      const bullishRatioOfOpinions = (bullish / opinionated) * 100;
-      sentimentScore = Math.round(bullishRatioOfOpinions);
-    } else {
-      // If no one expressed opinion, default to neutral
-      sentimentScore = 50;
-    }
-
-    // Map to WhisperData sentimentLabel format
-    let sentimentLabel;
-    if (sentimentScore >= 70) sentimentLabel = 'Strong Buy';
-    else if (sentimentScore >= 55) sentimentLabel = 'Buy';
-    else if (sentimentScore >= 45) sentimentLabel = 'Hold';
-    else if (sentimentScore >= 30) sentimentLabel = 'Sell';
-    else sentimentLabel = 'Strong Sell';
-
-    res.json({
-      ticker,
-      overallScore: sentimentScore,
-      sentimentLabel,
-      sources: [{
-        source: 'Stocktwits',
-        score: sentimentScore,
-        trend: bullish > bearish ? 'up' : bearish > bullish ? 'down' : 'flat',
-        sentiment: bullish > bearish ? 'Bullish' : bearish > bullish ? 'Bearish' : 'Neutral',
-        insight: `Based on ${total} recent messages: ${bullish} bullish, ${bearish} bearish`,
-        stats: { bullish, bearish, neutral, total }
-      }],
-      summary: `StockTwits sentiment for ${ticker}: ${sentimentLabel} (${sentimentScore}/100) based on ${total} messages.`,
-      provider: 'StockTwits (RapidAPI)',
-      fetchedAt: new Date().toISOString()
-    });
+    const result = await fetchStocktwitsFromApi(ticker, RAPIDAPI_KEY);
+    res.json(result);
 
   } catch (error) {
     const status = error?.response?.status;
@@ -1029,6 +959,76 @@ app.get('/api/recommendations/:ticker', async (req, res) => {
   }
 });
 
+// Shared StockTwits API helper — used by /api/stocktwits/:ticker and /api/whisper/:ticker fallback
+const fetchStocktwitsFromApi = async (ticker, rapidApiKey) => {
+  const STOCKTWITS_HOST = process.env.STOCKTWITS_RAPIDAPI_HOST || 'stocktwits.p.rapidapi.com';
+  const url = `https://${STOCKTWITS_HOST}/streams/symbol/${ticker}.json?limit=30`;
+  const response = await axios.get(url, {
+    headers: {
+      'x-rapidapi-key': rapidApiKey,
+      'x-rapidapi-host': STOCKTWITS_HOST,
+      'Content-Type': 'application/json'
+    },
+    timeout: 8000
+  });
+
+  const data = response.data;
+  const messages = data?.messages || [];
+
+  if (messages.length === 0) {
+    return {
+      status: 'no_data',
+      message: `No StockTwits messages found for ${ticker}`
+    };
+  }
+
+  let bullish = 0, bearish = 0, neutral = 0;
+  messages.forEach(msg => {
+    const sentiment = msg?.entities?.sentiment;
+    if (sentiment) {
+      if (sentiment.basic === 'Bullish') bullish++;
+      else if (sentiment.basic === 'Bearish') bearish++;
+    } else {
+      neutral++;
+    }
+  });
+
+  const total = bullish + bearish + neutral;
+  const opinionated = bullish + bearish;
+
+  let sentimentScore;
+  if (opinionated > 0) {
+    const bullishRatioOfOpinions = (bullish / opinionated) * 100;
+    sentimentScore = Math.round(bullishRatioOfOpinions);
+  } else {
+    sentimentScore = 50;
+  }
+
+  let sentimentLabel;
+  if (sentimentScore >= 70) sentimentLabel = 'Strong Buy';
+  else if (sentimentScore >= 55) sentimentLabel = 'Buy';
+  else if (sentimentScore >= 45) sentimentLabel = 'Hold';
+  else if (sentimentScore >= 30) sentimentLabel = 'Sell';
+  else sentimentLabel = 'Strong Sell';
+
+  return {
+    ticker,
+    overallScore: sentimentScore,
+    sentimentLabel,
+    sources: [{
+      source: 'Stocktwits',
+      score: sentimentScore,
+      trend: bullish > bearish ? 'up' : bearish > bullish ? 'down' : 'flat',
+      sentiment: bullish > bearish ? 'Bullish' : bearish > bullish ? 'Bearish' : 'Neutral',
+      insight: `Based on ${total} recent messages: ${bullish} bullish, ${bearish} bearish`,
+      stats: { bullish, bearish, neutral, total }
+    }],
+    summary: `StockTwits sentiment for ${ticker}: ${sentimentLabel} (${sentimentScore}/100) based on ${total} messages.`,
+    provider: 'StockTwits (RapidAPI)',
+    fetchedAt: new Date().toISOString()
+  };
+};
+
 // Whisper / Social Sentiment (Finnhub)
 app.get('/api/whisper/:ticker', async (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
@@ -1075,20 +1075,26 @@ app.get('/api/whisper/:ticker', async (req, res) => {
     const statusCode = Number(error?.response?.status || error?.status || error?.code);
     const status = statusCode === 429
       ? 'rate_limited'
-      : statusCode === 401 || statusCode === 403
+      : statusCode === 401
         ? 'forbidden'
-        : statusCode === 502 || statusCode === 503 || statusCode === 504
-          ? 'unavailable'
-          : 'error';
+        : statusCode === 403
+          ? 'forbidden'
+          : statusCode === 502 || statusCode === 503 || statusCode === 504
+            ? 'unavailable'
+            : 'error';
     const reasonByStatus = {
       rate_limited: 'rate_limited',
-      forbidden: 'provider_auth_failed',
+      forbidden_401: 'provider_auth_failed',
+      forbidden_403: 'premium_required',
       unavailable: 'provider_unavailable',
       error: 'provider_error',
     };
+    const reasonKey = status === 'forbidden'
+      ? `forbidden_${statusCode}`
+      : status;
     return {
       status,
-      reason: reasonByStatus[status] || 'provider_error',
+      reason: reasonByStatus[reasonKey] || 'provider_error',
       message: error instanceof Error ? error.message : 'Failed to fetch social sentiment.',
     };
   };
@@ -1132,7 +1138,48 @@ app.get('/api/whisper/:ticker', async (req, res) => {
   };
 
   const finnhubResult = await fetchFinnhubWhisper();
-  return res.json(finnhubResult);
+
+  // Finnhub succeeded → return immediately
+  if (finnhubResult.status === 'success') {
+    return res.json(finnhubResult);
+  }
+
+  // --- Stocktwits fallback ---
+  const stocktwitsCacheKey = `stocktwits:whisper:${ticker}`;
+  const cachedStocktwits = readWhisperCache(stocktwitsCacheKey, 'StockTwits (RapidAPI)');
+  if (cachedStocktwits) return res.json(cachedStocktwits);
+
+  if (!process.env.RAPIDAPI_KEY) {
+    return res.json(buildWhisperResponse({
+      status: 'unavailable', reason: 'missing_key',
+      message: 'RAPIDAPI_KEY not configured.', provider: 'StockTwits (RapidAPI)',
+    }));
+  }
+
+  try {
+    const stocktwitsResult = await fetchStocktwitsFromApi(ticker, process.env.RAPIDAPI_KEY);
+    if (stocktwitsResult?.sources?.length > 0) {
+      const payload = buildWhisperResponse({
+        status: 'success',
+        reddit: [],
+        twitter: stocktwitsResult.sources.map(s => ({
+          mention: s.stats?.total ?? 0,
+          positiveMention: s.stats?.bullish ?? 0,
+          negativeMention: s.stats?.bearish ?? 0,
+        })),
+        provider: 'StockTwits (RapidAPI)',
+      });
+      return res.json(writeWhisperCache(stocktwitsCacheKey, payload));
+    }
+    return res.json(buildWhisperResponse({
+      status: 'unavailable', reason: 'no_social_data',
+      message: 'No social sentiment from any provider.', provider: 'StockTwits (RapidAPI)',
+    }));
+  } catch (error) {
+    return res.json(buildWhisperResponse({
+      ...classifyProviderError(error), provider: 'StockTwits (RapidAPI)',
+    }));
+  }
 });
 
 // 4. Historical Data (Polygon / Alpaca)
