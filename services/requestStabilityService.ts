@@ -3,6 +3,7 @@ import { DataSourceHealth, DataSourceStatus } from '../types';
 export interface ClassifiedSourceError {
   status: DataSourceStatus;
   message: string;
+  reason?: string;
 }
 
 export interface SafeSourceResult<T> {
@@ -51,25 +52,31 @@ const getStatusCode = (error: unknown) => {
   return undefined;
 };
 
+const getErrorReason = (error: unknown) => {
+  const reason = (error as { reason?: unknown })?.reason;
+  return typeof reason === 'string' && reason.trim() ? reason : undefined;
+};
+
 export const classifyError = (error: unknown): ClassifiedSourceError => {
   const message = getErrorText(error);
   const statusCode = getStatusCode(error);
+  const reason = getErrorReason(error);
   const normalized = message.toLowerCase();
 
   if ((error as { code?: string })?.code === TIMEOUT_CODE || normalized.includes('timeout') || normalized.includes('timed out')) {
-    return { status: 'timeout', message };
+    return { status: 'timeout', message, reason };
   }
   if (statusCode === 429 || normalized.includes('429') || normalized.includes('rate limit')) {
-    return { status: 'rate_limited', message: 'Market data provider is rate limited. Please retry later.' };
+    return { status: 'rate_limited', message: 'Market data provider is rate limited. Please retry later.', reason };
   }
   if (statusCode === 401 || statusCode === 403 || normalized.includes('403') || normalized.includes('forbidden')) {
-    return { status: 'forbidden', message };
+    return { status: 'forbidden', message, reason };
   }
   if (statusCode === 502 || statusCode === 503 || statusCode === 504 || normalized.includes('network')) {
-    return { status: 'unavailable', message };
+    return { status: 'unavailable', message, reason };
   }
 
-  return { status: 'error', message };
+  return { status: 'error', message, reason };
 };
 
 export const buildDataSourceHealth = ({
@@ -77,16 +84,19 @@ export const buildDataSourceHealth = ({
   label,
   status,
   message,
+  reason,
 }: {
   key: string;
   label: string;
   status: DataSourceStatus;
   message?: string;
+  reason?: string;
 }): DataSourceHealth => ({
   key,
   label,
   status,
   message,
+  reason,
   updatedAt: new Date().toISOString(),
 });
 
@@ -99,6 +109,7 @@ export const safeResolveSource = async <T>({
   getSuccessMessage,
   isUnavailableValue,
   getUnavailableMessage,
+  getUnavailableReason,
 }: {
   key: string;
   label: string;
@@ -108,6 +119,7 @@ export const safeResolveSource = async <T>({
   getSuccessMessage?: (value: T) => string | undefined;
   isUnavailableValue?: (value: T) => boolean;
   getUnavailableMessage?: (value: T) => string | undefined;
+  getUnavailableReason?: (value: T) => string | undefined;
 }): Promise<SafeSourceResult<T>> => {
   try {
     const value = await withTimeout(promise, timeoutMs, label);
@@ -119,6 +131,7 @@ export const safeResolveSource = async <T>({
           label,
           status: 'unavailable',
           message: getUnavailableMessage?.(value) || `${label} unavailable.`,
+          reason: getUnavailableReason?.(value),
         }),
       };
     }
@@ -142,6 +155,7 @@ export const safeResolveSource = async <T>({
         label,
         status: classified.status,
         message: classified.message,
+        reason: classified.reason,
       }),
     };
   }

@@ -1,5 +1,5 @@
 
-import { StockQuote, CompanyFundamentals, OptionsChain, OptionContract, NewsItem, BacktestResult, EquityPoint, TradeLog, Greeks, WhisperData, WhisperSource } from '../types';
+import { StockQuote, CompanyFundamentals, OptionsChain, OptionContract, NewsItem, BacktestResult, EquityPoint, TradeLog, Greeks, WhisperData, WhisperSource, InsiderTradingSummary, EarningsEvent, DividendEvent, AnalystRecommendation } from '../types';
 
 // NOTE: Keys are now securely stored in server/index.js
 // We fetch from our local backend proxy /api/...
@@ -481,6 +481,42 @@ interface FinnhubSocialEntry {
   score?: number;
 }
 
+type WhisperUnavailableReason =
+  | 'missing_key'
+  | 'no_social_data'
+  | 'rate_limited'
+  | 'provider_auth_failed'
+  | 'provider_unavailable'
+  | 'provider_error'
+  | 'network_error';
+
+interface WhisperApiResponse {
+  ticker?: string;
+  status?: 'success' | 'unavailable' | 'rate_limited' | 'forbidden' | 'timeout' | 'error';
+  reason?: WhisperUnavailableReason;
+  message?: string;
+  reddit?: FinnhubSocialEntry[];
+  twitter?: FinnhubSocialEntry[];
+  fetchedAt?: string;
+  source?: string;
+  provider?: string;
+}
+
+const createWhisperError = (
+  status: WhisperApiResponse['status'] = 'unavailable',
+  reason: WhisperUnavailableReason = 'provider_error',
+  message = 'Whisper social sentiment unavailable.',
+) => {
+  const error = new Error(message) as Error & { status?: number; reason?: WhisperUnavailableReason };
+  error.reason = reason;
+  if (status === 'rate_limited') error.status = 429;
+  else if (status === 'forbidden') error.status = 403;
+  else if (status === 'timeout') error.status = 504;
+  else if (status === 'unavailable') error.status = 503;
+  else error.status = 500;
+  return error;
+};
+
 const deriveSentimentLabel = (score: number): WhisperData['sentimentLabel'] => {
   if (score > 80) return 'Strong Buy';
   if (score > 60) return 'Buy';
@@ -519,23 +555,42 @@ const mapFinnhubSource = (
   return { source: sourceLabel, score, trend, sentiment, insight };
 };
 
-export const fetchWhisperData = async (ticker: string): Promise<WhisperData | null> => {
+export const fetchWhisperData = async (
+  ticker: string,
+  options: { throwOnUnavailable?: boolean } = {},
+): Promise<WhisperData | null> => {
   const t = ticker.toUpperCase();
 
   try {
     const resp = await fetch(`/api/whisper/${t}`);
-    const data = await resp.json();
+    const data = (await resp.json()) as WhisperApiResponse;
 
-    if (data?.source === 'unavailable') {
-      console.warn('[Whisper] Finnhub social sentiment unavailable for', t);
+    if (!resp.ok) {
+      const error = createWhisperError('error', 'provider_error', `Whisper request failed with status ${resp.status}.`);
+      if (options.throwOnUnavailable) throw error;
+      console.warn('[Whisper] Finnhub social sentiment unavailable for', t, error);
       return null;
     }
 
-    const redditSource = mapFinnhubSource(data?.reddit, 'Reddit');
-    const twitterSource = mapFinnhubSource(data?.twitter, 'Twitter');
+    if (data?.status && data.status !== 'success') {
+      const error = createWhisperError(data.status, data.reason || 'provider_error', data.message);
+      if (options.throwOnUnavailable) throw error;
+      console.warn('[Whisper] Finnhub social sentiment unavailable for', t, error);
+      return null;
+    }
+
+    const redditSource = mapFinnhubSource(data?.reddit || [], 'Reddit');
+    const twitterSource = mapFinnhubSource(data?.twitter || [], 'Twitter');
     const realSources: WhisperSource[] = [];
     if (redditSource) realSources.push(redditSource);
     if (twitterSource) realSources.push(twitterSource);
+
+    if (realSources.length === 0) {
+      const error = createWhisperError('unavailable', 'no_social_data', 'Finnhub returned no Reddit or Twitter social sentiment for this ticker.');
+      if (options.throwOnUnavailable) throw error;
+      console.warn('[Whisper] Finnhub social sentiment unavailable for', t, error);
+      return null;
+    }
 
     const allSources = realSources;
 
@@ -549,22 +604,70 @@ export const fetchWhisperData = async (ticker: string): Promise<WhisperData | nu
 
     const mentionTotal = realSources.reduce((sum, s) => sum + s.score, 0);
     const mood = overallScore > 60 ? 'bullish' : overallScore < 40 ? 'bearish' : 'neutral';
+    const provider = data.provider || data.source || 'Finnhub';
 
     return {
       ticker: t,
       overallScore,
       sentimentLabel,
       sources: allSources,
-      summary: `Finnhub social sentiment: ${realSources.length} real sources with ${mentionTotal} total signal strength. Overall mood is ${mood}. ${
-        realSources.length === 0 ? 'No real social data available for this ticker.' : ''
-      }`,
+      summary: `${provider} social sentiment: ${realSources.length} real sources with ${mentionTotal} total signal strength. Overall mood is ${mood}.`,
+      provider,
+      fetchedAt: data.fetchedAt,
     };
   } catch (err) {
-    console.warn('[Whisper] Network error fetching Finnhub social sentiment:', err);
+    console.warn('[Whisper] Error fetching Finnhub social sentiment:', err);
+    if (options.throwOnUnavailable) {
+      throw err instanceof Error
+        ? err
+        : createWhisperError('error', 'network_error', 'Network error fetching Finnhub social sentiment.');
+    }
     return null;
   }
 };
 
+/**
+ * Fetch StockTwits social sentiment data via RapidAPI
+ * Returns WhisperData format for consistency with existing whisper sources
+ */
+export const fetchStockTwitsData = async (
+  ticker: string,
+  options: { throwOnUnavailable?: boolean } = {},
+): Promise<WhisperData | null> => {
+  const t = ticker.toUpperCase();
+
+  try {
+    const resp = await fetch(`/api/stocktwits/${t}`);
+    const data = await resp.json();
+
+    // Handle no_data/missing_key gracefully
+    if (!resp.ok || data.status === 'no_data' || data.status === 'unavailable') {
+      if (options.throwOnUnavailable) {
+        throw new Error(`StockTwits unavailable: ${data.message || 'Unknown error'}`);
+      }
+      return null;
+    }
+
+    // Handle rate limiting
+    if (data.status === 'rate_limited') {
+      console.warn('[StockTwits] Rate limited');
+      return null;
+    }
+
+    // Validate response structure
+    if (!data.ticker || !data.sources) {
+      console.warn('[StockTwits] Invalid response:', data);
+      return null;
+    }
+
+    return data as WhisperData;
+
+  } catch (error) {
+    console.warn('[StockTwits] Error:', error);
+    if (options.throwOnUnavailable) throw error;
+    return null;
+  }
+};
 
 // --- Backtesting Engine ---
 
@@ -810,3 +913,111 @@ export const runStrategyBacktest = async (
         trades
     };
 };
+
+// --- Insider Trading ---
+export async function fetchInsiderTrading(ticker: string): Promise<InsiderTradingSummary> {
+  const upperTicker = ticker.toUpperCase();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+  try {
+    console.log(`[MarketService] Fetching insider trading for ${upperTicker}...`);
+    const response = await fetch(`/api/insiders/${upperTicker}`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw await createBackendError(response, `Insider API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      ticker: upperTicker,
+      generatedAt: data.generatedAt || new Date().toISOString(),
+      status: data.status || 'success',
+      trades: data.trades || [],
+      totalBuys: data.totalBuys || 0,
+      totalSells: data.totalSells || 0,
+      netShares: data.netShares || 0,
+      sentiment: data.sentiment || 'neutral',
+      notes: data.notes || []
+    };
+
+  } catch (error) {
+    clearTimeout(timeoutId);
+    console.warn(`[MarketService] Insider trading fetch failed for ${upperTicker}.`, error);
+    return {
+      ticker: upperTicker,
+      generatedAt: new Date().toISOString(),
+      status: 'unavailable',
+      trades: [],
+      totalBuys: 0,
+      totalSells: 0,
+      netShares: 0,
+      sentiment: 'neutral',
+      notes: ['Insider trading data unavailable.']
+    };
+  }
+}
+
+// --- Earnings Calendar ---
+export async function fetchEarningsCalendar(ticker: string): Promise<EarningsEvent[]> {
+  const upperTicker = ticker.toUpperCase();
+
+  try {
+    console.log(`[MarketService] Fetching earnings calendar for ${upperTicker}...`);
+    const response = await fetch(`/api/calendar/earnings/${upperTicker}`);
+
+    if (!response.ok) {
+      console.warn(`[MarketService] Earnings calendar fetch failed: ${response.status}`);
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.warn(`[MarketService] Earnings calendar fetch failed for ${upperTicker}.`, error);
+    return [];
+  }
+}
+
+// --- Dividends ---
+export async function fetchDividends(ticker: string): Promise<DividendEvent[]> {
+  const upperTicker = ticker.toUpperCase();
+
+  try {
+    console.log(`[MarketService] Fetching dividends for ${upperTicker}...`);
+    const response = await fetch(`/api/dividends/${upperTicker}`);
+
+    if (!response.ok) {
+      console.warn(`[MarketService] Dividends fetch failed: ${response.status}`);
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.warn(`[MarketService] Dividends fetch failed for ${upperTicker}.`, error);
+    return [];
+  }
+}
+
+// --- Analyst Recommendations ---
+export async function fetchAnalystRecommendations(ticker: string): Promise<AnalystRecommendation[]> {
+  const upperTicker = ticker.toUpperCase();
+
+  try {
+    console.log(`[MarketService] Fetching analyst recommendations for ${upperTicker}...`);
+    const response = await fetch(`/api/recommendations/${upperTicker}`);
+
+    if (!response.ok) {
+      console.warn(`[MarketService] Recommendations fetch failed: ${response.status}`);
+      return [];
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.warn(`[MarketService] Recommendations fetch failed for ${upperTicker}.`, error);
+    return [];
+  }
+}

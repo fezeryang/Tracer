@@ -1,21 +1,10 @@
 import React from 'react';
-import { BarChart3, Database, LineChart as LineChartIcon, ShieldCheck, TrendingUp } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Database, ShieldCheck } from 'lucide-react';
 import { Language, t } from '../i18n';
 import { theme } from '../designTokens';
 import { DataSourceHealth, DataSourceStatus, ReportEvidencePack, StockAnalysisReport } from '../types';
 import { buildSourceTrustSummary } from '../services/sourceTrustService';
+import { CandlestickChart, SentimentDonut, FundamentalsGauge } from './charts';
 
 const panelStyle = {
   backgroundColor: theme.colors.cardAltBg,
@@ -26,20 +15,6 @@ const statusColor = (status: DataSourceStatus | ReportEvidencePack['priceHistory
   if (status === 'success' || status === 'available') return theme.colors.up;
   if (status === 'simulation' || status === 'fallback' || status === 'timeout' || status === 'rate_limited') return theme.colors.warn;
   return theme.colors.down;
-};
-
-const formatMetric = (value: number | string | undefined, fallback: string) => {
-  if (typeof value === 'number' && Number.isFinite(value)) return value.toLocaleString();
-  if (typeof value === 'string' && value.trim()) return value;
-  return fallback;
-};
-
-const formatMarketCap = (value: number | undefined, fallback: string) => {
-  if (!value || !Number.isFinite(value)) return fallback;
-  if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
-  if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-  if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-  return `$${value.toLocaleString()}`;
 };
 
 const getEvidenceStatusLabel = (
@@ -107,91 +82,13 @@ const EvidenceHeader = ({ language }: { language: Language }) => (
 const PriceTrend = ({ evidencePack, language }: { evidencePack?: ReportEvidencePack; language: Language }) => {
   const history = evidencePack?.priceHistoryStatus === 'available' ? evidencePack.priceHistory || [] : [];
 
-  return (
-    <div className="rounded-[20px] border p-4" style={panelStyle}>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <LineChartIcon className="h-4 w-4" style={{ color: theme.colors.accentSoft }} />
-          <h4 className="text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
-            {t(language, 'evidence.priceTrend')}
-          </h4>
-        </div>
-        <span
-          className="rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
-          style={{
-            borderColor: statusColor(evidencePack?.priceHistoryStatus || 'unavailable'),
-            color: statusColor(evidencePack?.priceHistoryStatus || 'unavailable'),
-          }}
-        >
-          {getEvidenceStatusLabel(language, evidencePack?.priceHistoryStatus || 'unavailable')}
-        </span>
-      </div>
-      {history.length > 0 ? (
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={history}>
-              <CartesianGrid stroke={theme.colors.chart.muted} vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} minTickGap={24} />
-              <YAxis tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={54} />
-              <Tooltip
-                contentStyle={{ backgroundColor: theme.colors.cardBg, border: `1px solid ${theme.colors.borderSubtle}`, borderRadius: 12, color: theme.colors.textPrimary }}
-                labelStyle={{ color: theme.colors.textPrimary }}
-                formatter={(value) => [`$${Number(value).toFixed(2)}`, t(language, 'report.priceAnalysis')]}
-              />
-              <Line type="monotone" dataKey="close" stroke={theme.colors.chart.blue} strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div className="flex h-72 items-center justify-center rounded-[18px] border border-dashed px-5 text-center text-sm" style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textMuted }}>
-          {t(language, 'evidence.noPriceHistory')}
-        </div>
-      )}
-    </div>
-  );
+  return <CandlestickChart data={history} language={language} height={280} />;
 };
 
 const SentimentDistribution = ({ report, evidencePack, language }: { report: StockAnalysisReport; evidencePack?: ReportEvidencePack; language: Language }) => {
   const summary = evidencePack?.sentimentSummary || buildSentimentFallback(report);
-  const data = [
-    { label: t(language, 'evidence.positive'), value: summary.positive, color: theme.colors.chart.green },
-    { label: t(language, 'evidence.neutral'), value: summary.neutral, color: theme.colors.chart.gold },
-    { label: t(language, 'evidence.negative'), value: summary.negative, color: theme.colors.chart.red },
-  ];
 
-  return (
-    <div className="rounded-[20px] border p-4" style={panelStyle}>
-      <div className="mb-4 flex items-center gap-3">
-        <BarChart3 className="h-4 w-4" style={{ color: theme.colors.accentSoft }} />
-        <h4 className="text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
-          {t(language, 'evidence.sentimentDistribution')}
-        </h4>
-      </div>
-      {summary.total > 0 ? (
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <XAxis dataKey="label" tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis allowDecimals={false} tick={{ fill: theme.colors.textMuted, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip
-                cursor={{ fill: theme.colors.card.hover }}
-                contentStyle={{ backgroundColor: theme.colors.cardBg, border: `1px solid ${theme.colors.borderSubtle}`, borderRadius: 12, color: theme.colors.textPrimary }}
-              />
-              <Bar dataKey="value" radius={[8, 8, 0, 0]}>
-                {data.map((item) => (
-                  <Cell key={item.label} fill={item.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      ) : (
-        <div className="flex h-72 items-center justify-center rounded-[18px] border border-dashed px-5 text-center text-sm" style={{ borderColor: theme.colors.borderSubtle, color: theme.colors.textMuted }}>
-          {t(language, 'report.unavailableNews')}
-        </div>
-      )}
-    </div>
-  );
+  return <SentimentDonut data={summary} language={language} height={280} />;
 };
 
 const DataAvailability = ({ report, language }: { report: StockAnalysisReport; language: Language }) => (
@@ -226,40 +123,9 @@ const DataAvailability = ({ report, language }: { report: StockAnalysisReport; l
 );
 
 const FundamentalsSnapshot = ({ report, evidencePack, language }: { report: StockAnalysisReport; evidencePack?: ReportEvidencePack; language: Language }) => {
-  const fallback = t(language, 'evidence.unavailable');
   const snapshot = evidencePack?.fundamentalsSnapshot || report.fundamentals || undefined;
-  const items = [
-    { label: t(language, 'evidence.marketCap'), value: formatMarketCap(snapshot?.marketCap, fallback) },
-    { label: t(language, 'evidence.peRatio'), value: typeof snapshot?.peRatio === 'number' && Number.isFinite(snapshot.peRatio) ? snapshot.peRatio.toFixed(1) : fallback },
-    { label: t(language, 'evidence.beta'), value: typeof snapshot?.beta === 'number' && Number.isFinite(snapshot.beta) ? snapshot.beta.toFixed(2) : fallback },
-    { label: t(language, 'evidence.eps'), value: typeof snapshot?.eps === 'number' && Number.isFinite(snapshot.eps) ? `$${snapshot.eps.toFixed(2)}` : fallback },
-    { label: t(language, 'evidence.revenue'), value: formatMarketCap(snapshot?.revenue, fallback) },
-    { label: t(language, 'evidence.sector'), value: formatMetric(snapshot?.sector, fallback) },
-    { label: t(language, 'evidence.industry'), value: formatMetric(snapshot?.industry, fallback) },
-  ];
 
-  return (
-    <div className="rounded-[20px] border p-4" style={panelStyle}>
-      <div className="mb-3 flex items-center gap-3">
-        <TrendingUp className="h-4 w-4" style={{ color: theme.colors.accentSoft }} />
-        <h4 className="text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
-          {t(language, 'evidence.fundamentalsSnapshot')}
-        </h4>
-      </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {items.map((item) => (
-          <div key={item.label} className="rounded-[14px] border p-3" style={panelStyle}>
-            <div className="text-[11px] uppercase tracking-[0.16em]" style={{ color: theme.colors.textMuted }}>
-              {item.label}
-            </div>
-            <div className="mt-1 text-sm font-semibold" style={{ color: theme.colors.textPrimary }}>
-              {item.value}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <FundamentalsGauge data={snapshot || {}} language={language} />;
 };
 
 const SourceTrustSummary = ({ report, evidencePack, language }: { report: StockAnalysisReport; evidencePack?: ReportEvidencePack; language: Language }) => {

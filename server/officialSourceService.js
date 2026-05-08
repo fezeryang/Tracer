@@ -822,21 +822,28 @@ const generateIrCandidateUrls = (ticker, companyName, websiteUrl) => {
 const applyDeepSeekReviews = async (sources) => {
   if (!isDeepSeekConfigured() || sources.length === 0) return sources;
 
-  return Promise.all(
-    sources.map(async (source) => {
-      const review = await reviewOfficialSourceAuthority(source);
-      if (!review) return source;
+  // Process in batches of 2 to avoid overwhelming DeepSeek
+  const results = [];
+  for (let i = 0; i < sources.length; i += 2) {
+    const batch = sources.slice(i, i + 2);
+    const batchResults = await Promise.all(
+      batch.map(async (source) => {
+        const review = await reviewOfficialSourceAuthority(source);
+        if (!review) return source;
 
-      return {
-        ...source,
-        aiReviewed: true,
-        aiAssessment: review.assessment,
-        aiConfidence: review.confidence,
-        aiReasoning: review.reasoning,
-        warnings: [...(source.warnings || []), ...review.warnings],
-      };
-    })
-  );
+        return {
+          ...source,
+          aiReviewed: true,
+          aiAssessment: review.assessment,
+          aiConfidence: review.confidence,
+          aiReasoning: review.reasoning,
+          warnings: [...(source.warnings || []), ...review.warnings],
+        };
+      })
+    );
+    results.push(...batchResults);
+  }
+  return results;
 };
 
 export const getOfficialSourcesForTicker = async (tickerInput) => {

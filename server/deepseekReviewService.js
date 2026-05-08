@@ -85,7 +85,7 @@ export const reviewOfficialSourceAuthority = async (source) => {
         ],
         temperature: 0,
       }),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) return null;

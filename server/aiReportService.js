@@ -358,6 +358,7 @@ const buildPrompt = (context) => {
       dataSourceHealth: context.dataSourceHealth,
       evidencePack: context.evidencePack,
       whisper: context.whisper,
+      insiderTrading: context.insiderTrading,
       language: context.language,
     },
   });

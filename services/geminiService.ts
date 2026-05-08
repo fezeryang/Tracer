@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, FunctionDeclaration, Type, GenerateContentResponse } from "@google/genai";
-import { fetchStockQuote, fetchCompanyFundamentals, fetchStockNews, fetchWhisperData } from './marketDataService';
+import { fetchStockQuote, fetchCompanyFundamentals, fetchStockNews, fetchWhisperData, fetchStockTwitsData } from './marketDataService';
 import { StrategyRecommendation, OptionLeg, CompanyFundamentals, NewsItem, WhisperData, NewsImpactAnalysis, StockQuote } from '../types';
 import { vectorStore } from './ragService';
 
@@ -84,6 +84,21 @@ const getWhisperDataTool: FunctionDeclaration = {
     },
     required: ['ticker'],
   },
+};
+
+const getStockTwitsDataTool: FunctionDeclaration = {
+  name: 'getStockTwitsData',
+  description: 'Get real-time social sentiment data from StockTwits - investors post messages tagged as bullish or bearish about stocks. Returns sentiment score, bullish/bearish message counts, and recent insights.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      ticker: {
+        type: Type.STRING,
+        description: 'Stock ticker symbol (e.g., AAPL, TSLA)'
+      }
+    },
+    required: ['ticker']
+  }
 };
 
 const predictNewsImpactTool: FunctionDeclaration = {
@@ -205,7 +220,7 @@ export const createChatSession = (): ChatSession => {
       - High IV (>0.40): Sell premium (Iron Condors, Credit Spreads).
       - Low IV (<0.20): Buy premium (Long Calls, Debit Spreads).
       `,
-      tools: [{ functionDeclarations: [getQuoteTool, getFundamentalsTool, getNewsTool, getWhisperDataTool, predictNewsImpactTool, proposeStrategyTool] }],
+      tools: [{ functionDeclarations: [getQuoteTool, getFundamentalsTool, getNewsTool, getWhisperDataTool, getStockTwitsDataTool, predictNewsImpactTool, proposeStrategyTool] }],
       thinkingConfig: { thinkingBudget: 2048 }
     },
   });
@@ -276,6 +291,14 @@ export const createChatSession = (): ChatSession => {
             const whisper = await fetchWhisperData(ticker);
             fetchedWhisper = whisper ?? undefined;
             toolParts.push({ functionResponse: { name: call.name, id: call.id, response: { whisper } } });
+          }
+          else if (call.name === 'getStockTwitsData') {
+            const { ticker } = call.args as any;
+            const stocktwits = await fetchStockTwitsData(ticker);
+            if (stocktwits) {
+              fetchedWhisper = stocktwits;
+            }
+            toolParts.push({ functionResponse: { name: call.name, id: call.id, response: { stocktwits } } });
           }
           else if (call.name === 'predictNewsImpact') {
               console.log("[Gemini] Predicting News Impact");

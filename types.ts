@@ -145,6 +145,7 @@ export interface DataSourceHealth {
   label: string;
   status: DataSourceStatus;
   message?: string;
+  reason?: string;
   updatedAt: string;
 }
 
@@ -263,6 +264,9 @@ export interface SourceTrustSummary {
 export interface PriceHistoryPoint {
   date: string;
   close: number;
+  open?: number;
+  high?: number;
+  low?: number;
   volume?: number;
 }
 
@@ -433,7 +437,7 @@ export interface MarketEvent {
 
 // --- Whisper / Alternative Data Types ---
 export interface WhisperSource {
-    source: 'Reddit' | 'Twitter' | 'Glassdoor' | 'Google Trends' | 'App Store' | 'LinkedIn';
+    source: 'Reddit' | 'Twitter' | 'Stocktwits' | 'Glassdoor' | 'Google Trends' | 'App Store' | 'LinkedIn';
     score: number; // Normalized 0-100 or specific metric
     trend: 'up' | 'down' | 'flat';
     sentiment: 'Bullish' | 'Bearish' | 'Neutral';
@@ -447,6 +451,8 @@ export interface WhisperData {
     sentimentLabel: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell';
     sources: WhisperSource[];
     summary: string;
+    provider?: string;
+    fetchedAt?: string;
 }
 
 export interface AiReportSections {
@@ -490,6 +496,7 @@ export interface StockAnalysisReport {
   officialFilings?: SecFilingVerification;
   officialSources?: OfficialSourceVerification;
   whisper: WhisperData | null;
+  insiderTrading?: InsiderTradingSummary | null;
   summary: string;
   dataAvailabilityAnalysis?: string;
   priceAnalysis: string;
@@ -517,4 +524,56 @@ export interface StockAnalysisReport {
   newsAndEventsAnalysis?: string;
   volatilityAndOptionsAnalysis?: string;
   keyRisks?: string[];
+}
+
+// --- Insider Trading Types ---
+export interface InsiderTrade {
+  name: string;
+  transactionType: 'buy' | 'sell';
+  shares: number;
+  price: number;
+  date: string;
+  form: '3' | '4' | '5';
+  title: string;
+}
+
+export interface InsiderTradingSummary {
+  ticker: string;
+  generatedAt: string;
+  status: DataSourceStatus;
+  trades: InsiderTrade[];
+  totalBuys: number;
+  totalSells: number;
+  netShares: number;
+  sentiment: 'bullish' | 'bearish' | 'neutral';
+  notes: string[];
+}
+
+// --- Earnings Calendar Types ---
+export interface EarningsEvent {
+  date: string;
+  hour?: string;
+  epsEstimate?: number | null;
+  epsActual?: number | null;
+  surprise?: string | null;
+}
+
+// --- Dividend Types ---
+export interface DividendEvent {
+  date: string;
+  amount: number;
+  recordDate?: string;
+  paymentDate?: string;
+  frequency?: string;
+}
+
+// --- Analyst Recommendation Types ---
+export interface AnalystRecommendation {
+  date: string;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongBuy: number;
+  strongSell: number;
+  total: number;
 }

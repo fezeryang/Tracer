@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Sparkles,
+  Users,
   Waves,
 } from 'lucide-react';
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -26,6 +27,7 @@ import {
   CompanyFundamentals,
   DataSourceHealth,
   DataSourceStatus,
+  InsiderTradingSummary,
   NewsItem,
   ReportGenerationStage,
   ShellViewMode,
@@ -123,6 +125,11 @@ const getDataSourceStatusColor = (status: DataSourceStatus) => {
 };
 
 const getDataSourceStatusMessage = (language: Language, item: DataSourceHealth) => {
+  if (item.key === 'whisper' && item.reason) {
+    const localized = t(language, `report.dataSourceMessages.whisper.${item.reason}`);
+    if (localized !== `report.dataSourceMessages.whisper.${item.reason}`) return localized;
+  }
+
   if (item.status === 'rate_limited') {
     return language === 'zh'
       ? '数据源请求过于频繁，已触发限流。请稍后重试。'
@@ -421,6 +428,118 @@ const FundamentalsSnapshot = ({
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+// Helpers
+const formatShares = (num: number): string => {
+  if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + 'M';
+  if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
+  return String(num);
+};
+
+const formatDollars = (num: number): string => {
+  if (num === 0) return '$0';
+  return '$' + num.toFixed(2);
+};
+
+const InsiderTradingSnapshot = ({ insiderTrading, language }: { insiderTrading: InsiderTradingSummary | null | undefined; language: Language }) => {
+  if (!insiderTrading || insiderTrading.status === 'unavailable') {
+    return (
+      <div className="rounded-[18px] border border-dashed p-5 text-sm" style={{ ...panelStyle, color: theme.colors.textMuted }}>
+        {t(language, 'report.insiderUnavailable')}
+      </div>
+    );
+  }
+
+  const { trades, totalBuys, totalSells, netShares, sentiment } = insiderTrading;
+  const netColor = netShares > 0 ? theme.colors.chart.green : netShares < 0 ? theme.colors.chart.red : theme.colors.textMuted;
+  const sentimentColor = sentiment === 'bullish' ? theme.colors.chart.green : sentiment === 'bearish' ? theme.colors.chart.red : theme.colors.textMuted;
+  const sentimentLabel = sentiment === 'bullish' ? 'Bullish 🟢' : sentiment === 'bearish' ? 'Bearish 🔴' : 'Neutral ⚪';
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Grid */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-[18px] border p-4 text-center" style={panelStyle}>
+          <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, 'report.insiderNetFlow')}
+          </div>
+          <div className="mt-1 text-lg font-bold" style={{ color: netColor }}>
+            {netShares > 0 ? '+' : ''}{formatShares(netShares)}
+          </div>
+        </div>
+        <div className="rounded-[18px] border p-4 text-center" style={panelStyle}>
+          <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, 'report.insiderTotalBuys')}
+          </div>
+          <div className="mt-1 text-lg font-bold" style={{ color: theme.colors.chart.green }}>
+            {formatShares(totalBuys)}
+          </div>
+        </div>
+        <div className="rounded-[18px] border p-4 text-center" style={panelStyle}>
+          <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, 'report.insiderTotalSells')}
+          </div>
+          <div className="mt-1 text-lg font-bold" style={{ color: theme.colors.chart.red }}>
+            {formatShares(totalSells)}
+          </div>
+        </div>
+        <div className="rounded-[18px] border p-4 text-center" style={panelStyle}>
+          <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, 'report.insiderSentiment')}
+          </div>
+          <div className="mt-1 text-lg font-bold" style={{ color: sentimentColor }}>
+            {sentimentLabel}
+          </div>
+        </div>
+      </div>
+
+      {/* Trades Table */}
+      {trades.length > 0 && (
+        <div className="rounded-[18px] border p-4" style={panelStyle}>
+          <div className="mb-3 text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
+            {t(language, 'report.insiderRecentTrades')}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b" style={{ borderColor: theme.colors.borderSubtle }}>
+                  <th className="px-2 py-2 text-left font-medium" style={{ color: theme.colors.textMuted }}>{t(language, 'report.insiderName')}</th>
+                  <th className="px-2 py-2 text-left font-medium" style={{ color: theme.colors.textMuted }}>{t(language, 'report.insiderTitle')}</th>
+                  <th className="px-2 py-2 text-left font-medium" style={{ color: theme.colors.textMuted }}>{t(language, 'report.insiderTransactionType')}</th>
+                  <th className="px-2 py-2 text-right font-medium" style={{ color: theme.colors.textMuted }}>{t(language, 'report.insiderShares')}</th>
+                  <th className="px-2 py-2 text-right font-medium" style={{ color: theme.colors.textMuted }}>{t(language, 'report.insiderPrice')}</th>
+                  <th className="px-2 py-2 text-right font-medium" style={{ color: theme.colors.textMuted }}>{t(language, 'report.insiderDate')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trades.slice(0, 5).map((trade, idx) => (
+                  <tr key={idx} className="border-b last:border-b-0" style={{ borderColor: theme.colors.borderSubtle }}>
+                    <td className="px-2 py-2 font-medium" style={{ color: theme.colors.textPrimary }}>{trade.name}</td>
+                    <td className="px-2 py-2" style={{ color: theme.colors.textSecondary }}>{trade.title}</td>
+                    <td className="px-2 py-2">
+                      <span
+                        className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                        style={{
+                          backgroundColor: trade.transactionType === 'buy' ? theme.colors.chart.green + '20' : theme.colors.chart.red + '20',
+                          color: trade.transactionType === 'buy' ? theme.colors.chart.green : theme.colors.chart.red,
+                        }}
+                      >
+                        {trade.transactionType === 'buy' ? 'BUY' : 'SELL'}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2 text-right" style={{ color: theme.colors.textPrimary }}>{formatShares(trade.shares)}</td>
+                    <td className="px-2 py-2 text-right" style={{ color: theme.colors.textSecondary }}>{formatDollars(trade.price)}</td>
+                    <td className="px-2 py-2 text-right whitespace-nowrap" style={{ color: theme.colors.textSecondary }}>{trade.date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -746,13 +865,29 @@ const ReportSections = ({ report, language }: { report: StockAnalysisReport; lan
   );
 };
 
-const WhisperSummary = ({ whisper, language }: { whisper: WhisperData | null; language: Language }) => (
+const WhisperSummary = ({
+  whisper,
+  whisperHealth,
+  language,
+}: {
+  whisper: WhisperData | null;
+  whisperHealth?: DataSourceHealth;
+  language: Language;
+}) => (
   <div className="rounded-[18px] border p-5" style={panelStyle}>
     <div className="text-[11px] uppercase tracking-[0.18em]" style={{ color: theme.colors.textMuted }}>
       {t(language, 'report.whisperContext')}
     </div>
     <p className="mt-3 text-sm leading-7" style={{ color: theme.colors.textSecondary }}>
-      {whisper ? `${whisper.summary} ${t(language, 'report.whisperNotice')}` : t(language, 'report.whisperNotice')}
+      {whisper
+        ? `${whisper.summary} ${t(language, 'report.whisperNotice')}`
+        : `${getDataSourceStatusMessage(language, whisperHealth || {
+          key: 'whisper',
+          label: 'Whisper',
+          status: 'unavailable',
+          reason: 'no_social_data',
+          updatedAt: '',
+        })} ${t(language, 'report.whisperNotice')}`}
     </p>
   </div>
 );
@@ -986,8 +1121,16 @@ const ReportView: React.FC<ReportViewProps> = ({
           <SectionCard icon={Newspaper} title={t(language, 'report.latestNews')}>
             <div className="space-y-4">
               <NewsList news={report.news} language={language} />
-              <WhisperSummary whisper={report.whisper} language={language} />
+              <WhisperSummary
+                whisper={report.whisper}
+                whisperHealth={report.dataSourceHealth?.find((item) => item.key === 'whisper')}
+                language={language}
+              />
             </div>
+          </SectionCard>
+
+          <SectionCard icon={Users} title={t(language, 'report.insiderTrading')}>
+            <InsiderTradingSnapshot insiderTrading={report.insiderTrading} language={language} />
           </SectionCard>
 
           <SectionCard icon={ShieldCheck} title={t(language, 'sourceTrust.title')}>

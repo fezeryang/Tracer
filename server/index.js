@@ -33,7 +33,7 @@ async function startServer() {
 
     // Secrets from Environment
     const POLYGON_KEY = getPolygonCompatibleKey();
-    const FINNHUB_KEY = process.env.FINNHUB_KEY || 'd4t2hehr01qhr5tnsgp0d4t2hehr01qhr5tnsgpg';
+    const FINNHUB_KEY = process.env.FINNHUB_KEY;
     const ALPACA_KEY = process.env.ALPACA_API_KEY;
     const ALPACA_SECRET = process.env.ALPACA_SECRET_KEY;
     const EIA_KEY = process.env.EIA_API_KEY;
@@ -45,7 +45,9 @@ async function startServer() {
         history: 20 * 60 * 1000,
         fundamentals: 12 * 60 * 60 * 1000,
         news: 7 * 60 * 1000,
+        whisper: 10 * 60 * 1000,
     };
+    const whisperCache = new Map();
 
     const buildPolygonCompatibleUrl = (pathName, params = {}) => {
         const url = new URL(pathName, POLYGON_COMPATIBLE_BASE_URL);
@@ -674,7 +676,12 @@ app.get('/api/sec/filings/:ticker', async (req, res) => {
 
 app.get('/api/official-sources/:ticker', async (req, res) => {
   try {
-    const result = await getOfficialSourcesForTicker(req.params.ticker);
+    const result = await Promise.race([
+      getOfficialSourcesForTicker(req.params.ticker),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Official sources timed out')), 10000)
+      ),
+    ]);
     res.json(result);
   } catch (e) {
     res.status(500).json({
@@ -682,7 +689,7 @@ app.get('/api/official-sources/:ticker', async (req, res) => {
       generatedAt: new Date().toISOString(),
       status: 'error',
       sources: [],
-      notes: ['Official source discovery is currently unavailable.'],
+      notes: ['Official source discovery timed out.'],
       mode: process.env.DEEPSEEK_API_KEY ? 'rule_plus_ai' : 'rule_only',
       error: e.message,
     });
@@ -702,31 +709,430 @@ app.post('/api/ai/report', async (req, res) => {
   }
 });
 
+// StockTwits Social Sentiment via RapidAPI
+app.get('/api/stocktwits/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+  const STOCKTWITS_HOST = process.env.STOCKTWITS_RAPIDAPI_HOST || 'stocktwits.p.rapidapi.com';
+
+  if (!RAPIDAPI_KEY) {
+    return res.status(400).json({
+      status: 'unavailable',
+      reason: 'missing_key',
+      message: 'RAPIDAPI_KEY is not configured.'
+    });
+  }
+
+  try {
+    // Official endpoint: /streams/symbol/{ticker}.json
+    const url = `https://${STOCKTWITS_HOST}/streams/symbol/${ticker}.json?limit=30`;
+    const response = await axios.get(url, {
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': STOCKTWITS_HOST,
+        'Content-Type': 'application/json'
+      },
+      timeout: 8000
+    });
+
+    const data = response.data;
+    const messages = data?.messages || [];
+
+    if (messages.length === 0) {
+      return res.json({
+        status: 'no_data',
+        message: `No StockTwits messages found for ${ticker}`
+      });
+    }
+
+    // Calculate Bullish/Bearish statistics
+    let bullish = 0, bearish = 0, neutral = 0;
+    messages.forEach(msg => {
+      const sentiment = msg?.entities?.sentiment;
+      if (sentiment) {
+        if (sentiment.basic === 'Bullish') bullish++;
+        else if (sentiment.basic === 'Bearish') bearish++;
+      } else {
+        neutral++;
+      }
+    });
+
+    const total = bullish + bearish + neutral;
+    const opinionated = bullish + bearish;
+
+    // Improved scoring: base on opinionated sentiment (bullish % of those who expressed opinion)
+    // This gives a clearer signal from actual traders vs neutral posts
+    let sentimentScore;
+    if (opinionated > 0) {
+      const bullishRatioOfOpinions = (bullish / opinionated) * 100;
+      sentimentScore = Math.round(bullishRatioOfOpinions);
+    } else {
+      // If no one expressed opinion, default to neutral
+      sentimentScore = 50;
+    }
+
+    // Map to WhisperData sentimentLabel format
+    let sentimentLabel;
+    if (sentimentScore >= 70) sentimentLabel = 'Strong Buy';
+    else if (sentimentScore >= 55) sentimentLabel = 'Buy';
+    else if (sentimentScore >= 45) sentimentLabel = 'Hold';
+    else if (sentimentScore >= 30) sentimentLabel = 'Sell';
+    else sentimentLabel = 'Strong Sell';
+
+    res.json({
+      ticker,
+      overallScore: sentimentScore,
+      sentimentLabel,
+      sources: [{
+        source: 'Stocktwits',
+        score: sentimentScore,
+        trend: bullish > bearish ? 'up' : bearish > bullish ? 'down' : 'flat',
+        sentiment: bullish > bearish ? 'Bullish' : bearish > bullish ? 'Bearish' : 'Neutral',
+        insight: `Based on ${total} recent messages: ${bullish} bullish, ${bearish} bearish`,
+        stats: { bullish, bearish, neutral, total }
+      }],
+      summary: `StockTwits sentiment for ${ticker}: ${sentimentLabel} (${sentimentScore}/100) based on ${total} messages.`,
+      provider: 'StockTwits (RapidAPI)',
+      fetchedAt: new Date().toISOString()
+    });
+
+  } catch (error) {
+    const status = error?.response?.status;
+    if (status === 429) {
+      return res.status(429).json({
+        status: 'rate_limited',
+        message: 'StockTwits API rate limit exceeded. Please try again later.'
+      });
+    }
+    if (status === 404 || (error?.response?.data?.message && error.response.data.message.includes('symbol'))) {
+      return res.json({
+        status: 'no_data',
+        message: `No StockTwits data available for ${ticker}`
+      });
+    }
+    console.error('[StockTwits] Error:', error.message);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch StockTwits data.'
+    });
+  }
+});
+
+// --- Insider Trading via RapidAPI ---
+app.get('/api/insiders/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+  const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+
+  if (!RAPIDAPI_KEY) {
+    return res.status(503).json({
+      status: 'unavailable',
+      ticker,
+      generatedAt: new Date().toISOString(),
+      error: 'RAPIDAPI_KEY not configured',
+      trades: [],
+      totalBuys: 0,
+      totalSells: 0,
+      netShares: 0,
+      sentiment: 'neutral',
+      notes: ['Insider trading data unavailable. RapidAPI key not configured.']
+    });
+  }
+
+  try {
+    console.log(`[API] Fetching Insider Trading for ${ticker} via RapidAPI...`);
+    const url = `https://insiders.p.rapidapi.com/gedetailedtinsiders/${ticker}`;
+    const response = await axios.get(url, {
+      headers: {
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': 'insiders.p.rapidapi.com',
+        'Content-Type': 'application/json'
+      },
+      timeout: 8000
+    });
+
+    const rawData = response.data;
+
+    // The API returns nested data: insideTransactions[] -> reportingOwner[] -> transactions[] -> transactions[]
+    // Handle both {insideTransactions: [...]} and flat array formats
+    const transactionGroups = Array.isArray(rawData)
+      ? rawData
+      : (rawData?.insideTransactions || []);
+
+    const trades = [];
+    for (const group of transactionGroups) {
+      const owner = Array.isArray(group?.reportingOwner) && group.reportingOwner.length > 0
+        ? group.reportingOwner[0]
+        : null;
+      const name = owner?.name || 'Unknown';
+      const title = owner?.title || 'Officer';
+
+      const txnGroups = Array.isArray(group?.transactions) ? group.transactions : [];
+      for (const txnGroup of txnGroups) {
+        const subTxns = Array.isArray(txnGroup?.transactions) ? txnGroup.transactions : [];
+        for (const sub of subTxns) {
+          const shares = parseInt(sub.transactionShares, 10) || 0;
+          const code = sub.transactionAcquiredDisposedCode || '';
+          const price = parseFloat(sub.transactionPricePerShare) || 0;
+          const date = sub.transactionDate || '';
+          const form = String(sub.transactionFormType || '4');
+          const transactionCode = sub.transactionCode || '';
+
+          // Determine buy/sell from acquisition code or transaction code
+          const isBuy = code === 'A' || ['P', 'A', 'J', 'M'].includes(transactionCode);
+          const isSell = code === 'D' || ['S', 'D', 'W', 'F'].includes(transactionCode);
+
+          if (shares > 0 && (isBuy || isSell)) {
+            trades.push({
+              name,
+              transactionType: isBuy ? 'buy' : 'sell',
+              shares,
+              price,
+              date,
+              form,
+              title,
+            });
+          }
+        }
+      }
+    }
+
+    const totalBuys = trades.filter(t => t.transactionType === 'buy').reduce((sum, t) => sum + t.shares, 0);
+    const totalSells = trades.filter(t => t.transactionType === 'sell').reduce((sum, t) => sum + t.shares, 0);
+    const netShares = totalBuys - totalSells;
+    const sentiment = netShares > 10000 ? 'bullish' : netShares < -10000 ? 'bearish' : 'neutral';
+
+    return res.json({
+      ticker,
+      generatedAt: new Date().toISOString(),
+      status: 'success',
+      trades: trades.slice(0, 20),
+      totalBuys,
+      totalSells,
+      netShares,
+      sentiment,
+      notes: [`Fetched ${trades.length} insider transactions.`]
+    });
+
+  } catch (e) {
+    console.warn(`[API] RapidAPI Insiders failed for ${ticker}: ${e.message}`);
+    return res.status(503).json({
+      status: 'unavailable',
+      ticker,
+      generatedAt: new Date().toISOString(),
+      error: e.message,
+      trades: [],
+      totalBuys: 0,
+      totalSells: 0,
+      netShares: 0,
+      sentiment: 'neutral',
+      notes: ['Insider trading data temporarily unavailable.']
+    });
+  }
+});
+
+// --- Earnings Calendar (Finnhub) ---
+app.get('/api/calendar/earnings/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+
+  if (!FINNHUB_KEY) {
+    return res.status(503).json({ error: 'FINNHUB_KEY not configured' });
+  }
+
+  try {
+    console.log(`[API] Fetching Earnings Calendar for ${ticker}...`);
+    const today = new Date();
+    const from = new Date(today);
+    from.setDate(from.getDate() - 7);
+    const to = new Date(today);
+    to.setDate(to.getDate() + 90);
+
+    const fromStr = from.toISOString().split('T')[0];
+    const toStr = to.toISOString().split('T')[0];
+
+    const url = `https://finnhub.io/api/v1/calendar/earnings?from=${fromStr}&to=${toStr}&symbol=${ticker}&token=${FINNHUB_KEY}`;
+    const response = await axios.get(url, { timeout: 5000 });
+
+    const earnings = response.data?.earningsCalendar || [];
+    const filtered = earnings.filter(e => e.symbol === ticker);
+
+    return res.json(filtered.map(e => ({
+      date: e.date,
+      hour: e.hour,
+      epsEstimate: e.epsEstimate ?? null,
+      epsActual: e.epsActual ?? null,
+      surprise: e.epsEstimate && e.epsActual ? (e.epsActual - e.epsEstimate).toFixed(2) : null
+    })));
+
+  } catch (e) {
+    console.warn(`[API] Finnhub Earnings Calendar failed for ${ticker}: ${e.message}`);
+    return res.json([]);
+  }
+});
+
+// --- Dividends (Finnhub) ---
+app.get('/api/dividends/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+
+  if (!FINNHUB_KEY) {
+    return res.status(503).json({ error: 'FINNHUB_KEY not configured' });
+  }
+
+  try {
+    console.log(`[API] Fetching Dividends for ${ticker}...`);
+    const url = `https://finnhub.io/api/v1/stock/dividend?symbol=${ticker}&token=${FINNHUB_KEY}`;
+    const response = await axios.get(url, { timeout: 5000 });
+
+    const dividends = response.data || [];
+
+    return res.json(dividends.slice(0, 8).map(d => ({
+      date: d.date,
+      amount: d.amount,
+      recordDate: d.recordDate,
+      paymentDate: d.paymentDate,
+      frequency: d.frequency
+    })));
+
+  } catch (e) {
+    console.warn(`[API] Finnhub Dividends failed for ${ticker}: ${e.message}`);
+    return res.json([]);
+  }
+});
+
+// --- Analyst Recommendations (Finnhub) ---
+app.get('/api/recommendations/:ticker', async (req, res) => {
+  const ticker = req.params.ticker.toUpperCase();
+
+  if (!FINNHUB_KEY) {
+    return res.status(503).json({ error: 'FINNHUB_KEY not configured' });
+  }
+
+  try {
+    console.log(`[API] Fetching Analyst Recommendations for ${ticker}...`);
+    const url = `https://finnhub.io/api/v1/stock/recommendation?symbol=${ticker}&token=${FINNHUB_KEY}`;
+    const response = await axios.get(url, { timeout: 5000 });
+
+    const data = response.data || [];
+
+    return res.json(data.map(d => ({
+      date: d.period,
+      buy: d.buy,
+      hold: d.hold,
+      sell: d.sell,
+      strongBuy: d.strongBuy,
+      strongSell: d.strongSell,
+      total: d.buy + d.hold + d.sell + d.strongBuy + d.strongSell
+    })));
+
+  } catch (e) {
+    console.warn(`[API] Finnhub Recommendations failed for ${ticker}: ${e.message}`);
+    return res.json([]);
+  }
+});
+
 // Whisper / Social Sentiment (Finnhub)
 app.get('/api/whisper/:ticker', async (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
-  try {
-    const url = `https://finnhub.io/api/v1/stock/social-sentiment?symbol=${ticker}&token=${FINNHUB_KEY}`;
-    const response = await axios.get(url, { timeout: 5000 });
-    const data = response.data;
-    const hasData = (data?.reddit?.length || 0) > 0 || (data?.twitter?.length || 0) > 0;
-    res.json({
-      ticker,
-      reddit: data?.reddit || [],
-      twitter: data?.twitter || [],
-      fetchedAt: new Date().toISOString(),
-      source: hasData ? 'Finnhub' : 'unavailable',
-    });
-  } catch (e) {
-    res.json({
-      ticker,
-      reddit: [],
-      twitter: [],
-      fetchedAt: new Date().toISOString(),
-      source: 'unavailable',
-      error: e instanceof Error ? e.message : 'Failed to fetch social sentiment.',
-    });
-  }
+  const buildWhisperResponse = ({
+    status,
+    reason,
+    message,
+    reddit = [],
+    twitter = [],
+    cached = false,
+    provider = 'Finnhub',
+  }) => ({
+    ticker,
+    status,
+    reason,
+    message,
+    reddit,
+    twitter,
+    cached,
+    fetchedAt: new Date().toISOString(),
+    source: status === 'success' ? withCacheSourceLabel(provider, cached) : 'unavailable',
+    provider,
+  });
+
+  const readWhisperCache = (cacheKey, provider) => {
+    const cached = whisperCache.get(cacheKey);
+    if (cached?.expiresAt > Date.now()) {
+      return {
+        ...cached.data,
+        cached: true,
+        source: cached.data.status === 'success' ? withCacheSourceLabel(provider, true) : 'unavailable',
+      };
+    }
+    if (cached) whisperCache.delete(cacheKey);
+    return null;
+  };
+
+  const writeWhisperCache = (cacheKey, payload) => {
+    whisperCache.set(cacheKey, { data: payload, expiresAt: Date.now() + MARKET_DATA_TTL.whisper });
+    return payload;
+  };
+
+  const classifyProviderError = (error) => {
+    const statusCode = Number(error?.response?.status || error?.status || error?.code);
+    const status = statusCode === 429
+      ? 'rate_limited'
+      : statusCode === 401 || statusCode === 403
+        ? 'forbidden'
+        : statusCode === 502 || statusCode === 503 || statusCode === 504
+          ? 'unavailable'
+          : 'error';
+    const reasonByStatus = {
+      rate_limited: 'rate_limited',
+      forbidden: 'provider_auth_failed',
+      unavailable: 'provider_unavailable',
+      error: 'provider_error',
+    };
+    return {
+      status,
+      reason: reasonByStatus[status] || 'provider_error',
+      message: error instanceof Error ? error.message : 'Failed to fetch social sentiment.',
+    };
+  };
+
+  const fetchFinnhubWhisper = async () => {
+    if (!FINNHUB_KEY) {
+      return buildWhisperResponse({
+        status: 'unavailable',
+        reason: 'missing_key',
+        message: 'FINNHUB_KEY is not configured.',
+      });
+    }
+
+    const cacheKey = `finnhub:whisper:${ticker}`;
+    const cached = readWhisperCache(cacheKey, 'Finnhub');
+    if (cached) return cached;
+
+    try {
+      const url = `https://finnhub.io/api/v1/stock/social-sentiment?symbol=${encodeURIComponent(ticker)}&token=${FINNHUB_KEY}`;
+      const response = await axios.get(url, { timeout: 5000 });
+      const data = response.data;
+      const hasData = (data?.reddit?.length || 0) > 0 || (data?.twitter?.length || 0) > 0;
+      const payload = hasData
+        ? buildWhisperResponse({
+            status: 'success',
+            reddit: data?.reddit || [],
+            twitter: data?.twitter || [],
+          })
+        : buildWhisperResponse({
+            status: 'unavailable',
+            reason: 'no_social_data',
+            message: 'Finnhub returned no Reddit or Twitter social sentiment for this ticker.',
+          });
+      return writeWhisperCache(cacheKey, payload);
+    } catch (error) {
+      return buildWhisperResponse({
+        ...classifyProviderError(error),
+        provider: 'Finnhub',
+      });
+    }
+  };
+
+  const finnhubResult = await fetchFinnhubWhisper();
+  return res.json(finnhubResult);
 });
 
 // 4. Historical Data (Polygon / Alpaca)

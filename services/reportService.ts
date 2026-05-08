@@ -1,4 +1,4 @@
-import { fetchCompanyFundamentals, fetchStockNews, fetchStockQuote, fetchWhisperData } from './marketDataService';
+import { fetchCompanyFundamentals, fetchStockNews, fetchStockQuote, fetchWhisperData, fetchInsiderTrading } from './marketDataService';
 import { verifyStockNewsItems } from './newsVerificationService';
 import { fetchSecFilingsForTicker } from './secFilingService';
 import { fetchOfficialSources } from './officialSourceService';
@@ -12,6 +12,7 @@ import {
   AiReportSectionsExpanded,
   DataSourceHealth,
   DataSourceStatus,
+  InsiderTradingSummary,
   NewsItem,
   OfficialSourceVerification,
   PriceHistoryPoint,
@@ -46,6 +47,7 @@ const SOURCE_TIMEOUTS = {
   officialSources: 10000,
   priceHistory: 8000,
   whisper: 5000,
+  insiderTrading: 12000,
   ai: 310000,
 };
 
@@ -107,14 +109,24 @@ const fetchReportPriceHistory = async (ticker: string): Promise<PriceHistoryPoin
   const historical: unknown[] = Array.isArray(data?.historical) ? data.historical : [];
   return historical
     .reduce<PriceHistoryPoint[]>((items: PriceHistoryPoint[], item: unknown) => {
-      const point = item as { date?: unknown; close?: unknown; volume?: unknown };
+      const point = item as {
+        date?: unknown;
+        close?: unknown;
+        open?: unknown;
+        high?: unknown;
+        low?: unknown;
+        volume?: unknown;
+      };
       if (typeof point.date !== 'string' || !isFiniteNumber(point.close)) return items;
       return [
         ...items,
         {
-        date: point.date,
-        close: point.close,
-        ...(isFiniteNumber(point.volume) ? { volume: point.volume } : {}),
+          date: point.date,
+          close: point.close,
+          ...(isFiniteNumber(point.open) ? { open: point.open } : {}),
+          ...(isFiniteNumber(point.high) ? { high: point.high } : {}),
+          ...(isFiniteNumber(point.low) ? { low: point.low } : {}),
+          ...(isFiniteNumber(point.volume) ? { volume: point.volume } : {}),
         },
       ];
     }, [])
@@ -151,7 +163,8 @@ const buildAvailabilityNotes = (
   officialSources: OfficialSourceVerification,
   whisper: WhisperData | null,
   evidencePack: ReportEvidencePack | null,
-  failedSources: string[]
+  failedSources: string[],
+  insiderTrading?: InsiderTradingSummary | null,
 ): string[] => {
   const notes: string[] = [];
   const quoteQuality = assessQuoteQuality(quote);
@@ -173,6 +186,11 @@ const buildAvailabilityNotes = (
   } else {
     notes.push('Whisper social sentiment data is from Finnhub and reflects social media signals.');
   }
+  if (!insiderTrading || insiderTrading.status !== 'success') {
+    notes.push('Insider trading data was unavailable for this report.');
+  } else {
+    notes.push(`Insider trading data shows ${insiderTrading.trades.length} recent transactions with ${insiderTrading.totalBuys > 0 || insiderTrading.totalSells > 0 ? `${insiderTrading.totalBuys.toLocaleString()} buys and ${insiderTrading.totalSells.toLocaleString()} sells.` : 'no trading activity.'}`);
+  }
 
   if (failedSources.length > 0) {
     notes.push(`Data source issues detected: ${failedSources.join(', ')}.`);
@@ -192,10 +210,11 @@ const buildFallbackReport = (
   officialSources: OfficialSourceVerification,
   whisper: WhisperData | null,
   evidencePack: ReportEvidencePack,
-  failedSources: string[]
+  failedSources: string[],
+  insiderTrading?: InsiderTradingSummary | null,
 ): StockAnalysisReport => {
   const zh = isZh(language);
-  const availabilityNotes = buildAvailabilityNotes(quote, fundamentals, news, officialFilings, officialSources, whisper, evidencePack, failedSources);
+  const availabilityNotes = buildAvailabilityNotes(quote, fundamentals, news, officialFilings, officialSources, whisper, evidencePack, failedSources, insiderTrading);
   const quoteQuality = assessQuoteQuality(quote);
   const quoteIsReliable = isQuoteReliableForMarketConclusion(quote);
   const newsHeadlineSummary =
@@ -373,6 +392,7 @@ Follow-up requirement: Company official materials, financial statements, SEC fil
     officialFilings,
     officialSources,
     whisper,
+    insiderTrading,
     summary: zh
       ? `${quoteSummary} 本报告是基于当前可用行情、公司资料、新闻和来源核验信息生成的研究快照。仅供学习研究使用，不构成投资建议。`
       : `${quoteSummary} This report is a research-oriented snapshot assembled from currently available market, company, and headline data. ${REPORT_DISCLAIMER}`,
@@ -704,6 +724,7 @@ const requestDeepSeekReport = async ({
   dataSourceHealth,
   evidencePack,
   whisper,
+  insiderTrading,
 }: {
   ticker: string;
   language: Language;
@@ -716,6 +737,7 @@ const requestDeepSeekReport = async ({
   dataSourceHealth: DataSourceHealth[];
   evidencePack: ReportEvidencePack;
   whisper: WhisperData | null;
+  insiderTrading?: InsiderTradingSummary | null;
 }) => {
   const response = await fetch('/api/ai/report', {
     method: 'POST',
@@ -732,6 +754,7 @@ const requestDeepSeekReport = async ({
       dataSourceHealth,
       evidencePack,
       whisper,
+      insiderTrading,
       language,
     }),
   });
@@ -782,7 +805,7 @@ export const generateStockAnalysisReport = async (
       return result;
     });
 
-  const [quoteResult, fundamentalsResult, newsResult, secFilingsResult, officialSourcesResult, priceHistoryResult, whisperResult] = await Promise.all([
+  const [quoteResult, fundamentalsResult, newsResult, secFilingsResult, officialSourcesResult, priceHistoryResult, whisperResult, insiderTradingResult] = await Promise.all([
     safeResolveSource({
       key: 'quote',
       label: 'Quote',
@@ -827,10 +850,20 @@ export const generateStockAnalysisReport = async (
     safeResolveSource({
       key: 'whisper',
       label: 'Whisper',
-      promise: fetchWhisperData(ticker),
+      promise: fetchWhisperData(ticker, { throwOnUnavailable: true }),
       timeoutMs: SOURCE_TIMEOUTS.whisper,
       isUnavailableValue: (whisper) => !whisper,
       getUnavailableMessage: () => 'Whisper alternative signal data is unavailable for this ticker.',
+      getUnavailableReason: () => 'no_social_data',
+    }),
+    safeResolveSource({
+      key: 'insiderTrading',
+      label: 'Insider Trading',
+      promise: fetchInsiderTrading(ticker),
+      timeoutMs: SOURCE_TIMEOUTS.insiderTrading,
+      isUnavailableValue: (insider) => insider.status !== 'success',
+      getUnavailableMessage: () => 'Insider trading data is unavailable for this ticker.',
+      getUnavailableReason: () => 'no_data',
     }),
   ]);
 
@@ -844,6 +877,9 @@ export const generateStockAnalysisReport = async (
 
   const news = newsResult.value || [];
   if (newsResult.health.status !== 'success') failedSources.push('news');
+
+  const insiderTrading = insiderTradingResult.value;
+  if (!insiderTrading || insiderTrading.status !== 'success') failedSources.push('insider trading');
 
   const verifiedNews = news.length > 0 ? verifyStockNewsItems(ticker, news) : [];
   const verifiedNewsResult = {
@@ -910,6 +946,11 @@ export const generateStockAnalysisReport = async (
       message: priceHistoryStatus === 'available' ? `${priceHistory.length} real historical close points` : priceHistoryResult.health.message,
     },
     whisperResult.health,
+    {
+      ...insiderTradingResult.health,
+      status: insiderTrading?.status === 'success' ? insiderTradingResult.health.status : insiderTradingResult.health.status === 'success' ? 'unavailable' : insiderTradingResult.health.status,
+      message: insiderTrading?.status === 'success' ? `${insiderTrading.trades.length} trades` : insiderTradingResult.health.message,
+    },
   ]);
 
   const evidencePack = buildEvidencePack({
@@ -926,7 +967,7 @@ export const generateStockAnalysisReport = async (
     failedSources,
   });
 
-  const fallbackReport = buildFallbackReport(ticker, language, quote, fundamentals, news, verifiedNews, officialFilings, officialSources, whisper, evidencePack, failedSources);
+  const fallbackReport = buildFallbackReport(ticker, language, quote, fundamentals, news, verifiedNews, officialFilings, officialSources, whisper, evidencePack, failedSources, insiderTrading);
   fallbackReport.dataSourceHealth = [
     ...dataSourceHealth,
     buildAiFallbackHealth('AI analysis was not used.'),
@@ -951,6 +992,7 @@ export const generateStockAnalysisReport = async (
         dataSourceHealth,
         evidencePack,
         whisper,
+        insiderTrading,
       }),
       timeoutMs: SOURCE_TIMEOUTS.ai,
       getSuccessMessage: (value) => value.model || value.provider,
@@ -989,6 +1031,7 @@ export const generateStockAnalysisReport = async (
       officialFilings,
       officialSources,
       whisper,
+      insiderTrading,
       evidencePack,
       investmentContext,
       executiveSummary,

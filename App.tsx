@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Component, useEffect, useRef, useState } from 'react';
 import {
   Activity,
+  AlertCircle,
   ArrowRight,
   Database,
   HelpCircle,
@@ -38,6 +39,48 @@ import { NuxPage, NuxPageHeader, NuxNotice } from './components/NuxPage';
 import { loadCachedReport, loadSelectedTicker, saveCachedReport, saveSelectedTicker } from './services/reportCacheService';
 import { getInitialLanguage, LANGUAGE_STORAGE_KEY, Language, t } from './i18n';
 import { ShellViewMode } from './types';
+
+const SESSION_STORAGE_KEY = 'nux-session';
+
+// Error Boundary to catch crashes
+class ErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('App crashed:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-screen items-center justify-center bg-slate-950 p-4">
+          <div className="max-w-md text-center">
+            <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+            <h1 className="text-xl font-bold text-white mb-2">Something went wrong</h1>
+            <p className="text-slate-400 mb-4">{this.state.error?.message || 'An unexpected error occurred'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const QuickChip = ({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) => (
   <button
@@ -103,7 +146,21 @@ type ViewMode = ShellViewMode;
 
 const App: React.FC = () => {
   const [language, setLanguage] = useState<Language>(() => getInitialLanguage());
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
+
+  // Load session from localStorage on initialization
+  const loadSession = (): UserSession | null => {
+    try {
+      const saved = window.localStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to load session from localStorage', e);
+    }
+    return null;
+  };
+
+  const [userSession, setUserSession] = useState<UserSession | null>(() => loadSession());
   const [messages, setMessages] = useState<Message[]>(() => [
     {
       id: 'welcome',
@@ -127,6 +184,15 @@ const App: React.FC = () => {
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
   }, [language]);
+
+  // Persist session to localStorage
+  useEffect(() => {
+    if (userSession) {
+      window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(userSession));
+    } else {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  }, [userSession]);
 
   useEffect(() => {
     setMessages((prev) =>
@@ -554,8 +620,9 @@ const App: React.FC = () => {
     ) : undefined;
 
   return (
-    <div className="relative h-screen overflow-hidden">
-      {!userSession && <LoginOverlay onLogin={setUserSession} />}
+    <ErrorBoundary>
+      <div className="relative h-screen overflow-hidden">
+        {!userSession && <LoginOverlay onLogin={setUserSession} />}
       <VoiceVisualizer active={isListening} onClose={() => setIsListening(false)} language={language} />
 
       <AppShell
@@ -568,6 +635,7 @@ const App: React.FC = () => {
         {renderContent()}
       </AppShell>
     </div>
+    </ErrorBoundary>
   );
 };
 
