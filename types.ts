@@ -394,6 +394,7 @@ export interface Message {
   isLoading?: boolean;
   ragContext?: string[];
   blocks?: ChatRenderBlock[]; // Optional structured blocks for future AI-generated rendering
+  traceId?: string; // C-4: Link message to tool trace
 }
 
 // --- Backtest Types ---

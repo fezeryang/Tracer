@@ -1,7 +1,7 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Database, Radio, TrendingUp, Users, Volume2, BarChart3, Shield, FunctionSquare, Code, FileText } from 'lucide-react';
+import { Database, Radio, TrendingUp, Users, Volume2 } from 'lucide-react';
 import { Language, t } from '../../i18n';
 import { Message, ShellViewMode } from '../../types';
 import StrategyCard from '../StrategyCard';
@@ -17,6 +17,7 @@ import ChartBlock from './ChartBlock';
 import MermaidBlock from './MermaidBlock';
 import ActionButtonRow from './ActionButtonRow';
 import EvidenceList from './EvidenceList';
+import ToolTracePanel from './ToolTracePanel';
 
 interface ChatMessageRendererProps {
   message: Message;
@@ -25,6 +26,8 @@ interface ChatMessageRendererProps {
   onPrompt?: (prompt: string) => void;
   isSpeaking?: string | null;
   onSpeak?: (text: string, id: string) => void;
+  trace?: import('../../services/chatTraceService').ChatTrace;
+  onOpenEvidence?: () => void;
 }
 
 const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({
@@ -34,6 +37,8 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({
   onPrompt,
   isSpeaking,
   onSpeak,
+  trace,
+  onOpenEvidence,
 }) => {
   return (
     <div className="max-w-[95%] sm:max-w-[85%]">
@@ -226,6 +231,15 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({
             }
           })}
         </div>
+      )}
+
+      {/* Tool Trace Panel - C-4 */}
+      {message.role === 'model' && trace && (
+        <ToolTracePanel
+          trace={trace}
+          language={language}
+          onOpenEvidence={onOpenEvidence}
+        />
       )}
     </div>
   );

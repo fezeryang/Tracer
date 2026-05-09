@@ -11,6 +11,7 @@ import { createServer as createViteServer } from 'vite';
 import { getSecFilingsForTicker } from './secService.js';
 import { getOfficialSourcesForTicker } from './officialSourceService.js';
 import { generateDeepSeekReport } from './aiReportService.js';
+import { classifyChatIntent } from './chatIntentService.js';
 import {
     getPolygonCompatibleBaseUrl,
     getPolygonCompatibleKey,
@@ -705,6 +706,25 @@ app.post('/api/ai/report', async (req, res) => {
       ok: false,
       provider: 'deepseek',
       error: e instanceof Error ? e.message : 'AI report generation failed.',
+    });
+  }
+});
+
+app.post('/api/chat/intent', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const result = await classifyChatIntent({
+      input: body.input,
+      selectedTicker: body.selectedTicker,
+      language: body.language,
+      localGoal: body.localGoal,
+    });
+    res.json(result);
+  } catch {
+    res.json({
+      ok: false,
+      available: false,
+      error: 'deepseek_unavailable',
     });
   }
 });

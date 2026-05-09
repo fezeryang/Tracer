@@ -22,9 +22,29 @@ import TimeMachineView from './components/TimeMachineView';
 import WhisperView from './components/WhisperView';
 import NewsImpactView from './components/NewsImpactView';
 import ChatMessageRenderer from './components/chat/ChatMessageRenderer';
-import { parseChatCommand } from './services/chatCommandRegistry';
-import { detectChatIntent } from './services/chatIntentRouter';
+import EvidenceDrawer from './components/chat/EvidenceDrawer';
 import { executeCommand, CommandExecutorContext } from './services/chatCommandExecutor';
+import { parseChatCommand } from './services/chatCommandRegistry';
+import { ChatGoal, compileChatGoal } from './services/chatGoalCompiler';
+import { classifyChatIntentWithDeepSeek, DeepSeekIntentResult } from './services/chatIntentClassifierService';
+import {
+  buildContextSummaryForPrompt,
+  ChatContext,
+  createEmptyChatContext,
+  resolveContextTicker,
+  shouldUseContextForFollowup,
+  updateContextFromCommandResult,
+} from './services/chatContextService';
+import {
+  createChatTrace,
+  addTraceStep,
+  completeTraceStep,
+  addEvidenceItems,
+  addDataQualityNotes,
+  extractEvidenceFromCommandResult,
+  linkTraceToMessage,
+  ChatTrace,
+} from './services/chatTraceService';
 import MacroView from './components/MacroView';
 import TradingView from './components/TradingView';
 import ReportView from './components/ReportView';
@@ -36,6 +56,20 @@ import { getInitialLanguage, LANGUAGE_STORAGE_KEY, Language, t } from './i18n';
 import { ShellViewMode } from './types';
 
 const SESSION_STORAGE_KEY = 'nux-session';
+const createMessageId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+interface CommandRouteMeta {
+  ticker?: string;
+  command?: string;
+  intent?: string;
+  deepSeekIntentResult?: DeepSeekIntentResult;
+}
+
+interface DeepSeekCallMemo {
+  normalizedInput: string;
+  ticker?: string;
+  at: number;
+}
 
 // Error Boundary to catch crashes
 class ErrorBoundary extends Component<
@@ -88,6 +122,100 @@ const QuickChip = ({ icon: Icon, label, onClick }: { icon: any; label: string; o
 );
 
 const normalizeResearchTicker = (ticker: string) => (ticker || 'NVDA').trim().toUpperCase();
+
+const toIntentLabelKey = (intent: ChatGoal['intent'] | DeepSeekIntentResult['intent']) => {
+  if (intent === 'verified_news') return 'verifiedNews';
+  return intent;
+};
+
+const commandNameToIntent = (commandName: string): ChatIntent['name'] => {
+  if (commandName === 'verified-news') return 'verified_news';
+  if (commandName === 'general_analysis' || commandName === 'none') return 'unknown';
+  return commandName as ChatIntent['name'];
+};
+
+const toExecutableIntent = (goal: ChatGoal): ChatIntent => ({
+  name: goal.intent === 'general_analysis' ? 'unknown' : goal.intent,
+  ticker: goal.ticker,
+  confidence: goal.confidence,
+  source: goal.source,
+  command: goal.command,
+  reason: goal.reason,
+});
+
+const toClassifierExecutableIntent = (result: DeepSeekIntentResult): ChatIntent | null => {
+  if (!result.command) return null;
+  const parsed = parseChatCommand(result.command);
+  if (!parsed) return null;
+
+  return {
+    name: commandNameToIntent(parsed.name),
+    ticker: parsed.args[0]?.toUpperCase(),
+    confidence: result.confidence,
+    source: 'llm_classifier',
+    command: parsed.name,
+    reason: result.reason || 'DeepSeek intent classifier',
+  };
+};
+
+const normalizeInputForDedupe = (text: string) => text.trim().toLowerCase().replace(/\s+/g, ' ');
+
+const createContextAwareGoal = (goal: ChatGoal, ticker: string): ChatGoal => ({
+  ...goal,
+  ticker,
+  confidence: Math.max(goal.confidence, 0.85),
+  reason: `${goal.reason}:context_ticker`,
+  safetyNotes: Array.from(new Set([...goal.safetyNotes, 'using_current_ticker'])),
+});
+
+const getBlockData = (message: Message, blockType: string) => {
+  return message.blocks?.find((block) => block.type === blockType)?.data;
+};
+
+const extractDataQualityNotes = (message: Message): string[] | undefined => {
+  const notes = message.blocks
+    ?.filter((block) => block.type === 'disclaimer' && block.content)
+    .map((block) => String(block.content))
+    .slice(0, 4);
+  return notes && notes.length > 0 ? notes : undefined;
+};
+
+const extractHistorySummary = (message: Message, ticker?: string): ChatContext['lastHistorySummary'] => {
+  const chartData = getBlockData(message, 'chart')?.chartData;
+  if (!ticker || !Array.isArray(chartData) || chartData.length === 0) return undefined;
+  const latest = chartData[chartData.length - 1];
+  return {
+    ticker,
+    points: chartData.length,
+    startDate: String(chartData[0]?.label || ''),
+    endDate: String(latest?.label || ''),
+    latestClose: Number.isFinite(Number(latest?.value)) ? Number(latest.value) : undefined,
+  };
+};
+
+const extractContextUpdateFromMessage = (message: Message, meta: CommandRouteMeta) => {
+  const evidence = getBlockData(message, 'evidence_list')?.evidence;
+  const trustSummary = getBlockData(message, 'source_trust')?.trustSummary;
+  const ticker = meta.ticker || message.quote?.symbol;
+  const command = meta.command;
+
+  return {
+    ticker,
+    command,
+    intent: meta.intent,
+    quote: message.quote,
+    fundamentals: message.fundamentals,
+    news: message.news,
+    verifiedNews: command === 'verified-news' && Array.isArray(evidence) ? evidence : undefined,
+    historySummary: command === 'history' || command === 'chart' ? extractHistorySummary(message, ticker) : undefined,
+    secFilings: command === 'sec' && Array.isArray(evidence) ? evidence : undefined,
+    officialSources: command === 'official' && Array.isArray(evidence) ? evidence : undefined,
+    sourceTrust: trustSummary,
+    evidenceBundle: command === 'evidence' && Array.isArray(evidence) ? evidence : undefined,
+    dataQualityNotes: extractDataQualityNotes(message),
+    deepSeekIntentResult: meta.deepSeekIntentResult,
+  };
+};
 
 const VoiceVisualizer = ({ active, onClose, language }: { active: boolean; onClose: () => void; language: Language }) => {
   if (!active) return null;
@@ -169,12 +297,19 @@ const App: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState<string | null>(null);
   const [isAiConfigured, setIsAiConfigured] = useState(true);
-  const [selectedTicker, setSelectedTicker] = useState(() => loadSelectedTicker() || 'NVDA');
+  const [selectedTicker, setSelectedTicker] = useState(() => loadSelectedTicker() || '');
   const [lastReport, setLastReport] = useState<StockAnalysisReport | null>(() => loadCachedReport());
+  const [chatContext, setChatContext] = useState<ChatContext>(() => createEmptyChatContext());
+
+  // C-4: Trace & Evidence Drawer state
+  const [chatTraces, setChatTraces] = useState<ChatTrace[]>([]);
+  const [activeTraceId, setActiveTraceId] = useState<string | null>(null);
+  const [evidenceDrawerOpen, setEvidenceDrawerOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatSessionRef = useRef<ReturnType<typeof createChatSession> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const lastDeepSeekCallRef = useRef<DeepSeekCallMemo | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
@@ -309,11 +444,41 @@ const App: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const buildExecutorContext = (): CommandExecutorContext => ({
+  const buildExecutorContext = (meta: CommandRouteMeta = {}, currentTrace?: ChatTrace): CommandExecutorContext => ({
     language,
     t: (key, vars) => t(language, key, vars),
     addMessage: (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
+      setChatContext((prev) => updateContextFromCommandResult(
+        prev,
+        extractContextUpdateFromMessage(msg, meta),
+      ));
+
+      // C-4: Extract evidence and link trace to message
+      if (currentTrace) {
+        try {
+          const evidence = extractEvidenceFromCommandResult(msg, meta.command);
+          const dataQualityNotes = extractDataQualityNotes(msg);
+
+          let updatedTrace = addEvidenceItems(currentTrace, evidence);
+          if (dataQualityNotes) {
+            updatedTrace = addDataQualityNotes(updatedTrace, dataQualityNotes);
+          }
+
+          const linkedTrace = linkTraceToMessage(updatedTrace, msg.id);
+          setChatTraces((prev) => {
+            const filtered = prev.filter((t) => t.id !== linkedTrace.id);
+            return [...filtered, linkedTrace].slice(-50); // Keep max 50 traces
+          });
+
+          // Update the message with traceId
+          setMessages((prev) => prev.map((m) =>
+            m.id === msg.id ? { ...m, traceId: linkedTrace.id } : m
+          ));
+        } catch (e) {
+          console.warn('[App] Trace update failed:', e);
+        }
+      }
     },
     setTyping: setIsTyping,
     navigate: setView,
@@ -321,9 +486,16 @@ const App: React.FC = () => {
       const normTicker = (ticker || 'NVDA').trim().toUpperCase();
       setSelectedTicker(normTicker);
       saveSelectedTicker(normTicker);
+      setChatContext((prev) => updateContextFromCommandResult(prev, {
+        ticker: normTicker,
+        command: meta.command,
+        intent: meta.intent,
+        deepSeekIntentResult: meta.deepSeekIntentResult,
+      }));
     },
     resetMessages: (welcomeText: string) => {
       setMessages([{ id: 'welcome', role: 'model', text: welcomeText }]);
+      setChatContext(createEmptyChatContext());
     },
   });
 
@@ -331,78 +503,238 @@ const App: React.FC = () => {
     if (!text.trim() || isTyping) return;
 
     setInputValue('');
+    const userId = createMessageId('user');
     setMessages((prev) => [
       ...prev,
-      { id: Date.now().toString(), role: 'user', text },
+      { id: userId, role: 'user', text },
     ]);
     setIsTyping(true);
 
-    // ── Phase C-2A: Three-tier routing ──
+    // C-4: Create initial trace
+    let currentTrace = createChatTrace({
+      userInput: text,
+    });
 
-    // Tier 1: Slash commands (highest priority)
-    const slashCommand = parseChatCommand(text);
-    if (slashCommand) {
-      const slashIntent: ChatIntent = {
-        name: slashCommand.name as ChatIntent['name'],
-        ticker: slashCommand.args[0]?.toUpperCase(),
-        confidence: 1.0,
-        source: 'slash',
-        command: slashCommand.name,
-        reason: `Slash command /${slashCommand.name}`,
-      };
-      await executeCommand(slashIntent, buildExecutorContext());
-      return;
-    }
-
-    // Tier 2: Local NLP intent detection (C-2A)
-    const intent = detectChatIntent(text, selectedTicker);
-    if (intent.name !== 'unknown' && intent.confidence >= 0.80) {
-      // C-2B: intent.confidence < 0.80 will be routed to DeepSeek intent classifier
-      await executeCommand(intent, buildExecutorContext());
-      return;
-    }
-
-    // Tier 3: Gemini AI fallback (intent unknown or low confidence)
-    // C-2B: confidence < 0.80 ambiguous inputs will go through DeepSeek before reaching here
     try {
-      if (!chatSessionRef.current) {
-        throw new Error(GEMINI_KEY_MISSING_MESSAGE);
+      // Add user input step
+      currentTrace = addTraceStep(currentTrace, 'user_input', text.slice(0, 100), 'success');
+
+      // ── Phase C-3: Context-aware Goal Compiler routing ──
+      const compiledGoal = compileChatGoal(text, { selectedTicker, language });
+      const contextTicker = shouldUseContextForFollowup(text, chatContext)
+        ? resolveContextTicker({ selectedTicker, context: chatContext })
+        : undefined;
+      const goal = !compiledGoal.ticker && contextTicker
+        ? createContextAwareGoal(compiledGoal, contextTicker)
+        : compiledGoal;
+
+      if (goal.source === 'slash') {
+        currentTrace = addTraceStep(currentTrace, 'slash_command', `/${goal.command} ${goal.ticker || ''}`, 'pending');
+        await executeCommand(toExecutableIntent(goal), buildExecutorContext({
+          ticker: goal.ticker,
+          command: goal.command,
+          intent: goal.intent,
+        }, currentTrace));
+        return;
       }
 
-      const response = await chatSessionRef.current.sendMessage(text);
+      if (goal.source === 'local_rule' && goal.confidence >= 0.80 && goal.command) {
+        currentTrace = addTraceStep(currentTrace, 'local_intent', `${goal.intent} (${(goal.confidence * 100).toFixed(0)}%)`, 'success');
+        currentTrace = addTraceStep(currentTrace, 'command_execute', goal.command || 'unknown', 'pending');
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: 'model',
-          text: response.text,
-          strategy: response.strategy,
+        const intentLabel = t(language, `chat.goal.${toIntentLabelKey(goal.intent)}`);
+        const detectedText = t(language, 'chat.goal.detected', { intent: intentLabel });
+        const tickerFallbackText = goal.safetyNotes.includes('using_current_ticker') && goal.ticker
+          ? `\n${t(language, 'chat.goal.usingCurrentTicker', { ticker: goal.ticker })}`
+          : '';
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: createMessageId('goal-detected'),
+            role: 'model',
+            text: `${detectedText}${tickerFallbackText}`,
+          },
+        ]);
+        await executeCommand(toExecutableIntent(goal), buildExecutorContext({
+          ticker: goal.ticker,
+          command: goal.command,
+          intent: goal.intent,
+        }, currentTrace));
+        return;
+      }
+
+      if (goal.source === 'local_rule' && goal.confidence >= 0.45 && goal.confidence < 0.80) {
+        currentTrace = addTraceStep(currentTrace, 'local_intent', `${goal.intent} (${(goal.confidence * 100).toFixed(0)}%)`, 'warning');
+
+        const normalizedInput = normalizeInputForDedupe(text);
+        const dedupeTicker = resolveContextTicker({ explicitTicker: goal.ticker, selectedTicker, context: chatContext });
+        const recentDeepSeekCall = lastDeepSeekCallRef.current;
+        const skipDeepSeek = Boolean(
+          recentDeepSeekCall
+          && recentDeepSeekCall.normalizedInput === normalizedInput
+          && recentDeepSeekCall.ticker === dedupeTicker
+          && Date.now() - recentDeepSeekCall.at < 30_000,
+        );
+
+        // Add DeepSeek step
+        currentTrace = addTraceStep(currentTrace, 'deepseek_intent', 'DeepSeek classifier', 'pending');
+
+        const llmIntent = skipDeepSeek ? null : await classifyChatIntentWithDeepSeek({
+          text,
+          selectedTicker: dedupeTicker || selectedTicker,
+          language,
+          localGoal: goal,
+        });
+
+        if (!skipDeepSeek) {
+          lastDeepSeekCallRef.current = { normalizedInput, ticker: dedupeTicker, at: Date.now() };
+          // Complete DeepSeek step
+          if (llmIntent) {
+            currentTrace = completeTraceStep(currentTrace, 'deepseek_intent', 'success', llmIntent.reason);
+          } else {
+            currentTrace = completeTraceStep(currentTrace, 'deepseek_intent', 'skipped', 'No result');
+          }
+        } else {
+          currentTrace = completeTraceStep(currentTrace, 'deepseek_intent', 'skipped', 'Deduped');
+        }
+
+        if (llmIntent) {
+          setChatContext((prev) => updateContextFromCommandResult(prev, {
+            ticker: llmIntent.ticker || dedupeTicker,
+            intent: llmIntent.intent,
+            command: llmIntent.command?.replace(/^\//, '').split(/\s+/)[0],
+            deepSeekIntentResult: llmIntent,
+          }));
+        }
+
+        if (llmIntent?.needsClarification) {
+          currentTrace = addTraceStep(currentTrace, 'fallback', 'Needs clarification', 'warning');
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: createMessageId('intent-clarification'),
+              role: 'model',
+              text: t(language, 'chat.intentClassifier.needsClarification'),
+            },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+
+        if (llmIntent?.shouldExecute && llmIntent.command && llmIntent.confidence >= 0.75) {
+          currentTrace = addTraceStep(currentTrace, 'command_execute', llmIntent.command, 'pending');
+          const executableIntent = toClassifierExecutableIntent(llmIntent);
+          if (executableIntent) {
+            const intentLabel = t(language, `chat.goal.${toIntentLabelKey(llmIntent.intent)}`);
+            const detectedText = t(language, 'chat.intentClassifier.detectedByDeepSeek', { intent: intentLabel });
+            const tickerFallbackText = !goal.ticker && executableIntent.ticker
+              ? `\n${t(language, 'chat.intentClassifier.usingSelectedTicker', { ticker: executableIntent.ticker })}`
+              : '';
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: createMessageId('intent-detected'),
+                role: 'model',
+                text: `${detectedText}${tickerFallbackText}`,
+              },
+            ]);
+            await executeCommand(executableIntent, buildExecutorContext({
+              ticker: executableIntent.ticker,
+              command: executableIntent.command,
+              intent: executableIntent.name,
+              deepSeekIntentResult: llmIntent,
+            }, currentTrace));
+            return;
+          }
+        }
+      }
+
+      if (goal.requiresTicker && !goal.ticker) {
+        currentTrace = addTraceStep(currentTrace, 'fallback', 'Missing ticker', 'warning');
+        setMessages((prev) => [
+          ...prev,
+          { id: createMessageId('goal-missing'), role: 'model', text: t(language, 'chat.goal.missingTicker') },
+        ]);
+        setIsTyping(false);
+        return;
+      }
+
+      // Gemini fallback remains for open-ended analysis and low-confidence inputs.
+      currentTrace = addTraceStep(currentTrace, 'fallback', 'Gemini AI', 'pending');
+      try {
+        if (!chatSessionRef.current) {
+          throw new Error(GEMINI_KEY_MISSING_MESSAGE);
+        }
+
+        const contextSummary = buildContextSummaryForPrompt(chatContext, language);
+        const promptWithContext = contextSummary
+          ? `${contextSummary}\n\n${language === 'zh' ? '用户问题：' : 'User question:'}\n${text}`
+          : text;
+        const response = await chatSessionRef.current.sendMessage(promptWithContext);
+
+        currentTrace = completeTraceStep(currentTrace, 'fallback', 'success');
+
+        const geminiMsgId = createMessageId('gemini');
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: geminiMsgId,
+            role: 'model',
+            text: response.text,
+            strategy: response.strategy,
+            fundamentals: response.fundamentals,
+            news: response.news,
+            whisper: response.whisper,
+            impactAnalysis: response.impactAnalysis,
+            quote: response.quote,
+            ragContext: response.ragContext,
+          } as any,
+        ]);
+
+        // Link trace to Gemini message
+        const evidence = extractEvidenceFromCommandResult({
+          quote: response.quote,
           fundamentals: response.fundamentals,
           news: response.news,
-          whisper: response.whisper,
-          impactAnalysis: response.impactAnalysis,
-          quote: response.quote,
-          ragContext: response.ragContext,
-        } as any,
-      ]);
-    } catch (error: any) {
-      let errorText = t(language, 'chat.connectionInterrupted');
-      if (error?.message?.includes(GEMINI_KEY_MISSING_MESSAGE)) {
-        errorText = t(language, 'chat.keyMissing');
-      } else if (error?.message?.includes('429') || error?.status === 429) {
-        errorText = t(language, 'chat.quotaExceeded');
-      } else if (error?.message?.includes('503') || error?.status === 503) {
-        errorText = t(language, 'chat.serviceOverloaded');
-      }
+        } as Message, 'gemini');
+        if (evidence.length > 0) {
+          currentTrace = addEvidenceItems(currentTrace, evidence);
+        }
+        const linkedTrace = linkTraceToMessage(currentTrace, geminiMsgId);
+        setChatTraces((prev) => [...prev, linkedTrace].slice(-50));
+        setMessages((prev) => prev.map((m) =>
+          m.id === geminiMsgId ? { ...m, traceId: linkedTrace.id } : m
+        ));
+      } catch (error: any) {
+        currentTrace = completeTraceStep(currentTrace, 'fallback', 'error', error?.message);
+        let errorText = t(language, 'chat.connectionInterrupted');
+        if (error?.message?.includes(GEMINI_KEY_MISSING_MESSAGE)) {
+          errorText = t(language, 'chat.keyMissing');
+        } else if (error?.message?.includes('429') || error?.status === 429) {
+          errorText = t(language, 'chat.quotaExceeded');
+        } else if (error?.message?.includes('503') || error?.status === 503) {
+          errorText = t(language, 'chat.serviceOverloaded');
+        }
 
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), role: 'model', text: errorText },
-      ]);
-    } finally {
+        setMessages((prev) => [
+          ...prev,
+          { id: createMessageId('gemini-error'), role: 'model', text: errorText },
+        ]);
+      } finally {
+        setIsTyping(false);
+      }
+    } catch (error) {
+      console.warn('[App] Trace or execution error:', error);
       setIsTyping(false);
     }
+  };
+
+  const getContextLastViewedLabel = () => {
+    const command = chatContext.lastCommand || 'unknown';
+    const key = command === 'verified-news' ? 'news' : command;
+    return t(language, `chat.context.${key}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -422,46 +754,66 @@ const App: React.FC = () => {
     setInputValue(prompt);
   };
 
-  const renderChatContent = () => (
-    <NuxPage>
+  const renderChatContent = () => {
+    const quickTicker = selectedTicker || 'NVDA';
+
+    return (
+      <NuxPage>
       <NuxPageHeader
         eyebrow={t(language, 'common.nuxEyebrow')}
         title={t(language, 'chat.title')}
         subtitle={t(language, 'chat.subtitle')}
       />
       <NuxNotice tone="info">
-        {t(language, 'common.currentResearchTarget')}: {selectedTicker}
+        {t(language, 'common.currentResearchTarget')}: {selectedTicker || '—'}
       </NuxNotice>
+      {chatContext.currentTicker && (
+        <NuxNotice tone="info">
+          {t(language, 'chat.context.title')}: {chatContext.currentTicker}
+          {chatContext.lastCommand ? ` · ${t(language, 'chat.context.lastViewed')}: ${getContextLastViewedLabel()}` : ''}
+        </NuxNotice>
+      )}
       {!isAiConfigured && <NuxNotice tone="warning">{t(language, 'common.configGeminiHint')}</NuxNotice>}
       {messages.length <= 2 && (
         <div className="mb-8 grid grid-cols-2 gap-2 md:grid-cols-4 animate-fade-in-up">
-          <QuickChip icon={TrendingUp} label={t(language, 'chat.quickMoonshot')} onClick={() => void handleSend(`I'm extremely bullish on ${selectedTicker}, what's a high upside play?`)} />
-          <QuickChip icon={Newspaper} label={t(language, 'chat.quickNews')} onClick={() => void handleSend(`Scan the news for ${selectedTicker} and analyze sentiment.`)} />
+          <QuickChip icon={TrendingUp} label={t(language, 'chat.quickMoonshot')} onClick={() => void handleSend(`I'm extremely bullish on ${quickTicker}, what's a high upside play?`)} />
+          <QuickChip icon={Newspaper} label={t(language, 'chat.quickNews')} onClick={() => void handleSend(`Scan the news for ${quickTicker} and analyze sentiment.`)} />
           <QuickChip icon={HelpCircle} label={t(language, 'chat.quickTheta')} onClick={() => void handleSend('I want to profit from time decay (Theta) on a tech stock.')} />
           <QuickChip icon={Radio} label={t(language, 'chat.quickImpact')} onClick={() => setView('news-impact')} />
         </div>
       )}
 
-      {messages.map((msg: any) => (
-        <div key={msg.id} className={`group flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-          {msg.role === 'model' && (
-            <div className="mr-3 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800">
-              <Activity className="h-4 w-4 text-blue-400" />
-            </div>
-          )}
-          <ChatMessageRenderer
-            message={msg}
-            language={language}
-            onNavigate={setView}
-            onPrompt={(prompt) => {
-              setInputValue(prompt);
-              setTimeout(() => handleSend(prompt), 50);
-            }}
-            isSpeaking={isSpeaking}
-            onSpeak={speakText}
-          />
-        </div>
-      ))}
+      {messages.map((msg: any) => {
+        // C-4: Find trace for this message
+        const msgTrace = msg.traceId ? chatTraces.find((t) => t.id === msg.traceId) : undefined;
+        return (
+          <div key={msg.id} className={`group flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+            {msg.role === 'model' && (
+              <div className="mr-3 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800">
+                <Activity className="h-4 w-4 text-blue-400" />
+              </div>
+            )}
+            <ChatMessageRenderer
+              message={msg}
+              language={language}
+              onNavigate={setView}
+              onPrompt={(prompt) => {
+                setInputValue(prompt);
+                setTimeout(() => handleSend(prompt), 50);
+              }}
+              isSpeaking={isSpeaking}
+              onSpeak={speakText}
+              trace={msgTrace}
+              onOpenEvidence={() => {
+                if (msgTrace) {
+                  setActiveTraceId(msgTrace.id);
+                  setEvidenceDrawerOpen(true);
+                }
+              }}
+            />
+          </div>
+        );
+      })}
 
       {isTyping && (
         <div className="flex justify-start">
@@ -476,8 +828,9 @@ const App: React.FC = () => {
         </div>
       )}
       <div ref={messagesEndRef} />
-    </NuxPage>
-  );
+      </NuxPage>
+    );
+  };
 
   const renderContent = () => {
     switch (view) {
@@ -589,6 +942,14 @@ const App: React.FC = () => {
       >
         {renderContent()}
       </AppShell>
+
+      {/* C-4: Evidence Drawer */}
+      <EvidenceDrawer
+        open={evidenceDrawerOpen}
+        trace={chatTraces.find((t) => t.id === activeTraceId)}
+        language={language}
+        onClose={() => setEvidenceDrawerOpen(false)}
+      />
     </div>
     </ErrorBoundary>
   );
