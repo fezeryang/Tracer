@@ -3,6 +3,7 @@ import { GoogleGenAI, FunctionDeclaration, Type, GenerateContentResponse } from 
 import { fetchStockQuote, fetchCompanyFundamentals, fetchStockNews, fetchWhisperData, fetchStockTwitsData } from './marketDataService';
 import { StrategyRecommendation, OptionLeg, CompanyFundamentals, NewsItem, WhisperData, NewsImpactAnalysis, StockQuote } from '../types';
 import { vectorStore } from './ragService';
+import { Language } from '../i18n';
 
 let aiInstance: GoogleGenAI | null = null;
 export const GEMINI_KEY_MISSING_MESSAGE = "Gemini API key is not configured. AI chat is disabled until a key is provided.";
@@ -152,18 +153,71 @@ const proposeStrategyTool: FunctionDeclaration = {
   },
 };
 
+// Generate system instruction based on language
+const getSystemInstruction = (language: Language): string => {
+  const baseInstruction = `You are "NUX", a high-performance AI financial research terminal for retail investors.
+  Your tone is sharp, efficient, and slightly "cyberpunk/financial".
+
+  **RAG & MEMORY**:
+  You have access to a vector database of previous market data. ALWAYS check the "Context" provided.
+
+  **CAPABILITIES**:
+  1. **Real-time Data**: Always call 'getStockQuote' first for any ticker.
+     - Explicitly mention the **SOURCE** of the data (e.g., "Sourced from Alpaca live feed").
+     - If source is "Simulation" or "Yahoo", acknowledge it as potential delayed/fallback data.
+  2. **Deep Analysis**: Use 'getCompanyFundamentals' for "why" questions.
+  3. **Sentiment**: Use 'getWhisperData' and 'getMarketNews' for social/news trends.
+  4. **News Impact**: If the user asks about specific breaking news or "What will happen to the price?", call 'predictNewsImpact'.
+
+  **TOOL INSTRUCTIONS**:
+  - **predictNewsImpact**:
+    - Analyze the headline. Compare it to historical events (e.g., Earnings Beats, FDA approvals, CEO changes).
+    - Predict a realistic % move range.
+    - Calculate 'remainingAlpha' = (Predicted Avg - currentMovePercent).
+    - Output a 'verdict' (Load the Boat, Priced In, Sell Strength).
+
+  **Strategy Selection**:
+  - High IV (>0.40): Sell premium (Iron Condors, Credit Spreads).
+  - Low IV (<0.20): Buy premium (Long Calls, Debit Spreads).
+
+  **VISUALIZATION SUPPORT**:
+  You can create:
+  - Mermaid flowcharts for strategy execution flows, decision trees, and process diagrams
+  - Code blocks with syntax highlighting for calculation examples
+  - Math formulas using LaTeX notation for financial calculations (Black-Scholes, Greeks, etc.)
+
+  **RESPONSE FORMAT**:
+  - Use markdown for formatting
+  - Be concise but thorough
+  - Always include relevant disclaimers
+  `;
+
+  if (language === 'zh') {
+    return baseInstruction + `
+
+    **LANGUAGE**: Respond in Chinese (中文) for all user-facing content.
+    Technical terms and ticker symbols may remain in English.
+    `;
+  }
+
+  return baseInstruction + `
+
+  **LANGUAGE**: Respond in English.
+  `;
+};
+
 // --- Service ---
 
 interface ChatSession {
-  sendMessage: (message: string) => Promise<{ 
-      text: string; 
-      strategy?: StrategyRecommendation; 
-      fundamentals?: CompanyFundamentals; 
-      news?: NewsItem[]; 
+  sendMessage: (message: string, language?: Language) => Promise<{
+      text: string;
+      strategy?: StrategyRecommendation;
+      fundamentals?: CompanyFundamentals;
+      news?: NewsItem[];
       whisper?: WhisperData;
-      impactAnalysis?: NewsImpactAnalysis; 
+      impactAnalysis?: NewsImpactAnalysis;
       quote?: StockQuote;
-      ragContext?: string[] 
+      ragContext?: string[]
   }>;
 }
 
@@ -195,40 +249,19 @@ export const createChatSession = (): ChatSession => {
   const chat = ai.chats.create({
     model: 'gemini-3.1-pro-preview',
     config: {
-      systemInstruction: `You are "NUX", a high-performance AI financial research terminal for retail investors. 
-      Your tone is sharp, efficient, and slightly "cyberpunk/financial".
-      
-      **RAG & MEMORY**:
-      You have access to a vector database of previous market data. ALWAYS check the "Context" provided.
-
-      **CAPABILITIES**:
-      1. **Real-time Data**: Always call 'getStockQuote' first for any ticker. 
-         - Explicitly mention the **SOURCE** of the data (e.g., "Sourced from Alpaca live feed").
-         - If source is "Simulation" or "Yahoo", acknowledge it as potential delayed/fallback data.
-      2. **Deep Analysis**: Use 'getCompanyFundamentals' for "why" questions.
-      3. **Sentiment**: Use 'getWhisperData' and 'getMarketNews' for social/news trends.
-      4. **News Impact**: If the user asks about specific breaking news or "What will happen to the price?", call 'predictNewsImpact'.
-      
-      **TOOL INSTRUCTIONS**:
-      - **predictNewsImpact**: 
-        - Analyze the headline. Compare it to historical events (e.g., Earnings Beats, FDA approvals, CEO changes).
-        - Predict a realistic % move range.
-        - Calculate 'remainingAlpha' = (Predicted Avg - currentMovePercent).
-        - Output a 'verdict' (Load the Boat, Priced In, Sell Strength).
-      
-      **Strategy Selection**:
-      - High IV (>0.40): Sell premium (Iron Condors, Credit Spreads).
-      - Low IV (<0.20): Buy premium (Long Calls, Debit Spreads).
-      `,
+      systemInstruction: getSystemInstruction('en'),
       tools: [{ functionDeclarations: [getQuoteTool, getFundamentalsTool, getNewsTool, getWhisperDataTool, getStockTwitsDataTool, predictNewsImpactTool, proposeStrategyTool] }],
       thinkingConfig: { thinkingBudget: 2048 }
     },
   });
 
   return {
-    sendMessage: async (userMsg: string) => {
+    sendMessage: async (userMsg: string, language: Language = 'en') => {
       // 1. RAG Retrieval Step
       let augmentedMsg = userMsg;
+      if (language === 'zh') {
+        augmentedMsg = `[IMPORTANT: Please respond in Chinese (中文)]\n\n${userMsg}`;
+      }
       let retrievedContext: string[] = [];
       
       try {

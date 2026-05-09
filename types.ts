@@ -54,6 +54,19 @@ export interface Greeks {
   rho: number;
 }
 
+export interface ChainAggregateStats {
+  totalCallVolume: number;
+  totalPutVolume: number;
+  totalCallOpenInterest: number;
+  totalPutOpenInterest: number;
+  putCallVolumeRatio: number;
+  putCallOiRatio: number;
+  atmIv: number;
+  expectedMove: number;
+  maxPain: number;
+  netGammaExposure: number;
+}
+
 export interface StrategyRecommendation {
   name: string;
   ticker: string;
@@ -321,6 +334,7 @@ export interface NewsImpactAnalysis {
 
 export interface OptionContract {
   contractName?: string;
+  contractSymbol?: string;
   strike: number;
   type: 'call' | 'put';
   bid: number;
@@ -331,6 +345,43 @@ export interface OptionContract {
   openInterest: number;
   impliedVolatility: number;
   inTheMoney: boolean;
+  mid?: number;
+  mark?: number;
+  spread?: number;
+  spreadPct?: number;
+  dte?: number;
+  moneynessPct?: number;
+  intrinsicValue?: number;
+  extrinsicValue?: number;
+  breakeven?: number;
+  delta?: number;
+  gamma?: number;
+  theta?: number;
+  vega?: number;
+  rho?: number;
+  quoteTime?: string;
+  lastTradeTime?: string;
+  isSynthetic?: boolean;
+  liquidityScore?: number;
+}
+
+export interface OptionsChainRow {
+  strike: number;
+  dte: number;
+  moneynessPct: number;
+  isAtm: boolean;
+  call: OptionContract;
+  put: OptionContract;
+  gex?: number;
+}
+
+export interface UnusualActivity {
+  strike: number;
+  side: 'call' | 'put';
+  volume: number;
+  openInterest: number;
+  vOverOiRatio: number;
+  interpretation: string;
 }
 
 export interface OptionsChain {
@@ -340,6 +391,23 @@ export interface OptionsChain {
   selectedExpiration: string;
   calls: OptionContract[];
   puts: OptionContract[];
+  rows?: OptionsChainRow[];
+  provider?: string;
+  asOf?: string;
+  isDelayed?: boolean;
+  isSynthetic?: boolean;
+  rate?: number;
+  dividendYield?: number;
+  atmStrike?: number;
+  expectedMove?: number;
+  putCallVolumeRatio?: number;
+  putCallOiRatio?: number;
+  maxPain?: number;
+  aggregateStats?: ChainAggregateStats;
+  source?: string;
+  fetchedAt?: string;
+  priceSource?: 'real' | 'simulated';
+  rateLimited?: boolean;
 }
 
 export interface Message {

@@ -1,25 +1,7 @@
 import React, { Component, useEffect, useRef, useState } from 'react';
-import {
-  Activity,
-  AlertCircle,
-  ArrowRight,
-  Database,
-  HelpCircle,
-  MessageSquare,
-  Mic,
-  Newspaper,
-  Radio,
-  TrendingUp,
-  Users,
-  Volume2,
-  X,
-} from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { Mic, X, AlertCircle } from 'lucide-react';
 import { createChatSession, GEMINI_KEY_MISSING_MESSAGE } from './services/geminiService';
 import { Message, OptionContract, StockAnalysisReport, UserSession } from './types';
-import StrategyCard from './components/StrategyCard';
-import FundamentalsCard from './components/FundamentalsCard';
-import NewsFeed from './components/NewsFeed';
 import EducationView from './components/EducationView';
 import OptionsChainView from './components/OptionsChainView';
 import BacktestView from './components/BacktestView';
@@ -29,16 +11,16 @@ import LoginOverlay from './components/LoginOverlay';
 import TimeMachineView from './components/TimeMachineView';
 import WhisperView from './components/WhisperView';
 import NewsImpactView from './components/NewsImpactView';
-import QuoteCard from './components/QuoteCard';
 import MacroView from './components/MacroView';
 import TradingView from './components/TradingView';
 import ReportView from './components/ReportView';
 import OverviewView from './components/OverviewView';
 import AppShell from './components/AppShell';
-import { NuxPage, NuxPageHeader, NuxNotice } from './components/NuxPage';
+import { ChatView, ChatFooter } from './components/chat/ChatView';
 import { loadCachedReport, loadSelectedTicker, saveCachedReport, saveSelectedTicker } from './services/reportCacheService';
 import { getInitialLanguage, LANGUAGE_STORAGE_KEY, Language, t } from './i18n';
 import { ShellViewMode } from './types';
+import { detectLanguage } from './utils/languageDetection';
 
 const SESSION_STORAGE_KEY = 'nux-session';
 
@@ -81,16 +63,6 @@ class ErrorBoundary extends Component<
     return this.props.children;
   }
 }
-
-const QuickChip = ({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) => (
-  <button
-    onClick={onClick}
-    className="flex items-center gap-2 rounded-full border border-white/5 bg-slate-800/50 px-4 py-2 text-xs font-medium text-slate-300 transition-all hover:border-blue-500/40 hover:bg-blue-500/10 hover:text-white"
-  >
-    <Icon className="h-3.5 w-3.5" />
-    {label}
-  </button>
-);
 
 const normalizeResearchTicker = (ticker: string) => (ticker || 'NVDA').trim().toUpperCase();
 
@@ -333,7 +305,10 @@ const App: React.FC = () => {
         throw new Error(GEMINI_KEY_MISSING_MESSAGE);
       }
 
-      const response = await chatSessionRef.current.sendMessage(text);
+      // Auto-detect language from user input
+      const detectedLanguage = detectLanguage(text);
+
+      const response = await chatSessionRef.current.sendMessage(text, detectedLanguage);
 
       setMessages((prev) => [
         ...prev,
@@ -375,13 +350,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      void handleSend();
-    }
-  };
-
   const handleContractSelect = (ticker: string, expiration: string, contract: OptionContract) => {
     const normalizedTicker = normalizeResearchTicker(ticker);
     setSelectedTicker(normalizedTicker);
@@ -393,138 +361,32 @@ const App: React.FC = () => {
   };
 
   const renderChatContent = () => (
-    <NuxPage>
-      <NuxPageHeader
-        eyebrow={t(language, 'common.nuxEyebrow')}
-        title={t(language, 'chat.title')}
-        subtitle={t(language, 'chat.subtitle')}
-      />
-      <NuxNotice tone="info">
-        {t(language, 'common.currentResearchTarget')}: {selectedTicker}
-      </NuxNotice>
-      {!isAiConfigured && <NuxNotice tone="warning">{t(language, 'common.configGeminiHint')}</NuxNotice>}
-      {messages.length <= 2 && (
-        <div className="mb-8 grid grid-cols-2 gap-2 md:grid-cols-4 animate-fade-in-up">
-          <QuickChip icon={TrendingUp} label={t(language, 'chat.quickMoonshot')} onClick={() => void handleSend(`I'm extremely bullish on ${selectedTicker}, what's a high upside play?`)} />
-          <QuickChip icon={Newspaper} label={t(language, 'chat.quickNews')} onClick={() => void handleSend(`Scan the news for ${selectedTicker} and analyze sentiment.`)} />
-          <QuickChip icon={HelpCircle} label={t(language, 'chat.quickTheta')} onClick={() => void handleSend('I want to profit from time decay (Theta) on a tech stock.')} />
-          <QuickChip icon={Radio} label={t(language, 'chat.quickImpact')} onClick={() => setView('news-impact')} />
-        </div>
-      )}
-
-      {messages.map((msg: any) => (
-        <div key={msg.id} className={`group flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-          {msg.role === 'model' && (
-            <div className="mr-3 mt-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800">
-              <Activity className="h-4 w-4 text-blue-400" />
-            </div>
-          )}
-
-          <div className={`max-w-[95%] sm:max-w-[85%] ${msg.role === 'user' ? 'flex flex-col items-end' : ''}`}>
-            {msg.role === 'model' && msg.ragContext && (
-              <div className="mb-2 flex w-fit items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] text-emerald-400">
-                <Database className="h-3 w-3" />
-                <span>{t(language, 'chat.memoryActive', { count: msg.ragContext.length })}</span>
-              </div>
-            )}
-
-            {msg.text && (
-              <div
-                className={`relative max-w-none rounded-2xl px-6 py-4 prose prose-invert prose-sm shadow-sm transition-all ${
-                  msg.role === 'user'
-                    ? 'rounded-br-none bg-blue-600 text-white'
-                    : 'rounded-bl-none border border-white/5 bg-slate-900/60 text-slate-300'
-                }`}
-              >
-                <ReactMarkdown
-                  components={{
-                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />,
-                    strong: ({ node, ...props }) => <strong className="font-bold text-white" {...props} />,
-                    ul: ({ node, ...props }) => <ul className="mb-2 list-disc space-y-1 pl-4 marker:text-blue-400" {...props} />,
-                  }}
-                >
-                  {msg.text}
-                </ReactMarkdown>
-
-                {msg.role === 'model' && msg.text && (
-                  <button
-                    onClick={() => speakText(msg.text!, msg.id)}
-                    className={`absolute -bottom-6 left-0 rounded-full p-1.5 transition-colors hover:bg-white/10 ${
-                      isSpeaking === msg.id ? 'animate-pulse text-blue-400' : 'text-slate-500 opacity-0 group-hover:opacity-100'
-                    }`}
-                    title={t(language, 'common.readAloud')}
-                  >
-                    <Volume2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {msg.quote && <QuoteCard quote={msg.quote} />}
-            {msg.fundamentals && <FundamentalsCard data={msg.fundamentals} />}
-            {msg.news && <NewsFeed news={msg.news} />}
-
-            {msg.impactAnalysis && (
-              <div className="mt-4 rounded-r-lg border-l-2 border-rose-500 bg-rose-500/5 py-2 pl-4">
-                <h4 className="mb-1 flex items-center gap-2 text-sm font-bold text-rose-400">
-                  <Radio className="h-4 w-4" /> Impact Predicted: {msg.impactAnalysis.verdict}
-                </h4>
-                <div className="mt-2 flex items-center gap-4 text-xs text-slate-300">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-slate-500">{t(language, 'chat.current')}</span>
-                    <span className="font-mono">
-                      {msg.impactAnalysis.currentMove > 0 ? '+' : ''}
-                      {msg.impactAnalysis.currentMove}%
-                    </span>
-                  </div>
-                  <ArrowRight className="h-3 w-3 text-slate-500" />
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase text-slate-500">{t(language, 'chat.target')}</span>
-                    <span className="font-mono text-blue-400">
-                      {msg.impactAnalysis.predictedMoveLow}% - {msg.impactAnalysis.predictedMoveHigh}%
-                    </span>
-                  </div>
-                </div>
-                <button onClick={() => setView('news-impact')} className="mt-3 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-blue-300 hover:text-white">
-                  {t(language, 'chat.viewFullAnalysis')} <TrendingUp className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-
-            {msg.whisper && (
-              <div className="mt-4 rounded-r-lg border-l-2 border-blue-500 bg-blue-500/5 py-2 pl-4">
-                <h4 className="mb-1 flex items-center gap-2 text-sm font-bold text-blue-400">
-                  <Users className="h-4 w-4" /> {t(language, 'chat.whisperSignal')}: {msg.whisper.sentimentLabel}
-                </h4>
-                <p className="text-xs italic text-slate-400">"{msg.whisper.summary}"</p>
-                <button onClick={() => setView('whisper')} className="mt-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-blue-300 hover:text-white">
-                  {t(language, 'chat.viewFullAggregation')} <TrendingUp className="h-3 w-3" />
-                </button>
-              </div>
-            )}
-
-            {msg.strategy && <StrategyCard strategy={msg.strategy} />}
-          </div>
-        </div>
-      ))}
-
-      {isTyping && (
-        <div className="flex justify-start">
-          <div className="mr-3 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800">
-            <Activity className="h-4 w-4 text-blue-400" />
-          </div>
-          <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-white/5 bg-slate-900/50 px-4 py-3">
-            <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400" />
-            <div className="delay-75 h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400" />
-            <div className="delay-150 h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400" />
-          </div>
-        </div>
-      )}
-      <div ref={messagesEndRef} />
-    </NuxPage>
+    <ChatView
+      language={language}
+      selectedTicker={selectedTicker}
+      messages={messages}
+      isTyping={isTyping}
+      isSpeaking={isSpeaking}
+      isAiConfigured={isAiConfigured}
+      inputValue={inputValue}
+      isListening={isListening}
+      inputRef={inputRef}
+      messagesEndRef={messagesEndRef}
+      onSend={handleSend}
+      onInputChange={setInputValue}
+      onToggleListening={toggleListening}
+      onSpeakText={speakText}
+      onNavigateToView={setView}
+    />
   );
 
   const renderContent = () => {
+    return (
+      <>
+        <div style={{ display: view === 'chain' ? 'contents' : 'none' }}>
+          <OptionsChainView language={language} initialTicker={selectedTicker} onSelectContract={handleContractSelect} />
+        </div>
+        {(() => {
     switch (view) {
       case 'overview':
         return <OverviewView language={language} />;
@@ -547,8 +409,6 @@ const App: React.FC = () => {
             onNavigate={setView}
           />
         );
-      case 'chain':
-        return <OptionsChainView language={language} initialTicker={selectedTicker} onSelectContract={handleContractSelect} />;
       case 'academy':
         return <EducationView language={language} />;
       case 'backtest':
@@ -571,52 +431,23 @@ const App: React.FC = () => {
       default:
         return renderChatContent();
     }
+        })()}
+      </>
+    );
   };
 
   const chatFooter =
     view === 'chat' ? (
-      <footer className="border-t border-white/5 bg-[#081423]/90 p-4 pb-6 backdrop-blur-xl">
-        <div className="mx-auto max-w-4xl">
-          <div className="flex items-end gap-2 rounded-2xl border border-white/10 bg-slate-900/60 p-1.5 shadow-xl">
-            <button
-              onClick={toggleListening}
-              className={`mb-0.5 flex-shrink-0 rounded-xl p-3 transition-all ${
-                isListening ? 'animate-pulse bg-rose-500/20 text-rose-500' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-              title={t(language, 'common.voiceCommand')}
-            >
-              <Mic className="h-5 w-5" />
-            </button>
-
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={isListening ? t(language, 'common.listening') : t(language, 'common.chatPlaceholder')}
-              className="min-h-[50px] max-h-[120px] w-full resize-none bg-transparent p-3 text-sm text-white placeholder-slate-500 outline-none"
-              rows={1}
-              style={{ height: 'auto', minHeight: '50px' }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
-              }}
-            />
-            <button
-              onClick={() => void handleSend()}
-              disabled={!inputValue.trim() || isTyping}
-              className="mb-0.5 flex-shrink-0 rounded-xl bg-blue-600 p-3 text-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <MessageSquare className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="mt-3 text-center opacity-60">
-            <p className="text-[10px] font-medium text-slate-500">{t(language, 'chat.experimentDisclaimer')}</p>
-          </div>
-        </div>
-      </footer>
+      <ChatFooter
+        inputValue={inputValue}
+        isListening={isListening}
+        isTyping={isTyping}
+        language={language}
+        inputRef={inputRef}
+        onInputChange={setInputValue}
+        onSend={() => void handleSend()}
+        onToggleListening={toggleListening}
+      />
     ) : undefined;
 
   return (
