@@ -621,6 +621,35 @@ export interface DividendEvent {
   frequency?: string;
 }
 
+// --- Chat Intent Router Types (C-2A) ---
+// C-2B will add server-side DeepSeek intent classifier for ambiguous natural language inputs.
+// Do not expose DeepSeek key to frontend.
+// DeepSeek classifier must return strict JSON only.
+
+export type ChatIntentName =
+  | 'quote' | 'news' | 'fundamentals' | 'history' | 'chart'
+  | 'verified_news' | 'sec' | 'official' | 'trust' | 'evidence'
+  | 'report' | 'chain' | 'backtest' | 'impact' | 'macro'
+  | 'insiders' | 'earnings' | 'dividends'
+  | 'help' | 'clear' | 'unknown';
+
+export type ChatIntentSource = 'slash' | 'local_rule' | 'llm_classifier';
+
+export interface ChatIntent {
+  /** Detected intent name. 'unknown' means fall through to Gemini. */
+  name: ChatIntentName;
+  /** Extracted ticker symbol, if any. Uses selectedTicker fallback. */
+  ticker?: string;
+  /** Confidence 0.0–1.0. >= 0.80 triggers local execution. */
+  confidence: number;
+  /** How the intent was determined. */
+  source: ChatIntentSource;
+  /** Original canonical command name for dispatch. */
+  command?: string;
+  /** Human-readable reason for the classification decision. */
+  reason: string;
+}
+
 // --- Analyst Recommendation Types ---
 export interface AnalystRecommendation {
   date: string;
