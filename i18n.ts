@@ -377,6 +377,12 @@ export const messages: Record<Language, MessageTree> = {
         earningsResult: '已获取 {ticker} 财报日历数据。',
         dividendsResult: '已获取 {ticker} 分红记录。',
       },
+      intentRouter: {
+        detectedLocal: '本地识别为「{intent}」并直接执行。',
+        confidenceNote: '置信度: {confidence}%',
+        noLocalMatch: '交由 AI 进行全面分析。',
+        tickerFallback: '使用当前选中股票 {ticker} 作为默认代码。',
+      },
     },
     history: {
       dataPoints: '数据点数',
@@ -1031,6 +1037,12 @@ export const messages: Record<Language, MessageTree> = {
         insidersResult: 'Fetched insider trading data for {ticker}.',
         earningsResult: 'Fetched earnings calendar for {ticker}.',
         dividendsResult: 'Fetched dividend records for {ticker}.',
+      },
+      intentRouter: {
+        detectedLocal: 'Locally recognized as "{intent}" and executed directly.',
+        confidenceNote: 'Confidence: {confidence}%',
+        noLocalMatch: 'Forwarding to AI analysis for a comprehensive response.',
+        tickerFallback: 'Using currently selected ticker {ticker} as fallback.',
       },
     },
     history: {
