@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { calculateBlackScholes, calculateHestonPrice } from '../services/marketDataService';
+import { OptionsChain } from '../types';
 import { Maximize, Eye, Info, DollarSign, Target, Pause, Play, ScanLine, Crosshair, Settings2, Move3d, MousePointer2, Grid3X3, Clock, TrendingUp, RefreshCw } from 'lucide-react';
 
 interface Point3D {
@@ -26,9 +27,10 @@ interface SurfaceProps {
   riskFreeRate: number;
   isCall: boolean;
   strikePrice?: number;
+  chain?: OptionsChain;
 }
 
-const VolatilitySurface: React.FC<SurfaceProps> = ({ volatility, riskFreeRate, isCall, strikePrice = 100 }) => {
+const VolatilitySurface: React.FC<SurfaceProps> = ({ volatility, riskFreeRate, isCall, strikePrice = 100, chain }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -169,7 +171,7 @@ const VolatilitySurface: React.FC<SurfaceProps> = ({ volatility, riskFreeRate, i
           price = calculateHestonPrice(isCall ? 'call' : 'put', strikePrice, strikePrice, TIME_RANGE.max, riskFreeRate, hestonParams.v0, hestonParams.theta, hestonParams.kappa, hestonParams.xi, hestonParams.rho);
       }
       return isNaN(price) ? 0 : price;
-  }, [mesh, pricingModel]);
+  }, [volatility, riskFreeRate, isCall, strikePrice, hestonParams, pricingModel]);
 
   // --- 3D Projection Engine ---
   const project = (p: Point3D, width: number, height: number, yaw: number, pitch: number) => {
@@ -668,6 +670,15 @@ const VolatilitySurface: React.FC<SurfaceProps> = ({ volatility, riskFreeRate, i
         <div className="absolute bottom-4 right-4 text-[9px] text-slate-500 font-bold uppercase tracking-widest pointer-events-none opacity-50 z-10">
             {interactionMode === 'ORBIT' ? 'Drag to Rotate' : 'Drag to Scan'}
         </div>
+
+        {/* Live Chain Badge */}
+        {chain && !chain.isSynthetic && (
+          <div className="absolute bottom-4 left-4 pointer-events-none z-10">
+            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9px] font-semibold text-emerald-300 border border-emerald-500/30">
+              Live Chain
+            </span>
+          </div>
+        )}
     </div>
   );
 };

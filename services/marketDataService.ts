@@ -1,5 +1,5 @@
 
-import { StockQuote, CompanyFundamentals, OptionsChain, OptionContract, NewsItem, BacktestResult, EquityPoint, TradeLog, Greeks, WhisperData, WhisperSource, InsiderTradingSummary, EarningsEvent, DividendEvent, AnalystRecommendation } from '../types';
+import { StockQuote, CompanyFundamentals, OptionsChain, OptionContract, NewsItem, BacktestResult, EquityPoint, TradeLog, Greeks, WhisperData, WhisperSource, InsiderTradingSummary, EarningsEvent, DividendEvent, AnalystRecommendation, OptionsChainRow, ChainAggregateStats } from '../types';
 
 // NOTE: Keys are now securely stored in server/index.js
 // We fetch from our local backend proxy /api/...
@@ -336,6 +336,10 @@ export const calculateGreeks = (
   r: number,
   sigma: number
 ): Greeks => {
+  if (S <= 0 || K <= 0 || T <= 0 || sigma <= 0) {
+    return { delta: 0, gamma: 0, theta: 0, vega: 0, rho: 0 };
+  }
+
   const sqrtT = Math.sqrt(T);
   const d1 = (Math.log(S / K) + (r + sigma * sigma / 2) * T) / (sigma * sqrtT);
   const d2 = d1 - sigma * sqrtT;
@@ -374,6 +378,254 @@ export const calculateGreeks = (
   return { delta, gamma, theta, vega, rho };
 };
 
+const roundMetric = (value: number, digits = 4) => {
+  if (!Number.isFinite(value)) return 0;
+  return Number(value.toFixed(digits));
+};
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const getDaysToExpiry = (selectedExpiration: string) => {
+  const now = new Date();
+  const expDate = new Date(`${selectedExpiration}T12:00:00Z`);
+  return Math.max(1, Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+};
+
+const normalizeOptionContract = (
+  contract: OptionContract,
+  chainContext: {
+    currentPrice: number;
+    dte: number;
+    rate: number;
+    dividendYield: number;
+    isSynthetic: boolean;
+    maxVolume: number;
+    maxOpenInterest: number;
+  }
+): OptionContract => {
+  const { currentPrice, dte, rate, isSynthetic, maxVolume, maxOpenInterest } = chainContext;
+  const sigma = Math.max((contract.impliedVolatility || 0) / 100, 0.0001);
+  const years = Math.max(dte / 365, 0.0001);
+  const bid = Number(contract.bid || 0);
+  const ask = Number(contract.ask || 0);
+  const lastPrice = Number(contract.lastPrice || 0);
+  const midRaw = bid > 0 && ask > 0 ? (bid + ask) / 2 : lastPrice;
+  const mid = roundMetric(midRaw, 2);
+  const mark = mid;
+  const spread = roundMetric(Math.max(0, ask - bid), 2);
+  const spreadPct = roundMetric(spread / Math.max(mid, 0.01), 4);
+  const intrinsicValue = roundMetric(
+    contract.type === 'call'
+      ? Math.max(0, currentPrice - contract.strike)
+      : Math.max(0, contract.strike - currentPrice),
+    2
+  );
+  const extrinsicValue = roundMetric(Math.max(0, mark - intrinsicValue), 2);
+  const greeks = calculateGreeks(contract.type, currentPrice, contract.strike, years, rate, sigma);
+  const breakeven = roundMetric(
+    contract.type === 'call' ? contract.strike + mark : contract.strike - mark,
+    2
+  );
+  const moneynessPct = roundMetric((contract.strike - currentPrice) / Math.max(currentPrice, 0.01), 4);
+  const volumeRatio = (contract.volume || 0) / Math.max(maxVolume, 1);
+  const oiRatio = (contract.openInterest || 0) / Math.max(maxOpenInterest, 1);
+  const spreadPenalty = 1 - clamp(spreadPct, 0, 1);
+  const liquidityScore = roundMetric(clamp((volumeRatio * 0.45) + (oiRatio * 0.4) + (spreadPenalty * 0.15), 0, 1), 4);
+
+  return {
+    ...contract,
+    bid,
+    ask,
+    lastPrice,
+    theoreticalPrice: Number(contract.theoreticalPrice || mark),
+    mid,
+    mark,
+    spread,
+    spreadPct,
+    dte,
+    moneynessPct,
+    intrinsicValue,
+    extrinsicValue,
+    breakeven,
+    delta: roundMetric(greeks.delta, 4),
+    gamma: roundMetric(greeks.gamma, 6),
+    theta: roundMetric(greeks.theta, 4),
+    vega: roundMetric(greeks.vega, 4),
+    rho: roundMetric(greeks.rho, 4),
+    quoteTime: contract.quoteTime,
+    lastTradeTime: contract.lastTradeTime,
+    isSynthetic,
+    liquidityScore,
+  };
+};
+
+const computeMaxPain = (calls: OptionContract[], puts: OptionContract[]) => {
+  const strikes = Array.from(new Set([...calls, ...puts].map((contract) => contract.strike))).sort((a, b) => a - b);
+  if (strikes.length === 0) return 0;
+
+  let bestStrike = strikes[0];
+  let bestLoss = Number.POSITIVE_INFINITY;
+
+  for (const settleStrike of strikes) {
+    let loss = 0;
+    for (const call of calls) {
+      loss += Math.max(0, settleStrike - call.strike) * (call.openInterest || 0);
+    }
+    for (const put of puts) {
+      loss += Math.max(0, put.strike - settleStrike) * (put.openInterest || 0);
+    }
+    if (loss < bestLoss) {
+      bestLoss = loss;
+      bestStrike = settleStrike;
+    }
+  }
+
+  return bestStrike;
+};
+
+const buildChainRows = (
+  calls: OptionContract[],
+  puts: OptionContract[],
+  currentPrice: number,
+  dte: number
+): OptionsChainRow[] => {
+  const strikes = Array.from(new Set([...calls, ...puts].map((contract) => contract.strike))).sort((a, b) => a - b);
+  const callMap = new Map(calls.map((contract) => [contract.strike, contract]));
+  const putMap = new Map(puts.map((contract) => [contract.strike, contract]));
+  const placeholder = (strike: number, type: 'call' | 'put'): OptionContract => ({
+    strike,
+    type,
+    bid: 0,
+    ask: 0,
+    lastPrice: 0,
+    theoreticalPrice: 0,
+    volume: 0,
+    openInterest: 0,
+    impliedVolatility: 0,
+    inTheMoney: type === 'call' ? currentPrice > strike : currentPrice < strike,
+    mid: 0,
+    mark: 0,
+    spread: 0,
+    spreadPct: 0,
+    dte,
+    moneynessPct: roundMetric((strike - currentPrice) / Math.max(currentPrice, 0.01), 4),
+    intrinsicValue: type === 'call' ? Math.max(0, currentPrice - strike) : Math.max(0, strike - currentPrice),
+    extrinsicValue: 0,
+    breakeven: strike,
+    delta: 0,
+    gamma: 0,
+    theta: 0,
+    vega: 0,
+    rho: 0,
+    isSynthetic: true,
+    liquidityScore: 0,
+  });
+
+  return strikes.map((strike) => {
+    const call = callMap.get(strike) || placeholder(strike, 'call');
+    const put = putMap.get(strike) || placeholder(strike, 'put');
+    const moneynessPct = roundMetric((strike - currentPrice) / Math.max(currentPrice, 0.01), 4);
+    return {
+      strike,
+      dte,
+      moneynessPct,
+      isAtm: Math.abs(moneynessPct) <= 0.01,
+      call,
+      put,
+    };
+  });
+};
+
+const computeAggregateStats = (rows: OptionsChainRow[], currentPrice: number): ChainAggregateStats => {
+  const totalCallVolume = rows.reduce((sum, row) => sum + (row.call.volume || 0), 0);
+  const totalPutVolume = rows.reduce((sum, row) => sum + (row.put.volume || 0), 0);
+  const totalCallOpenInterest = rows.reduce((sum, row) => sum + (row.call.openInterest || 0), 0);
+  const totalPutOpenInterest = rows.reduce((sum, row) => sum + (row.put.openInterest || 0), 0);
+  const atmRow = rows.reduce<OptionsChainRow | null>((closest, row) => {
+    if (!closest) return row;
+    return Math.abs(row.strike - currentPrice) < Math.abs(closest.strike - currentPrice) ? row : closest;
+  }, null);
+  const atmIv = atmRow
+    ? roundMetric((((atmRow.call.impliedVolatility || 0) + (atmRow.put.impliedVolatility || 0)) / 2), 2)
+    : 0;
+  const expectedMove = atmRow
+    ? roundMetric(((atmRow.call.mid || 0) + (atmRow.put.mid || 0)), 2)
+    : 0;
+  const maxPain = computeMaxPain(rows.map((row) => row.call), rows.map((row) => row.put));
+  const netGammaExposure = roundMetric(rows.reduce((sum, row) => {
+    const callGex = (row.call.gamma || 0) * (row.call.openInterest || 0) * Math.pow(currentPrice, 2) * 100;
+    const putGex = (row.put.gamma || 0) * (row.put.openInterest || 0) * Math.pow(currentPrice, 2) * 100;
+    return sum + callGex - putGex;
+  }, 0), 2);
+
+  return {
+    totalCallVolume,
+    totalPutVolume,
+    totalCallOpenInterest,
+    totalPutOpenInterest,
+    putCallVolumeRatio: roundMetric(totalPutVolume / Math.max(totalCallVolume, 1), 4),
+    putCallOiRatio: roundMetric(totalPutOpenInterest / Math.max(totalCallOpenInterest, 1), 4),
+    atmIv,
+    expectedMove,
+    maxPain,
+    netGammaExposure,
+  };
+};
+
+export const normalizeOptionsChain = (
+  chain: OptionsChain,
+  defaults: { rate?: number; dividendYield?: number } = {}
+): OptionsChain => {
+  const rate = defaults.rate ?? chain.rate ?? 0.05;
+  const dividendYield = defaults.dividendYield ?? chain.dividendYield ?? 0;
+  const dte = getDaysToExpiry(chain.selectedExpiration);
+  const isSynthetic = Boolean(chain.isSynthetic || chain.source === 'Simulation' || chain.provider === 'Simulation');
+  const maxVolume = Math.max(1, ...chain.calls.map((contract) => contract.volume || 0), ...chain.puts.map((contract) => contract.volume || 0));
+  const maxOpenInterest = Math.max(1, ...chain.calls.map((contract) => contract.openInterest || 0), ...chain.puts.map((contract) => contract.openInterest || 0));
+  const context = {
+    currentPrice: chain.currentPrice,
+    dte,
+    rate,
+    dividendYield,
+    isSynthetic,
+    maxVolume,
+    maxOpenInterest,
+  };
+  const calls = [...chain.calls]
+    .map((contract) => normalizeOptionContract(contract, context))
+    .sort((a, b) => a.strike - b.strike);
+  const puts = [...chain.puts]
+    .map((contract) => normalizeOptionContract(contract, context))
+    .sort((a, b) => a.strike - b.strike);
+  const rows = buildChainRows(calls, puts, chain.currentPrice, dte);
+  const aggregateStats = computeAggregateStats(rows, chain.currentPrice);
+  const atmStrike = rows.reduce((closest, row) => {
+    if (closest === null) return row.strike;
+    return Math.abs(row.strike - chain.currentPrice) < Math.abs(closest - chain.currentPrice) ? row.strike : closest;
+  }, null as number | null) || chain.currentPrice;
+
+  return {
+    ...chain,
+    calls,
+    puts,
+    rows,
+    provider: chain.provider || chain.source || 'Simulation',
+    asOf: chain.asOf || chain.fetchedAt || new Date().toISOString(),
+    isDelayed: chain.isDelayed ?? false,
+    isSynthetic,
+    rate,
+    dividendYield,
+    atmStrike,
+    expectedMove: aggregateStats.expectedMove,
+    putCallVolumeRatio: aggregateStats.putCallVolumeRatio,
+    putCallOiRatio: aggregateStats.putCallOiRatio,
+    maxPain: aggregateStats.maxPain,
+    aggregateStats,
+    source: chain.source || chain.provider || 'Simulation',
+    fetchedAt: chain.fetchedAt || chain.asOf || new Date().toISOString(),
+  };
+};
+
 const generateExpirationDates = (): string[] => {
   const dates = [];
   const today = new Date();
@@ -399,16 +651,64 @@ export const calculateEstimatedPremium = (
   return parseFloat(price.toFixed(2));
 };
 
+export const fetchRealExpirations = async (ticker: string): Promise<string[]> => {
+  try {
+    const response = await fetch(`/api/options/expirations/${ticker.toUpperCase()}`);
+    if (!response.ok) throw new Error(`Expirations API Error: ${response.status}`);
+    const data = await response.json();
+    return data.expirations || [];
+  } catch (error) {
+    console.warn(`[MarketService] Real expirations fetch failed for ${ticker}, using fallback`, error);
+    return generateExpirationDates();
+  }
+};
+
+export const fetchRealOptionsChain = async (ticker: string, expiration?: string): Promise<OptionsChain | null> => {
+  try {
+    const params = expiration ? `?expiration=${encodeURIComponent(expiration)}` : '';
+    const response = await fetch(`/api/options/chain/${ticker.toUpperCase()}${params}`);
+    if (!response.ok) throw new Error(`Chain API Error: ${response.status}`);
+    const data = await response.json();
+
+    // Validate that we got useful data
+    if (!data || (data.calls?.length === 0 && data.puts?.length === 0)) {
+      return null;
+    }
+
+    return normalizeOptionsChain(data as OptionsChain);
+  } catch (error) {
+    console.warn(`[MarketService] Real chain fetch failed for ${ticker}, will use fallback`, error);
+    return null;
+  }
+};
+
+export const fetchTermStructure = async (ticker: string): Promise<Array<{ expiration: string; dte: number; atmIv: number; expectedMove: number }>> => {
+  try {
+    const response = await fetch(`/api/options/term-structure/${encodeURIComponent(ticker.toUpperCase())}`);
+    if (!response.ok) throw new Error(`Term structure API error: ${response.status}`);
+    const data = await response.json();
+    return data.termStructure || [];
+  } catch (error) {
+    console.warn(`[MarketService] Term structure fetch failed for ${ticker}`, error);
+    return [];
+  }
+};
+
 export const fetchOptionsChain = async (ticker: string, expirationDate?: string): Promise<OptionsChain> => {
+  // Try real data first
+  const realChain = await fetchRealOptionsChain(ticker, expirationDate);
+  if (realChain) return realChain;
+
+  // Fallback to synthetic
   const quote = await fetchStockQuote(ticker);
   const currentPrice = quote.price;
   const expirations = generateExpirationDates();
   const selectedExpiration = expirationDate || expirations[0];
-  
+
   const now = new Date();
   const targetDate = new Date(selectedExpiration);
   const diffTime = Math.abs(targetDate.getTime() - now.getTime());
-  const daysToExpiry = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+  const daysToExpiry = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   const safeDaysToExpiry = Math.max(1, daysToExpiry);
 
   const calls: OptionContract[] = [];
@@ -427,13 +727,13 @@ export const fetchOptionsChain = async (ticker: string, expirationDate?: string)
     const strike = parseFloat((centerStrike + (i * interval)).toFixed(2));
     if (strike <= 0) continue;
 
-    const volatilitySkew = quote.volatility * (1 + (Math.pow(Math.abs(i)/numStrikes, 2) * 0.2)); 
-    
+    const volatilitySkew = quote.volatility * (1 + (Math.pow(Math.abs(i)/numStrikes, 2) * 0.2));
+
     // Calls
     const callTheo = calculateEstimatedPremium(currentPrice, strike, volatilitySkew, 'call', safeDaysToExpiry);
     const callBid = parseFloat((callTheo * 0.95).toFixed(2));
     const callAsk = parseFloat((callTheo * 1.05).toFixed(2));
-    
+
     calls.push({
         strike,
         type: 'call',
@@ -443,7 +743,7 @@ export const fetchOptionsChain = async (ticker: string, expirationDate?: string)
         theoreticalPrice: callTheo,
         volume: Math.floor(Math.random() * 5000 * (1 - Math.abs(i)/numStrikes)) + 100,
         openInterest: Math.floor(Math.random() * 10000) + 500,
-        impliedVolatility: parseFloat((volatilitySkew * 100).toFixed(1)), 
+        impliedVolatility: parseFloat((volatilitySkew * 100).toFixed(1)),
         inTheMoney: currentPrice > strike
     });
 
@@ -466,14 +766,20 @@ export const fetchOptionsChain = async (ticker: string, expirationDate?: string)
     });
   }
 
-  return {
+  return normalizeOptionsChain({
     symbol: ticker.toUpperCase(),
     currentPrice,
     expirations,
     selectedExpiration,
     calls,
-    puts
-  };
+    puts,
+    provider: 'Simulation',
+    isSynthetic: true,
+    rate: 0.05,
+    dividendYield: 0,
+    source: 'Simulation',
+    fetchedAt: new Date().toISOString()
+  });
 };
 
 // --- Whisper / Alternative Data ---
