@@ -7,6 +7,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "server": "node server/index.js",
     "dev:full": "npm run dev",
     "test:e2e": "playwright test",
@@ -38,6 +40,7 @@
     "concurrently": "^8.2.2",
     "playwright": "^1.59.1",
     "typescript": "^5.2.2",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vitest": "^1.6.1"
   }
 }
