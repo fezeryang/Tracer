@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { createChatSession, GEMINI_KEY_MISSING_MESSAGE } from './services/geminiService';
-import { Message, OptionContract, StockAnalysisReport, UserSession } from './types';
+import { Message, OptionContract, StockAnalysisReport, UserSession, ChatIntent } from './types';
 import EducationView from './components/EducationView';
 import OptionsChainView from './components/OptionsChainView';
 import BacktestView from './components/BacktestView';
@@ -22,12 +22,9 @@ import TimeMachineView from './components/TimeMachineView';
 import WhisperView from './components/WhisperView';
 import NewsImpactView from './components/NewsImpactView';
 import ChatMessageRenderer from './components/chat/ChatMessageRenderer';
-import { parseChatCommand, getCommandSpec, COMMANDS } from './services/chatCommandRegistry';
-import { fetchStockQuote, fetchStockNews, fetchCompanyFundamentals, fetchInsiderTrading, fetchEarningsCalendar, fetchDividends, fetchHistoricalPrices } from './services/marketDataService';
-import { fetchVerifiedStockNews } from './services/newsVerificationService';
-import { fetchSecFilingsForTicker } from './services/secFilingService';
-import { fetchOfficialSources } from './services/officialSourceService';
-import { buildSourceTrustSummary } from './services/sourceTrustService';
+import { parseChatCommand } from './services/chatCommandRegistry';
+import { detectChatIntent } from './services/chatIntentRouter';
+import { executeCommand, CommandExecutorContext } from './services/chatCommandExecutor';
 import MacroView from './components/MacroView';
 import TradingView from './components/TradingView';
 import ReportView from './components/ReportView';
@@ -312,668 +309,61 @@ const App: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
+  const buildExecutorContext = (): CommandExecutorContext => ({
+    language,
+    t: (key, vars) => t(language, key, vars),
+    addMessage: (msg: Message) => {
+      setMessages((prev) => [...prev, msg]);
+    },
+    setTyping: setIsTyping,
+    navigate: setView,
+    setTicker: (ticker: string) => {
+      const normTicker = (ticker || 'NVDA').trim().toUpperCase();
+      setSelectedTicker(normTicker);
+      saveSelectedTicker(normTicker);
+    },
+    resetMessages: (welcomeText: string) => {
+      setMessages([{ id: 'welcome', role: 'model', text: welcomeText }]);
+    },
+  });
+
   const handleSend = async (text: string = inputValue) => {
     if (!text.trim() || isTyping) return;
 
     setInputValue('');
     setMessages((prev) => [
       ...prev,
-      {
-        id: Date.now().toString(),
-        role: 'user',
-        text,
-      },
+      { id: Date.now().toString(), role: 'user', text },
     ]);
     setIsTyping(true);
 
-    // Intercept slash commands before calling Gemini
-    const command = parseChatCommand(text);
-    if (command) {
-      const spec = getCommandSpec(command.name);
-      if (!spec) {
-        setIsTyping(false);
-        return;
-      }
+    // ── Phase C-2A: Three-tier routing ──
 
-      const ticker = command.args[0]?.toUpperCase();
-
-      switch (spec.action) {
-        case 'help': {
-          const helpLines = [
-            `## ${t(language, 'chat.commands.title')}`,
-            '',
-            `| ${t(language, 'chat.commands.help')} | Description |`,
-            '|---|---|',
-          ];
-          for (const cmd of COMMANDS) {
-            const desc = t(language, cmd.descriptionKey);
-            helpLines.push(`| \`/${cmd.usage}\` | ${desc} |`);
-          }
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: (Date.now() + 1).toString(),
-              role: 'model',
-              text: helpLines.join('\n'),
-            },
-          ]);
-          setIsTyping(false);
-          return;
-        }
-
-        case 'fetch_quote': {
-          if (!ticker) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.missingTicker'),
-              },
-            ]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const quote = await fetchStockQuote(ticker);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.quoteResult', { ticker }),
-                quote,
-              } as any,
-            ]);
-          } catch (error: any) {
-            const errorMsg = error?.status === 429
-              ? t(language, 'chat.commands.rateLimited')
-              : t(language, 'chat.commands.fetchFailed');
-            console.warn('[Command] Quote fetch failed:', error);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: errorMsg,
-              },
-            ]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        case 'fetch_news': {
-          if (!ticker) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.missingTicker'),
-              },
-            ]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const news = await fetchStockNews(ticker);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.newsResult', { ticker }),
-                news,
-              } as any,
-            ]);
-          } catch (error: any) {
-            const errorMsg = error?.status === 429
-              ? t(language, 'chat.commands.rateLimited')
-              : t(language, 'chat.commands.fetchFailed');
-            console.warn('[Command] News fetch failed:', error);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: errorMsg,
-              },
-            ]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        case 'fetch_fundamentals': {
-          if (!ticker) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.missingTicker'),
-              },
-            ]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const fundamentals = await fetchCompanyFundamentals(ticker);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.fundamentalsResult', { ticker }),
-                fundamentals,
-              } as any,
-            ]);
-          } catch (error: any) {
-            const errorMsg = error?.status === 429
-              ? t(language, 'chat.commands.rateLimited')
-              : t(language, 'chat.commands.fetchFailed');
-            console.warn('[Command] Fundamentals fetch failed:', error);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: errorMsg,
-              },
-            ]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        case 'navigate': {
-          const targetView = spec.targetView;
-          if (!ticker || !targetView) {
-            setIsTyping(false);
-            return;
-          }
-          const normTicker = normalizeResearchTicker(ticker);
-          setSelectedTicker(normTicker);
-          saveSelectedTicker(normTicker);
-
-          const navKey = targetView === 'report' ? 'openingReport'
-            : targetView === 'chain' ? 'openingChain'
-            : targetView === 'backtest' ? 'openingBacktest'
-            : targetView === 'news-impact' ? 'openingImpact'
-            : 'openingMacro';
-
-          const navText = t(language, `chat.commands.${navKey}`, { ticker: normTicker });
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: (Date.now() + 1).toString(),
-              role: 'model',
-              text: navText,
-            },
-          ]);
-
-          // Navigate after a brief delay so the message renders
-          setTimeout(() => setView(targetView), 100);
-          setIsTyping(false);
-          return;
-        }
-
-        case 'clear': {
-          setMessages([
-            {
-              id: 'welcome',
-              role: 'model',
-              text: t(language, 'chat.welcome'),
-            },
-          ]);
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_history: /history and /chart ---
-        case 'fetch_history': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const history = await fetchHistoricalPrices(ticker, 252);
-            if (history.length === 0) throw new Error('No data');
-            const count = history.length;
-            const prices = history.map(h => h.close);
-            const dates = history.map(h => h.date);
-            const latestClose = prices[prices.length - 1];
-            const highestClose = Math.max(...prices);
-            const lowestClose = Math.min(...prices);
-            const chartData = history.map(h => ({ label: h.date, value: h.close }));
-
-            setMessages((prev) => [...prev, {
-              id: (Date.now() + 1).toString(),
-              role: 'model',
-              text: t(language, 'chat.commands.historyResult', { ticker, count: String(count) }),
-              blocks: [
-                {
-                  type: 'data_quality',
-                  data: { quote: undefined, fundamentals: undefined, news: undefined },
-                },
-                {
-                  type: 'chart',
-                  title: `${ticker} ${t(language, 'chat.blocks.chart')}`,
-                  data: { chartData, chartType: 'line', chartColor: '#818cf8', yAxisLabel: 'Price' },
-                },
-                {
-                  type: 'metric_grid',
-                  metrics: [
-                    { label: t(language, 'history.dataPoints'), value: count },
-                    { label: t(language, 'history.startDate'), value: dates[0] || 'N/A' },
-                    { label: t(language, 'history.endDate'), value: dates[dates.length - 1] || 'N/A' },
-                    { label: t(language, 'history.latestClose'), value: `$${latestClose.toFixed(2)}` },
-                    { label: t(language, 'history.highestClose'), value: `$${highestClose.toFixed(2)}` },
-                    { label: t(language, 'history.lowestClose'), value: `$${lowestClose.toFixed(2)}` },
-                  ],
-                },
-                {
-                  type: 'disclaimer',
-                  content: t(language, 'history.researchOnly'),
-                  tone: 'info',
-                },
-              ],
-            } as any]);
-          } catch (error: any) {
-            const errorMsg = error?.status === 429 ? t(language, 'chat.commands.rateLimited') : t(language, 'chat.commands.fetchFailed');
-            console.warn('[Command] History fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: errorMsg }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_verified_news: /verified-news ---
-        case 'fetch_verified_news': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const verifiedNews = await fetchVerifiedStockNews(ticker);
-            const items = (verifiedNews || []).map((n: any) => ({
-              label: `[${n.confidenceScore || '?'}%] ${n.title}${n.source ? ' — ' + n.source : ''}`,
-              source: n.source,
-              url: n.url,
-            }));
-
-            setMessages((prev) => [...prev, {
-              id: (Date.now() + 1).toString(),
-              role: 'model',
-              text: t(language, 'chat.commands.verifiedNewsResult', { ticker }),
-              blocks: [
-                {
-                  type: 'evidence_list',
-                  data: { evidence: items.length > 0 ? items : [{ label: t(language, 'evidence.noEvidence'), source: undefined, url: undefined }] },
-                },
-                {
-                  type: 'data_quality',
-                  data: { quote: undefined, fundamentals: undefined, news: undefined },
-                },
-              ],
-            } as any]);
-          } catch (error: any) {
-            console.warn('[Command] Verified news fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_sec: /sec ---
-        case 'fetch_sec': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const secData = await fetchSecFilingsForTicker(ticker);
-            const filings = secData?.filings || [];
-            const items = filings.map((f: any) => ({
-              label: `${f.form || 'N/A'} | ${f.filingDate || 'N/A'}${f.description ? ': ' + f.description : ''}`,
-              source: 'SEC EDGAR',
-              url: f.url,
-            }));
-
-            if (secData?.status === 'unavailable') {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.secResult', { ticker }),
-                blocks: [
-                  { type: 'evidence_list', data: { evidence: [{ label: t(language, 'sec.unavailable'), source: undefined, url: undefined }] } },
-                ],
-              } as any]);
-            } else {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.secResult', { ticker }),
-                blocks: [
-                  { type: 'evidence_list', data: { evidence: items } },
-                  { type: 'disclaimer', content: t(language, 'sec.officialDisclosureNotice'), tone: 'info' },
-                ],
-              } as any]);
-            }
-          } catch (error: any) {
-            console.warn('[Command] SEC fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_official: /official ---
-        case 'fetch_official': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const officialData = await fetchOfficialSources(ticker);
-            const sources = officialData?.sources || [];
-            const items = sources.map((s: any) => ({
-              label: `${s.name || 'N/A'}${s.aiReviewed ? ' [' + t(language, 'evidence.aiVerified') + ']' : ' [' + t(language, 'evidence.requiresManualConfirmation') + ']'}`,
-              source: s.type || 'N/A',
-              url: s.url,
-            }));
-
-            if (officialData?.status === 'error' || officialData?.status === 'not_found') {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.fetchFailed'),
-              }]);
-            } else {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.officialResult', { ticker }),
-                blocks: [
-                  { type: 'evidence_list', data: { evidence: items.length > 0 ? items : [{ label: t(language, 'evidence.noEvidence'), source: undefined, url: undefined }] } },
-                ],
-              } as any]);
-            }
-          } catch (error: any) {
-            console.warn('[Command] Official sources fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_trust: /trust ---
-        case 'fetch_trust': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const [verifiedNews, secData, officialData] = await Promise.all([
-              fetchVerifiedStockNews(ticker),
-              fetchSecFilingsForTicker(ticker),
-              fetchOfficialSources(ticker),
-            ]);
-            const trustSummary = buildSourceTrustSummary({ ticker, verifiedNews, officialFilings: secData, officialSources: officialData });
-
-            setMessages((prev) => [...prev, {
-              id: (Date.now() + 1).toString(),
-              role: 'model',
-              text: t(language, 'chat.commands.trustResult', { ticker }),
-              blocks: [
-                {
-                  type: 'source_trust',
-                  data: { trustSummary },
-                },
-                {
-                  type: 'metric_grid',
-                  metrics: [
-                    { label: t(language, 'sourceTrust.overallScore'), value: `${trustSummary.overallScore}/100` },
-                    { label: t(language, 'sourceTrust.confidenceLevel'), value: trustSummary.confidenceLevel },
-                    { label: t(language, 'sourceTrust.officialSources'), value: trustSummary.officialSourceCount },
-                    { label: t(language, 'sourceTrust.secFilings'), value: trustSummary.secFilingCount },
-                    { label: t(language, 'sourceTrust.verifiedNews'), value: trustSummary.verifiedNewsCount },
-                  ],
-                },
-              ],
-            } as any]);
-          } catch (error: any) {
-            console.warn('[Command] Trust fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_evidence: /evidence ---
-        case 'fetch_evidence': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const [quote, verifiedNews, secData, officialData] = await Promise.all([
-              fetchStockQuote(ticker),
-              fetchVerifiedStockNews(ticker).catch(() => []),
-              fetchSecFilingsForTicker(ticker).catch(() => undefined),
-              fetchOfficialSources(ticker).catch(() => undefined),
-            ]);
-            const trustSummary = buildSourceTrustSummary({ ticker, verifiedNews, officialFilings: secData, officialSources: officialData });
-
-            const newsItems = (verifiedNews || []).map((n: any) => ({
-              label: `[${n.confidenceScore || '?'}% ${t(language, 'evidence.verifiedNews')}] ${n.title}`,
-              source: n.source,
-              url: n.url,
-            }));
-            const secItems = (secData?.filings || []).map((f: any) => ({
-              label: `${f.form || 'N/A'} (${f.filingDate || 'N/A'})`,
-              source: 'SEC',
-              url: f.url,
-            }));
-            const officialItems = (officialData?.sources || []).map((s: any) => ({
-              label: s.name || 'N/A',
-              source: s.type || 'N/A',
-              url: s.url,
-            }));
-            const allEvidence = [...newsItems, ...secItems, ...officialItems];
-
-            setMessages((prev) => [...prev, {
-              id: (Date.now() + 1).toString(),
-              role: 'model',
-              text: t(language, 'chat.commands.evidenceResult', { ticker }),
-              blocks: [
-                {
-                  type: 'data_quality',
-                  data: { quote: quote || undefined, fundamentals: undefined, news: undefined },
-                },
-                {
-                  type: 'source_trust',
-                  data: { trustSummary },
-                },
-                {
-                  type: 'evidence_list',
-                  data: { evidence: allEvidence.length > 0 ? allEvidence : [{ label: t(language, 'evidence.noEvidence'), source: undefined, url: undefined }] },
-                },
-                {
-                  type: 'action_buttons',
-                  actions: [
-                    { label: t(language, 'chat.actions.generateReport'), view: 'report', ticker },
-                    { label: t(language, 'chat.actions.analyzeNewsImpact'), view: 'news-impact', ticker },
-                    { label: t(language, 'chat.actions.viewMacro'), view: 'macro', ticker },
-                  ],
-                },
-              ],
-            } as any]);
-          } catch (error: any) {
-            console.warn('[Command] Evidence fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_insiders: /insiders ---
-        case 'fetch_insiders': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const data = await fetchInsiderTrading(ticker);
-            if (data.status === 'unavailable') {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.insidersResult', { ticker }),
-                blocks: [
-                  {
-                    type: 'evidence_list',
-                    data: { evidence: [{ label: t(language, 'insiders.unavailable'), source: undefined, url: undefined }] },
-                  },
-                ],
-              } as any]);
-            } else {
-              const tradeItems = (data.trades || []).slice(0, 20).map((t: any) => ({
-                label: `${t.name || 'N/A'} — ${t.transactionType === 'buy' ? 'Buy' : 'Sell'} ${t.shares} shares @ $${t.price || 'N/A'}`,
-                source: t.date || 'N/A',
-                url: undefined,
-              }));
-
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.insidersResult', { ticker }),
-                blocks: [
-                  {
-                    type: 'metric_grid',
-                    metrics: [
-                      { label: t(language, 'insiders.totalBuys'), value: data.totalBuys, tone: data.totalBuys > data.totalSells ? 'positive' : 'neutral' },
-                      { label: t(language, 'insiders.totalSells'), value: data.totalSells, tone: data.totalSells > data.totalBuys ? 'negative' : 'neutral' },
-                      { label: t(language, 'insiders.transactionCount'), value: data.trades.length },
-                      { label: t(language, 'insiders.netShares'), value: data.netShares, helper: data.sentiment },
-                    ],
-                  },
-                  {
-                    type: 'evidence_list',
-                    data: { evidence: tradeItems.length > 0 ? tradeItems : [{ label: 'No recent insider trades.', source: undefined, url: undefined }] },
-                  },
-                ],
-              } as any]);
-            }
-          } catch (error: any) {
-            console.warn('[Command] Insiders fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_earnings: /earnings ---
-        case 'fetch_earnings': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const earnings = await fetchEarningsCalendar(ticker);
-            if (!earnings || earnings.length === 0) {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.earningsResult', { ticker }),
-                blocks: [
-                  { type: 'evidence_list', data: { evidence: [{ label: t(language, 'earnings.unavailable'), source: undefined, url: undefined }] } },
-                ],
-              } as any]);
-            } else {
-              const latest = earnings[0];
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.earningsResult', { ticker }),
-                blocks: [
-                  {
-                    type: 'metric_grid',
-                    metrics: [
-                      { label: t(language, 'earnings.date'), value: latest.date || 'N/A' },
-                      { label: t(language, 'earnings.epsEstimate'), value: latest.epsEstimate != null ? `$${latest.epsEstimate}` : 'N/A' },
-                      { label: t(language, 'earnings.epsActual'), value: latest.epsActual != null ? `$${latest.epsActual}` : 'N/A' },
-                      { label: t(language, 'earnings.surprise'), value: latest.surprise || 'N/A' },
-                    ],
-                  },
-                ],
-              } as any]);
-            }
-          } catch (error: any) {
-            console.warn('[Command] Earnings fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        // --- fetch_dividends: /dividends ---
-        case 'fetch_dividends': {
-          if (!ticker) {
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.missingTicker') }]);
-            setIsTyping(false);
-            return;
-          }
-          try {
-            const dividends = await fetchDividends(ticker);
-            if (!dividends || dividends.length === 0) {
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.dividendsResult', { ticker }),
-                blocks: [
-                  { type: 'evidence_list', data: { evidence: [{ label: t(language, 'dividends.unavailable'), source: undefined, url: undefined }] } },
-                ],
-              } as any]);
-            } else {
-              const items = dividends.slice(0, 20).map((d: any) => ({
-                label: `${d.date || 'N/A'} — $${d.amount != null ? d.amount.toFixed(4) : 'N/A'}${d.paymentDate ? ' (Pay: ' + d.paymentDate + ')' : ''}`,
-                source: 'Dividend',
-                url: undefined,
-              }));
-              setMessages((prev) => [...prev, {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: t(language, 'chat.commands.dividendsResult', { ticker }),
-                blocks: [
-                  { type: 'evidence_list', data: { evidence: items } },
-                ],
-              } as any]);
-            }
-          } catch (error: any) {
-            console.warn('[Command] Dividends fetch failed:', error);
-            setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'model', text: t(language, 'chat.commands.fetchFailed') }]);
-          }
-          setIsTyping(false);
-          return;
-        }
-
-        default:
-          setIsTyping(false);
-          return;
-      }
+    // Tier 1: Slash commands (highest priority)
+    const slashCommand = parseChatCommand(text);
+    if (slashCommand) {
+      const slashIntent: ChatIntent = {
+        name: slashCommand.name as ChatIntent['name'],
+        ticker: slashCommand.args[0]?.toUpperCase(),
+        confidence: 1.0,
+        source: 'slash',
+        command: slashCommand.name,
+        reason: `Slash command /${slashCommand.name}`,
+      };
+      await executeCommand(slashIntent, buildExecutorContext());
+      return;
     }
 
-    // --- Existing Gemini flow (unchanged) ---
+    // Tier 2: Local NLP intent detection (C-2A)
+    const intent = detectChatIntent(text, selectedTicker);
+    if (intent.name !== 'unknown' && intent.confidence >= 0.80) {
+      // C-2B: intent.confidence < 0.80 will be routed to DeepSeek intent classifier
+      await executeCommand(intent, buildExecutorContext());
+      return;
+    }
+
+    // Tier 3: Gemini AI fallback (intent unknown or low confidence)
+    // C-2B: confidence < 0.80 ambiguous inputs will go through DeepSeek before reaching here
     try {
       if (!chatSessionRef.current) {
         throw new Error(GEMINI_KEY_MISSING_MESSAGE);
@@ -997,12 +387,10 @@ const App: React.FC = () => {
         } as any,
       ]);
     } catch (error: any) {
-      console.error('Error:', error);
-
       let errorText = t(language, 'chat.connectionInterrupted');
       if (error?.message?.includes(GEMINI_KEY_MISSING_MESSAGE)) {
         errorText = t(language, 'chat.keyMissing');
-      } else if (error?.message?.includes('429') || error?.status === 429 || error?.code === 429) {
+      } else if (error?.message?.includes('429') || error?.status === 429) {
         errorText = t(language, 'chat.quotaExceeded');
       } else if (error?.message?.includes('503') || error?.status === 503) {
         errorText = t(language, 'chat.serviceOverloaded');
@@ -1010,11 +398,7 @@ const App: React.FC = () => {
 
       setMessages((prev) => [
         ...prev,
-        {
-          id: Date.now().toString(),
-          role: 'model',
-          text: errorText,
-        },
+        { id: Date.now().toString(), role: 'model', text: errorText },
       ]);
     } finally {
       setIsTyping(false);
