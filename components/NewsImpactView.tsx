@@ -100,7 +100,7 @@ const NewsImpactView: React.FC<NewsImpactViewProps> = ({ language, selectedTicke
                     confidence: 50,
                     reasoning: response?.text || "Fallback analysis based on quote movement and headline sentiment.",
                     similarEvents: [],
-                    verdict: 'Wait'
+                    verdict: 'Needs More Evidence'
                 });
             }
 
@@ -166,11 +166,12 @@ const NewsImpactView: React.FC<NewsImpactViewProps> = ({ language, selectedTicke
                                  </h3>
                                  <div className="flex items-center gap-4">
                                      <div className={`px-4 py-2 rounded-lg border font-bold uppercase tracking-wide text-sm ${
-                                         analysis.verdict === 'Load the Boat' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' :
-                                         analysis.verdict === 'Priced In' ? 'bg-slate-500/20 text-slate-300 border-slate-500/50' :
+                                         analysis.verdict === 'Positive Event Signal' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' :
+                                         analysis.verdict === 'Negative Event Signal' ? 'bg-rose-500/20 text-rose-400 border-rose-500/50' :
+                                         analysis.verdict === 'Likely Priced In' ? 'bg-slate-500/20 text-slate-300 border-slate-500/50' :
                                          'bg-amber-500/20 text-amber-400 border-amber-500/50'
                                      }`}>
-                                         Verdict: {analysis.verdict}
+                                         Verdict: {t(language, `chat.impact.${analysis.verdict.toLowerCase().replace(/\s+/g, '_')}`)}
                                      </div>
                                      <div className="text-slate-400 text-sm flex items-center gap-1">
                                          <Target className="w-4 h-4 text-indigo-400" /> Confidence: <span className="text-white font-bold">{analysis.confidence}%</span>

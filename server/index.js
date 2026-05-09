@@ -11,6 +11,7 @@ import { createServer as createViteServer } from 'vite';
 import { getSecFilingsForTicker } from './secService.js';
 import { getOfficialSourcesForTicker } from './officialSourceService.js';
 import { generateDeepSeekReport } from './aiReportService.js';
+import { classifyChatIntent } from './chatIntentService.js';
 import {
     getPolygonCompatibleBaseUrl,
     getPolygonCompatibleKey,
@@ -732,6 +733,25 @@ app.post('/api/ai/report', async (req, res) => {
   }
 });
 
+app.post('/api/chat/intent', async (req, res) => {
+  try {
+    const body = req.body || {};
+    const result = await classifyChatIntent({
+      input: body.input,
+      selectedTicker: body.selectedTicker,
+      language: body.language,
+      localGoal: body.localGoal,
+    });
+    res.json(result);
+  } catch {
+    res.json({
+      ok: false,
+      available: false,
+      error: 'deepseek_unavailable',
+    });
+  }
+});
+
 // StockTwits Social Sentiment via RapidAPI
 app.get('/api/stocktwits/:ticker', async (req, res) => {
   const ticker = req.params.ticker.toUpperCase();
@@ -1028,11 +1048,11 @@ const fetchStocktwitsFromApi = async (ticker, rapidApiKey) => {
   }
 
   let sentimentLabel;
-  if (sentimentScore >= 70) sentimentLabel = 'Strong Buy';
-  else if (sentimentScore >= 55) sentimentLabel = 'Buy';
-  else if (sentimentScore >= 45) sentimentLabel = 'Hold';
-  else if (sentimentScore >= 30) sentimentLabel = 'Sell';
-  else sentimentLabel = 'Strong Sell';
+  if (sentimentScore >= 70) sentimentLabel = 'Very Positive';
+  else if (sentimentScore >= 55) sentimentLabel = 'Positive';
+  else if (sentimentScore >= 45) sentimentLabel = 'Neutral';
+  else if (sentimentScore >= 30) sentimentLabel = 'Negative';
+  else sentimentLabel = 'Very Negative';
 
   return {
     ticker,
@@ -1046,7 +1066,7 @@ const fetchStocktwitsFromApi = async (ticker, rapidApiKey) => {
       insight: `Based on ${total} recent messages: ${bullish} bullish, ${bearish} bearish`,
       stats: { bullish, bearish, neutral, total }
     }],
-    summary: `StockTwits sentiment for ${ticker}: ${sentimentLabel} (${sentimentScore}/100) based on ${total} messages.`,
+    summary: `StockTwits social sentiment for ${ticker}: numeric score ${sentimentScore}/100 based on ${total} messages.`,
     provider: 'StockTwits (RapidAPI)',
     fetchedAt: new Date().toISOString()
   };

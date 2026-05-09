@@ -832,11 +832,11 @@ const createWhisperError = (
 };
 
 const deriveSentimentLabel = (score: number): WhisperData['sentimentLabel'] => {
-  if (score > 80) return 'Strong Buy';
-  if (score > 60) return 'Buy';
-  if (score < 20) return 'Strong Sell';
-  if (score < 40) return 'Sell';
-  return 'Hold';
+  if (score > 80) return 'Very Positive';
+  if (score > 60) return 'Positive';
+  if (score < 20) return 'Very Negative';
+  if (score < 40) return 'Negative';
+  return 'Neutral';
 };
 
 const mapFinnhubSource = (
@@ -995,7 +995,7 @@ const roundToStrike = (price: number): number => {
     return Math.round(price * 2) / 2;
 };
 
-const fetchHistoricalPrices = async (ticker: string, days: number = 252): Promise<{date: string, close: number}[]> => {
+export const fetchHistoricalPrices = async (ticker: string, days: number = 252): Promise<{date: string, close: number}[]> => {
     try {
         const response = await fetch(`/api/history/${ticker}`);
         const data = await response.json();
