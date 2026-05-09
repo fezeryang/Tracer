@@ -71,9 +71,18 @@ const QuoteCard: React.FC<QuoteCardProps> = ({ quote }) => {
         )}
         
         <div className="px-5 pb-5 grid grid-cols-2 gap-4">
-             <div className="bg-slate-950 p-2 rounded-lg border border-white/5 flex justify-between items-center">
-                 <span className="text-[10px] text-slate-500 uppercase font-bold">Implied Volatility</span>
-                 <span className="text-cyan-400 font-mono font-bold">{(quote.volatility * 100).toFixed(1)}%</span>
+             <div className="bg-slate-950 p-2 rounded-lg border border-white/5 flex flex-col">
+                 <div className="flex justify-between items-center">
+                   <span className="text-[10px] text-slate-500 uppercase font-bold">Heuristic Vol. Est.</span>
+                   <span className="text-cyan-400 font-mono font-bold">{(quote.volatility * 100).toFixed(1)}%</span>
+                 </div>
+                 <span className="text-[9px] text-slate-600 mt-1">This value is not sourced from the real options market.</span>
+                 {isSimulation && (
+                   <div className="mt-1 flex items-center gap-1 text-[9px] text-rose-400 font-medium">
+                     <AlertTriangle className="w-3 h-3" />
+                     Simulation / Fallback
+                   </div>
+                 )}
              </div>
              <div className="bg-slate-950 p-2 rounded-lg border border-white/5 flex justify-between items-center">
                  <span className="text-[10px] text-slate-500 uppercase font-bold">Data Integrity</span>

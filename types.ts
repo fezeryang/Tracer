@@ -316,7 +316,7 @@ export interface NewsImpactAnalysis {
     confidence: number; // 0-100
     reasoning: string;
     similarEvents: HistoricalEvent[];
-    verdict: 'Load the Boat' | 'Buy Dip' | 'Wait' | 'Sell Strength' | 'Priced In';
+    verdict: 'Positive Event Signal' | 'Negative Event Signal' | 'Mixed Event Signal' | 'Likely Priced In' | 'Needs More Evidence';
 }
 
 export interface OptionContract {
@@ -342,6 +342,45 @@ export interface OptionsChain {
   puts: OptionContract[];
 }
 
+// --- Chat Render Block Types ---
+export type ChatBlockType =
+  | 'markdown'
+  | 'metric_grid'
+  | 'data_quality'
+  | 'source_trust'
+  | 'formula'
+  | 'chart'
+  | 'mermaid'
+  | 'action_buttons'
+  | 'evidence_list'
+  | 'disclaimer';
+
+export interface ChatMetricItem {
+  label: string;
+  value: string | number;
+  helper?: string;
+  tone?: 'neutral' | 'positive' | 'negative' | 'warning' | 'info';
+}
+
+export interface ChatAction {
+  label: string;
+  view?: ShellViewMode;
+  ticker?: string;
+  prompt?: string;
+  tone?: 'primary' | 'secondary' | 'warning';
+}
+
+export interface ChatRenderBlock {
+  id?: string;
+  type: ChatBlockType;
+  title?: string;
+  content?: string;
+  metrics?: ChatMetricItem[];
+  data?: any;
+  actions?: ChatAction[];
+  tone?: 'neutral' | 'info' | 'warning' | 'danger' | 'success';
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -354,6 +393,7 @@ export interface Message {
   quote?: StockQuote; // If the model fetches a quote
   isLoading?: boolean;
   ragContext?: string[];
+  blocks?: ChatRenderBlock[]; // Optional structured blocks for future AI-generated rendering
 }
 
 // --- Backtest Types ---
@@ -448,12 +488,26 @@ export interface WhisperSource {
 export interface WhisperData {
     ticker: string;
     overallScore: number; // 0-100
-    sentimentLabel: 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell';
+    sentimentLabel: 'Very Positive' | 'Positive' | 'Neutral' | 'Negative' | 'Very Negative';
     sources: WhisperSource[];
     summary: string;
     provider?: string;
     fetchedAt?: string;
 }
+
+// --- Backward Compatibility Helpers ---
+const OLD_TO_NEW_SENTIMENT_LABEL: Record<string, WhisperData['sentimentLabel']> = {
+  'Strong Buy': 'Very Positive',
+  'Buy': 'Positive',
+  'Hold': 'Neutral',
+  'Sell': 'Negative',
+  'Strong Sell': 'Very Negative',
+};
+
+/** Maps old sentimentLabel values (e.g. "Strong Buy") to new values (e.g. "Very Positive"). */
+export const migrateSentimentLabel = (label: string): WhisperData['sentimentLabel'] => {
+  return OLD_TO_NEW_SENTIMENT_LABEL[label] || 'Neutral';
+};
 
 export interface AiReportSections {
   summary: string;

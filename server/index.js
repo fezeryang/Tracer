@@ -1005,11 +1005,11 @@ const fetchStocktwitsFromApi = async (ticker, rapidApiKey) => {
   }
 
   let sentimentLabel;
-  if (sentimentScore >= 70) sentimentLabel = 'Strong Buy';
-  else if (sentimentScore >= 55) sentimentLabel = 'Buy';
-  else if (sentimentScore >= 45) sentimentLabel = 'Hold';
-  else if (sentimentScore >= 30) sentimentLabel = 'Sell';
-  else sentimentLabel = 'Strong Sell';
+  if (sentimentScore >= 70) sentimentLabel = 'Very Positive';
+  else if (sentimentScore >= 55) sentimentLabel = 'Positive';
+  else if (sentimentScore >= 45) sentimentLabel = 'Neutral';
+  else if (sentimentScore >= 30) sentimentLabel = 'Negative';
+  else sentimentLabel = 'Very Negative';
 
   return {
     ticker,
@@ -1023,7 +1023,7 @@ const fetchStocktwitsFromApi = async (ticker, rapidApiKey) => {
       insight: `Based on ${total} recent messages: ${bullish} bullish, ${bearish} bearish`,
       stats: { bullish, bearish, neutral, total }
     }],
-    summary: `StockTwits sentiment for ${ticker}: ${sentimentLabel} (${sentimentScore}/100) based on ${total} messages.`,
+    summary: `StockTwits social sentiment for ${ticker}: numeric score ${sentimentScore}/100 based on ${total} messages.`,
     provider: 'StockTwits (RapidAPI)',
     fetchedAt: new Date().toISOString()
   };

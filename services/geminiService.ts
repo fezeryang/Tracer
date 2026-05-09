@@ -103,7 +103,7 @@ const getStockTwitsDataTool: FunctionDeclaration = {
 
 const predictNewsImpactTool: FunctionDeclaration = {
     name: 'predictNewsImpact',
-    description: 'Analyzes a specific news headline to predict its short-term stock price impact based on historical patterns and sentiment velocity.',
+    description: 'Analyzes a specific news headline to estimate its short-term stock price impact based on historical patterns and sentiment velocity. Outputs a neutral research verdict.',
     parameters: {
         type: Type.OBJECT,
         properties: {
@@ -195,30 +195,47 @@ export const createChatSession = (): ChatSession => {
   const chat = ai.chats.create({
     model: 'gemini-3.1-pro-preview',
     config: {
-      systemInstruction: `You are "NUX", a high-performance AI financial research terminal for retail investors. 
+      systemInstruction: `You are "NUX", a high-performance AI financial research terminal for retail investors.
       Your tone is sharp, efficient, and slightly "cyberpunk/financial".
-      
+
       **RAG & MEMORY**:
       You have access to a vector database of previous market data. ALWAYS check the "Context" provided.
 
       **CAPABILITIES**:
-      1. **Real-time Data**: Always call 'getStockQuote' first for any ticker. 
+      1. **Real-time Data**: Always call 'getStockQuote' first for any ticker.
          - Explicitly mention the **SOURCE** of the data (e.g., "Sourced from Alpaca live feed").
          - If source is "Simulation" or "Yahoo", acknowledge it as potential delayed/fallback data.
       2. **Deep Analysis**: Use 'getCompanyFundamentals' for "why" questions.
       3. **Sentiment**: Use 'getWhisperData' and 'getMarketNews' for social/news trends.
       4. **News Impact**: If the user asks about specific breaking news or "What will happen to the price?", call 'predictNewsImpact'.
-      
+
       **TOOL INSTRUCTIONS**:
-      - **predictNewsImpact**: 
+      - **predictNewsImpact**:
         - Analyze the headline. Compare it to historical events (e.g., Earnings Beats, FDA approvals, CEO changes).
         - Predict a realistic % move range.
         - Calculate 'remainingAlpha' = (Predicted Avg - currentMovePercent).
-        - Output a 'verdict' (Load the Boat, Priced In, Sell Strength).
-      
+        - Output a 'verdict' using one of: Positive Event Signal, Negative Event Signal, Mixed Event Signal, Likely Priced In, Needs More Evidence.
+
       **Strategy Selection**:
       - High IV (>0.40): Sell premium (Iron Condors, Credit Spreads).
       - Low IV (<0.20): Buy premium (Long Calls, Debit Spreads).
+
+      **SAFETY CONSTRAINTS** — These are mandatory:
+      1. **No investment ratings**: You must NOT output Buy/Sell/Hold/Strong Buy/Strong Sell ratings. Do not assign rating labels to stocks, options, or strategies.
+      2. **No target prices or entry points**: Do not suggest specific target prices, entry points, support/resistance levels, stop-loss levels, or trade setups.
+      3. **Data quality citation**: Always state the source and quality of data (live, delayed, simulation, fallback). If data is simulated or unavailable, say so clearly.
+      4. **Volatility is heuristic**: The 'volatility' field in quote data is a heuristic estimate, not real implied volatility from the options market. Call this out when discussing options or volatility.
+      5. **Options strategy is educational**: Any options strategy discussion is for educational research only. Use phrases like "consider researching" or "study the mechanics" rather than "place this trade" or "execute this strategy".
+      6. **Missing data transparency**: When data is missing or unavailable, explain what is missing and why. Do not fabricate data.
+      7. **Chinese-mode equivalents**: When responding in Chinese, apply all the same constraints using equivalent Chinese terms.
+
+      **FORBIDDEN OUTPUT PATTERNS**:
+      - "Buy/Hold/Sell/Strong Buy/Strong Sell" as rating labels for any asset
+      - "This is a good entry point" or similar entry/timing advice
+      - "Target price: $XXX"
+      - "Set a stop-loss at $XXX"
+      - "Load the Boat / Buy Dip / Sell Strength / Priced In" verdict language
+      - Any language that could be construed as a trading recommendation
       `,
       tools: [{ functionDeclarations: [getQuoteTool, getFundamentalsTool, getNewsTool, getWhisperDataTool, getStockTwitsDataTool, predictNewsImpactTool, proposeStrategyTool] }],
       thinkingConfig: { thinkingBudget: 2048 }
@@ -348,16 +365,16 @@ export const createChatSession = (): ChatSession => {
                   currentMove: currentMovePercent,
                   remainingAlpha: parseFloat(((predictedLow + predictedHigh)/2 - currentMovePercent).toFixed(2)),
                   confidence: 78,
-                  reasoning: isPositive 
-                    ? "Keyword analysis detects strong positive momentum signals. Historical comparables suggest a 3-day continuation pattern." 
-                    : isNegative 
-                    ? "Negative sentiment keywords detected. Institutional distribution likely to continue until support levels are tested."
-                    : "Mixed signals detected. Volatility is expected to compress before the next directional move.",
+                  reasoning: isPositive
+                    ? "Keyword analysis detects strong positive momentum signals. Historical comparables suggest a continuation pattern worth monitoring."
+                    : isNegative
+                    ? "Negative sentiment keywords detected. Further observation is warranted to assess broader market reaction."
+                    : "Mixed signals detected. Market participants may need additional context before a clear directional signal emerges.",
                   similarEvents: [
                       { event: "Q3 Earnings Report", date: "2023-11-14", ticker, movePercent: isPositive ? 8.2 : -4.5, similarity: 90 },
                       { event: "Strategic Announcement", date: "2022-05-20", ticker, movePercent: isPositive ? 4.5 : -2.1, similarity: 75 }
                   ],
-                  verdict: (predictedLow + predictedHigh)/2 > currentMovePercent + 2 ? 'Load the Boat' : isNegative ? 'Sell Strength' : 'Priced In'
+                  verdict: (predictedLow + predictedHigh)/2 > currentMovePercent + 2 ? 'Positive Event Signal' : isNegative ? 'Negative Event Signal' : 'Mixed Event Signal'
               };
               
               fetchedImpact = analysis;

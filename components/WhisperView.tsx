@@ -80,7 +80,7 @@ const WhisperView: React.FC<{ language: Language }> = ({ language }) => {
                           <div>
                               <div className="text-[10px] text-slate-500 uppercase font-bold">Dominant Mood</div>
                               <div className={`text-lg font-bold ${data.overallScore > 50 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                  {data.sentimentLabel}
+                                  {t(language, `chat.sentiment.${data.sentimentLabel.toLowerCase().replace(/\s+/g, '_')}`)}
                               </div>
                           </div>
                           <div className="text-right">

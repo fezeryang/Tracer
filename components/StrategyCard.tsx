@@ -163,6 +163,11 @@ const StrategyCard: React.FC<StrategyCardProps> = ({ strategy }) => {
               </div>
           </div>
       )}
+      <div className="px-5 pb-4">
+        <p className="text-[10px] text-slate-500 italic text-center">
+          For educational research only. Not a trading recommendation.
+        </p>
+      </div>
     </div>
   );
 };
