@@ -23,10 +23,21 @@ import WhisperView from './components/WhisperView';
 import NewsImpactView from './components/NewsImpactView';
 import ChatMessageRenderer from './components/chat/ChatMessageRenderer';
 import EvidenceDrawer from './components/chat/EvidenceDrawer';
-import { executeCommand, CommandExecutorContext } from './services/chatCommandExecutor';
+import PromptSuggestionChips from './components/chat/PromptSuggestionChips';
+import ContextualPromptPanel from './components/chat/ContextualPromptPanel';
+import {
+  getStarterSuggestions,
+  getContextualSuggestions,
+  getDynamicPlaceholder,
+  ChatSuggestion,
+} from './services/chatSuggestionService';
+import { executeChatCommand, ChatCommandExecutionResult } from './services/chatCommandExecutor';
 import { parseChatCommand } from './services/chatCommandRegistry';
 import { ChatGoal, compileChatGoal } from './services/chatGoalCompiler';
 import { classifyChatIntentWithDeepSeek, DeepSeekIntentResult } from './services/chatIntentClassifierService';
+import { routeChatModel } from './services/chatModelRouter';
+import { composeFinancialChatAnswer } from './services/chatAnswerComposer';
+import { planRichBlocksForAnswer } from './services/richBlockPlanner';
 import {
   buildContextSummaryForPrompt,
   ChatContext,
@@ -57,13 +68,6 @@ import { ShellViewMode } from './types';
 
 const SESSION_STORAGE_KEY = 'nux-session';
 const createMessageId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-interface CommandRouteMeta {
-  ticker?: string;
-  command?: string;
-  intent?: string;
-  deepSeekIntentResult?: DeepSeekIntentResult;
-}
 
 interface DeepSeekCallMemo {
   normalizedInput: string;
@@ -167,55 +171,6 @@ const createContextAwareGoal = (goal: ChatGoal, ticker: string): ChatGoal => ({
   reason: `${goal.reason}:context_ticker`,
   safetyNotes: Array.from(new Set([...goal.safetyNotes, 'using_current_ticker'])),
 });
-
-const getBlockData = (message: Message, blockType: string) => {
-  return message.blocks?.find((block) => block.type === blockType)?.data;
-};
-
-const extractDataQualityNotes = (message: Message): string[] | undefined => {
-  const notes = message.blocks
-    ?.filter((block) => block.type === 'disclaimer' && block.content)
-    .map((block) => String(block.content))
-    .slice(0, 4);
-  return notes && notes.length > 0 ? notes : undefined;
-};
-
-const extractHistorySummary = (message: Message, ticker?: string): ChatContext['lastHistorySummary'] => {
-  const chartData = getBlockData(message, 'chart')?.chartData;
-  if (!ticker || !Array.isArray(chartData) || chartData.length === 0) return undefined;
-  const latest = chartData[chartData.length - 1];
-  return {
-    ticker,
-    points: chartData.length,
-    startDate: String(chartData[0]?.label || ''),
-    endDate: String(latest?.label || ''),
-    latestClose: Number.isFinite(Number(latest?.value)) ? Number(latest.value) : undefined,
-  };
-};
-
-const extractContextUpdateFromMessage = (message: Message, meta: CommandRouteMeta) => {
-  const evidence = getBlockData(message, 'evidence_list')?.evidence;
-  const trustSummary = getBlockData(message, 'source_trust')?.trustSummary;
-  const ticker = meta.ticker || message.quote?.symbol;
-  const command = meta.command;
-
-  return {
-    ticker,
-    command,
-    intent: meta.intent,
-    quote: message.quote,
-    fundamentals: message.fundamentals,
-    news: message.news,
-    verifiedNews: command === 'verified-news' && Array.isArray(evidence) ? evidence : undefined,
-    historySummary: command === 'history' || command === 'chart' ? extractHistorySummary(message, ticker) : undefined,
-    secFilings: command === 'sec' && Array.isArray(evidence) ? evidence : undefined,
-    officialSources: command === 'official' && Array.isArray(evidence) ? evidence : undefined,
-    sourceTrust: trustSummary,
-    evidenceBundle: command === 'evidence' && Array.isArray(evidence) ? evidence : undefined,
-    dataQualityNotes: extractDataQualityNotes(message),
-    deepSeekIntentResult: meta.deepSeekIntentResult,
-  };
-};
 
 const VoiceVisualizer = ({ active, onClose, language }: { active: boolean; onClose: () => void; language: Language }) => {
   if (!active) return null;
@@ -444,60 +399,87 @@ const App: React.FC = () => {
     window.speechSynthesis.speak(utterance);
   };
 
-  const buildExecutorContext = (meta: CommandRouteMeta = {}, currentTrace?: ChatTrace): CommandExecutorContext => ({
-    language,
-    t: (key, vars) => t(language, key, vars),
-    addMessage: (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
-      setChatContext((prev) => updateContextFromCommandResult(
-        prev,
-        extractContextUpdateFromMessage(msg, meta),
-      ));
+  // Helper to handle command execution result (new pattern)
+  const handleCommandResult = (
+    result: ChatCommandExecutionResult,
+    currentTrace: ChatTrace,
+    commandName: string,
+  ) => {
+    // Complete the command_execute trace step
+    let updatedTrace = completeTraceStep(
+      currentTrace,
+      'command_execute',
+      result.ok ? 'success' : 'error',
+      result.ok ? `${commandName} completed` : result.error,
+    );
 
-      // C-4: Extract evidence and link trace to message
-      if (currentTrace) {
-        try {
-          const evidence = extractEvidenceFromCommandResult(msg, meta.command);
-          const dataQualityNotes = extractDataQualityNotes(msg);
-
-          let updatedTrace = addEvidenceItems(currentTrace, evidence);
-          if (dataQualityNotes) {
-            updatedTrace = addDataQualityNotes(updatedTrace, dataQualityNotes);
-          }
-
-          const linkedTrace = linkTraceToMessage(updatedTrace, msg.id);
-          setChatTraces((prev) => {
-            const filtered = prev.filter((t) => t.id !== linkedTrace.id);
-            return [...filtered, linkedTrace].slice(-50); // Keep max 50 traces
-          });
-
-          // Update the message with traceId
-          setMessages((prev) => prev.map((m) =>
-            m.id === msg.id ? { ...m, traceId: linkedTrace.id } : m
-          ));
-        } catch (e) {
-          console.warn('[App] Trace update failed:', e);
-        }
-      }
-    },
-    setTyping: setIsTyping,
-    navigate: setView,
-    setTicker: (ticker: string) => {
-      const normTicker = (ticker || 'NVDA').trim().toUpperCase();
-      setSelectedTicker(normTicker);
-      saveSelectedTicker(normTicker);
-      setChatContext((prev) => updateContextFromCommandResult(prev, {
-        ticker: normTicker,
-        command: meta.command,
-        intent: meta.intent,
-        deepSeekIntentResult: meta.deepSeekIntentResult,
-      }));
-    },
-    resetMessages: (welcomeText: string) => {
+    // Handle clear
+    if (result.shouldClearMessages) {
+      const welcomeText = t(language, 'chat.welcome');
       setMessages([{ id: 'welcome', role: 'model', text: welcomeText }]);
       setChatContext(createEmptyChatContext());
-    },
-  });
+      setIsTyping(false);
+      return;
+    }
+
+    // Handle error
+    if (!result.ok) {
+      const errorMsg = result.text || result.error || t(language, 'chat.commands.fetchFailed');
+      setMessages((prev) => [...prev, {
+        id: createMessageId('cmd-error'),
+        role: 'model',
+        text: errorMsg,
+      }]);
+      setIsTyping(false);
+      return;
+    }
+
+    // Success: create message
+    const messageId = createMessageId('cmd');
+    const message: Message = {
+      id: messageId,
+      role: 'model',
+      text: result.text,
+      ...result.messagePatch,
+    };
+    setMessages((prev) => [...prev, message]);
+
+    // Update context
+    const contextUpdate = result.contextUpdate;
+    if (contextUpdate) {
+      setChatContext((prev) => updateContextFromCommandResult(prev, contextUpdate));
+    }
+
+    // Update trace with evidence + quality notes
+    updatedTrace = addEvidenceItems(updatedTrace, result.evidenceItems);
+    if (result.dataQualityNotes?.length) {
+      updatedTrace = addDataQualityNotes(updatedTrace, result.dataQualityNotes);
+    }
+    const linkedTrace = linkTraceToMessage(updatedTrace, messageId);
+    setChatTraces((prev) => {
+      const filtered = prev.filter((t) => t.id !== linkedTrace.id);
+      return [...filtered, linkedTrace].slice(-50);
+    });
+
+    // Link trace to message
+    setMessages((prev) => prev.map((m) =>
+      m.id === messageId ? { ...m, traceId: linkedTrace.id } : m
+    ));
+
+    // Navigate
+    if (result.navigateTo) {
+      setTimeout(() => setView(result.navigateTo!), 100);
+    }
+
+    // Set ticker
+    if (result.ticker) {
+      setSelectedTicker(result.ticker);
+      saveSelectedTicker(result.ticker);
+    }
+
+    setIsTyping(false);
+  };
+
 
   const handleSend = async (text: string = inputValue) => {
     if (!text.trim() || isTyping) return;
@@ -521,24 +503,59 @@ const App: React.FC = () => {
 
       // ── Phase C-3: Context-aware Goal Compiler routing ──
       const compiledGoal = compileChatGoal(text, { selectedTicker, language });
+      const recentMessagesForPlanner: Message[] = [
+        ...messages,
+        { id: userId, role: 'user', text },
+      ];
       const contextTicker = shouldUseContextForFollowup(text, chatContext)
         ? resolveContextTicker({ selectedTicker, context: chatContext })
         : undefined;
       const goal = !compiledGoal.ticker && contextTicker
         ? createContextAwareGoal(compiledGoal, contextTicker)
         : compiledGoal;
+      const shouldUsePlannerForChartExplanation = goal.source !== 'slash'
+        && goal.intent === 'chart'
+        && /解释|说明|怎么看|explain this move|explain.*trend|what.*trend|price action/i.test(text);
 
       if (goal.source === 'slash') {
-        currentTrace = addTraceStep(currentTrace, 'slash_command', `/${goal.command} ${goal.ticker || ''}`, 'pending');
-        await executeCommand(toExecutableIntent(goal), buildExecutorContext({
-          ticker: goal.ticker,
-          command: goal.command,
-          intent: goal.intent,
-        }, currentTrace));
+        currentTrace = addTraceStep(currentTrace, 'slash_command', `/${goal.command} ${goal.ticker || ''}`, 'success');
+        currentTrace = addTraceStep(currentTrace, 'command_execute', goal.command || 'unknown', 'pending');
+        const intent = toExecutableIntent(goal);
+        const result = await executeChatCommand({
+          command: intent.command || intent.name,
+          args: intent.ticker ? [intent.ticker] : [],
+          rawInput: `/${goal.command} ${goal.ticker || ''}`.trim(),
+          ticker: intent.ticker,
+          selectedTicker,
+          language,
+        });
+        handleCommandResult(result, currentTrace, goal.command || 'unknown');
         return;
       }
 
-      if (goal.source === 'local_rule' && goal.confidence >= 0.80 && goal.command) {
+      const deterministicRichBlockPlan = planRichBlocksForAnswer({
+        language,
+        userText: text,
+        context: chatContext,
+        recentMessages: recentMessagesForPlanner,
+        selectedTicker,
+      });
+      if (deterministicRichBlockPlan.reason.startsWith('mermaid_') && deterministicRichBlockPlan.blocks.length > 0) {
+        const firstBlock = deterministicRichBlockPlan.blocks[0];
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: createMessageId('mermaid-planner'),
+            role: 'model',
+            text: firstBlock.data?.description || firstBlock.title || t(language, 'chat.mermaid.title'),
+            blocks: deterministicRichBlockPlan.blocks,
+          },
+        ]);
+        setIsTyping(false);
+        return;
+      }
+
+      if (goal.source === 'local_rule' && goal.confidence >= 0.80 && goal.command && !shouldUsePlannerForChartExplanation) {
         currentTrace = addTraceStep(currentTrace, 'local_intent', `${goal.intent} (${(goal.confidence * 100).toFixed(0)}%)`, 'success');
         currentTrace = addTraceStep(currentTrace, 'command_execute', goal.command || 'unknown', 'pending');
 
@@ -556,11 +573,16 @@ const App: React.FC = () => {
             text: `${detectedText}${tickerFallbackText}`,
           },
         ]);
-        await executeCommand(toExecutableIntent(goal), buildExecutorContext({
-          ticker: goal.ticker,
-          command: goal.command,
-          intent: goal.intent,
-        }, currentTrace));
+        const localIntent = toExecutableIntent(goal);
+        const localResult = await executeChatCommand({
+          command: localIntent.command || localIntent.name,
+          args: localIntent.ticker ? [localIntent.ticker] : [],
+          rawInput: text,
+          ticker: localIntent.ticker,
+          selectedTicker,
+          language,
+        });
+        handleCommandResult(localResult, currentTrace, goal.command || 'unknown');
         return;
       }
 
@@ -640,43 +662,140 @@ const App: React.FC = () => {
                 text: `${detectedText}${tickerFallbackText}`,
               },
             ]);
-            await executeCommand(executableIntent, buildExecutorContext({
+            const dsResult = await executeChatCommand({
+              command: executableIntent.command || executableIntent.name,
+              args: executableIntent.ticker ? [executableIntent.ticker] : [],
+              rawInput: text,
               ticker: executableIntent.ticker,
-              command: executableIntent.command,
-              intent: executableIntent.name,
-              deepSeekIntentResult: llmIntent,
-            }, currentTrace));
+              selectedTicker,
+              language,
+            });
+            handleCommandResult(dsResult, currentTrace, executableIntent.command || 'unknown');
             return;
           }
         }
       }
 
+      if (shouldUsePlannerForChartExplanation) {
+        const richBlockPlan = planRichBlocksForAnswer({
+          language,
+          userText: text,
+          context: chatContext,
+          recentMessages: recentMessagesForPlanner,
+          selectedTicker,
+        });
+        if (richBlockPlan.blocks.length > 0 && richBlockPlan.reason !== 'reused_recent_chart_block') {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: createMessageId('chart-planner'),
+              role: 'model',
+              text: richBlockPlan.blocks[0].content || t(language, 'chat.chart.noReusableChart'),
+              blocks: richBlockPlan.blocks,
+            },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+      }
+
       if (goal.requiresTicker && !goal.ticker) {
         currentTrace = addTraceStep(currentTrace, 'fallback', 'Missing ticker', 'warning');
+        const richBlockPlan = planRichBlocksForAnswer({
+          language,
+          userText: text,
+          context: chatContext,
+          recentMessages: recentMessagesForPlanner,
+          selectedTicker,
+        });
         setMessages((prev) => [
           ...prev,
-          { id: createMessageId('goal-missing'), role: 'model', text: t(language, 'chat.goal.missingTicker') },
+          {
+            id: createMessageId('goal-missing'),
+            role: 'model',
+            text: t(language, 'chat.goal.missingTicker'),
+            blocks: richBlockPlan.blocks.length > 0 ? richBlockPlan.blocks : undefined,
+          },
         ]);
         setIsTyping(false);
         return;
       }
 
-      // Gemini fallback remains for open-ended analysis and low-confidence inputs.
+      // Gemini fallback for open-ended analysis and low-confidence inputs.
+      // C-6: Model router + answer composer integration.
+
+      // 1. Detect complex financial question
+      const isComplexFinancialQuestion =
+        goal.confidence < 0.45
+        && /分析|explain|why|risk|competitive|long.?term|business model|thesis|framework|compare|outlook|prospect|战略|优势|风险|前景|模型/i.test(text);
+
+      // 2. Route model
+      const modelRoute = routeChatModel({
+        purpose: isComplexFinancialQuestion
+          ? 'complex_financial_question'
+          : 'general_chat',
+        hasGeminiKey: Boolean(chatSessionRef.current),
+      });
+
+      // 3. Handle unavailable
+      if (modelRoute.provider === 'none') {
+        currentTrace = addTraceStep(currentTrace, 'model_route', t(language, 'chat.modelRouter.unavailable'), 'error');
+        currentTrace = addTraceStep(currentTrace, 'error', 'No API key', 'error');
+        const richBlockPlan = planRichBlocksForAnswer({
+          language,
+          userText: text,
+          context: chatContext,
+          recentMessages: recentMessagesForPlanner,
+          selectedTicker,
+        });
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: createMessageId('no-key'),
+            role: 'model',
+            text: t(language, 'chat.answerComposer.noApiKey'),
+            blocks: richBlockPlan.blocks.length > 0 ? richBlockPlan.blocks : undefined,
+          },
+        ]);
+        setIsTyping(false);
+        return;
+      }
+
+      // 4. Add trace step for model routing
+      currentTrace = addTraceStep(currentTrace, 'model_route',
+        `${modelRoute.provider}:${modelRoute.role}`, 'success');
       currentTrace = addTraceStep(currentTrace, 'fallback', 'Gemini AI', 'pending');
+
       try {
         if (!chatSessionRef.current) {
           throw new Error(GEMINI_KEY_MISSING_MESSAGE);
         }
 
-        const contextSummary = buildContextSummaryForPrompt(chatContext, language);
-        const promptWithContext = contextSummary
-          ? `${contextSummary}\n\n${language === 'zh' ? '用户问题：' : 'User question:'}\n${text}`
-          : text;
-        const response = await chatSessionRef.current.sendMessage(promptWithContext);
+        // 5. Build prompt
+        const prompt = isComplexFinancialQuestion
+          ? (() => {
+              const comp = composeFinancialChatAnswer({ userText: text, context: chatContext, language });
+              return `${comp.systemPrefix}\n\n${comp.contextSummary}\n\n${comp.userPrompt}\n\n${comp.safetyInstructions}`;
+            })()
+          : (() => {
+              const ctx = buildContextSummaryForPrompt(chatContext, language);
+              return ctx
+                ? `${ctx}\n\n${language === 'zh' ? '用户问题：' : 'User question:'}\n${text}`
+                : text;
+            })();
+
+        const response = await chatSessionRef.current.sendMessage(prompt);
 
         currentTrace = completeTraceStep(currentTrace, 'fallback', 'success');
 
         const geminiMsgId = createMessageId('gemini');
+        const richBlockPlan = planRichBlocksForAnswer({
+          language,
+          userText: text,
+          context: chatContext,
+          recentMessages: recentMessagesForPlanner,
+          selectedTicker,
+        });
         setMessages((prev) => [
           ...prev,
           {
@@ -690,6 +809,7 @@ const App: React.FC = () => {
             impactAnalysis: response.impactAnalysis,
             quote: response.quote,
             ragContext: response.ragContext,
+            blocks: richBlockPlan.blocks.length > 0 ? richBlockPlan.blocks : undefined,
           } as any,
         ]);
 
@@ -720,7 +840,18 @@ const App: React.FC = () => {
 
         setMessages((prev) => [
           ...prev,
-          { id: createMessageId('gemini-error'), role: 'model', text: errorText },
+          {
+            id: createMessageId('gemini-error'),
+            role: 'model',
+            text: errorText,
+            blocks: planRichBlocksForAnswer({
+              language,
+              userText: text,
+              context: chatContext,
+              recentMessages: recentMessagesForPlanner,
+              selectedTicker,
+            }).blocks,
+          },
         ]);
       } finally {
         setIsTyping(false);
@@ -754,6 +885,19 @@ const App: React.FC = () => {
     setInputValue(prompt);
   };
 
+  const handleSuggestionSelect = (suggestion: ChatSuggestion) => {
+    if (suggestion.command) {
+      void handleSend(
+        suggestion.command
+          ? `/${suggestion.command}${suggestion.requiresTicker && chatContext.currentTicker ? ` ${chatContext.currentTicker}` : ''}`
+          : suggestion.prompt.replace('{ticker}', chatContext.currentTicker || ''),
+      );
+    } else {
+      const prompt = suggestion.prompt.replace('{ticker}', chatContext.currentTicker || '');
+      void handleSend(prompt);
+    }
+  };
+
   const renderChatContent = () => {
     const quickTicker = selectedTicker || 'NVDA';
 
@@ -775,11 +919,20 @@ const App: React.FC = () => {
       )}
       {!isAiConfigured && <NuxNotice tone="warning">{t(language, 'common.configGeminiHint')}</NuxNotice>}
       {messages.length <= 2 && (
-        <div className="mb-8 grid grid-cols-2 gap-2 md:grid-cols-4 animate-fade-in-up">
-          <QuickChip icon={TrendingUp} label={t(language, 'chat.quickMoonshot')} onClick={() => void handleSend(`I'm extremely bullish on ${quickTicker}, what's a high upside play?`)} />
-          <QuickChip icon={Newspaper} label={t(language, 'chat.quickNews')} onClick={() => void handleSend(`Scan the news for ${quickTicker} and analyze sentiment.`)} />
-          <QuickChip icon={HelpCircle} label={t(language, 'chat.quickTheta')} onClick={() => void handleSend('I want to profit from time decay (Theta) on a tech stock.')} />
-          <QuickChip icon={Radio} label={t(language, 'chat.quickImpact')} onClick={() => setView('news-impact')} />
+        <div className="mb-8 animate-fade-in-up">
+          <PromptSuggestionChips
+            suggestions={getStarterSuggestions({ language, selectedTicker, contextTicker: chatContext.currentTicker })}
+            language={language}
+            onSelect={handleSuggestionSelect}
+          />
+          {chatContext.currentTicker && (
+            <ContextualPromptPanel
+              context={chatContext}
+              suggestions={getContextualSuggestions({ language, context: chatContext, lastCommand: chatContext.lastCommand, lastIntent: chatContext.lastIntent })}
+              language={language}
+              onSelect={handleSuggestionSelect}
+            />
+          )}
         </div>
       )}
 
@@ -901,7 +1054,7 @@ const App: React.FC = () => {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isListening ? t(language, 'common.listening') : t(language, 'common.chatPlaceholder')}
+              placeholder={isListening ? t(language, 'common.listening') : getDynamicPlaceholder({ language, context: chatContext, selectedTicker })}
               className="min-h-[50px] max-h-[120px] w-full resize-none bg-transparent p-3 text-sm text-white placeholder-slate-500 outline-none"
               rows={1}
               style={{ height: 'auto', minHeight: '50px' }}

@@ -25,6 +25,7 @@ export type ChatTraceStepType =
   | 'data_quality'
   | 'evidence'
   | 'fallback'
+  | 'model_route'
   | 'error';
 
 export interface ChatTraceStep {
@@ -378,6 +379,7 @@ export function getStepLabel(type: ChatTraceStepType, language: Language): strin
     data_quality: { zh: '数据质量检查', en: 'Data quality check' },
     evidence: { zh: '证据收集', en: 'Evidence collection' },
     fallback: { zh: '降级处理', en: 'Fallback' },
+    model_route: { zh: '模型路由', en: 'Model route' },
     error: { zh: '错误', en: 'Error' },
   };
   return labels[type]?.[language] || labels[type]?.en || type;

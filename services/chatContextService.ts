@@ -24,7 +24,7 @@ export interface ChatContext {
   lastUpdatedAt?: string;
 }
 
-interface ContextUpdateInput {
+export interface ContextUpdateInput {
   ticker?: string;
   command?: string;
   intent?: string;
