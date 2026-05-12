@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   composeFinancialChatAnswer,
   buildRichContextSummary,
+  planRichAnswer,
+  sanitizeFinancialSafetyText,
 } from '../chatAnswerComposer';
 import { ChatContext } from '../chatContextService';
 
@@ -90,14 +92,15 @@ describe('composeFinancialChatAnswer', () => {
     expect(summary).toContain('high');
   });
 
-  it('safetyInstructions contains Buy/Sell/Hold prohibition', () => {
+  it('safetyInstructions prohibits directional trading ratings without banned labels', () => {
     const result = composeFinancialChatAnswer({
       userText: 'Should I buy NVDA?',
       context: makeContext(),
       language: 'en',
     });
 
-    expect(result.safetyInstructions).toContain('Buy/Sell/Hold');
+    expect(result.safetyInstructions).toContain('directional trading ratings');
+    expect(result.safetyInstructions).not.toContain('Buy/Sell/Hold');
   });
 
   it('output does NOT contain lastDeepSeekIntentResult content', () => {
@@ -149,11 +152,11 @@ describe('composeFinancialChatAnswer', () => {
     });
 
     // ZH uses Chinese labels
-    expect(zhResult.safetyInstructions).toContain('买入');
+    expect(zhResult.safetyInstructions).toContain('方向性交易评级');
     expect(zhResult.userPrompt).toContain('用户问题');
 
     // EN uses English labels
-    expect(enResult.safetyInstructions).toContain('Buy');
+    expect(enResult.safetyInstructions).toContain('directional trading ratings');
     expect(enResult.userPrompt).toContain('User question');
 
     // Both contain the ticker
@@ -179,5 +182,88 @@ describe('composeFinancialChatAnswer', () => {
     expect(summary).toContain('News 3');
     expect(summary).not.toContain('News 4');
     expect(summary).not.toContain('News 5');
+  });
+});
+
+describe('planRichAnswer', () => {
+  it('recommends chart-oriented blocks for trend questions', () => {
+    const result = planRichAnswer({
+      userText: 'Explain this price action trend',
+      context: makeContext({ currentTicker: 'NVDA' }),
+      selectedTicker: 'NVDA',
+      language: 'en',
+    });
+
+    expect(result.purpose).toBe('explain_trend');
+    expect(result.recommendedBlockKinds).toEqual(
+      expect.arrayContaining(['chart', 'data_quality', 'action_buttons', 'disclaimer']),
+    );
+  });
+
+  it('recommends evidence and source trust blocks for evidence questions', () => {
+    const result = planRichAnswer({
+      userText: '结合证据和 SEC 来源看什么？',
+      context: makeContext({ currentTicker: 'AAPL' }),
+      selectedTicker: 'AAPL',
+      language: 'zh',
+    });
+
+    expect(result.purpose).toBe('review_evidence');
+    expect(result.recommendedBlockKinds).toEqual(
+      expect.arrayContaining(['evidence_list', 'source_trust', 'data_table', 'action_buttons', 'disclaimer']),
+    );
+  });
+
+  it('recommends formula blocks for formula questions', () => {
+    const result = planRichAnswer({
+      userText: 'P/E 怎么算？',
+      language: 'zh',
+    });
+
+    expect(result.purpose).toBe('explain_formula');
+    expect(result.recommendedBlockKinds).toEqual(
+      expect.arrayContaining(['formula', 'action_buttons', 'disclaimer']),
+    );
+  });
+
+  it('recommends Mermaid blocks only as a kind, without generated block data', () => {
+    const result = planRichAnswer({
+      userText: 'draw an evidence chain workflow',
+      language: 'en',
+    });
+
+    expect(result.purpose).toBe('explain_context');
+    expect(result.recommendedBlockKinds).toContain('mermaid');
+    expect(JSON.stringify(result)).not.toContain('flowchart');
+    expect(JSON.stringify(result)).not.toContain('chartData');
+  });
+
+  it('falls back to general for unmatched prompts', () => {
+    const result = planRichAnswer({
+      userText: 'hello',
+      language: 'en',
+    });
+
+    expect(result.purpose).toBe('general');
+    expect(result.recommendedBlockKinds).toEqual([]);
+  });
+});
+
+describe('sanitizeFinancialSafetyText', () => {
+  it('removes prohibited visible trading words from Gemini text', () => {
+    const result = sanitizeFinancialSafetyText(
+      'No Buy/Sell/Hold, no target price, no entry point, no stop-loss. 不要买入、卖出、持有、抄底、加仓、减仓。',
+    );
+
+    expect(result).not.toMatch(/Buy|Sell|Hold|target price|entry point|stop-loss|买入|卖出|持有|抄底|加仓|减仓/i);
+    expect(result).toContain('directional trading rating');
+    expect(result).toContain('方向性交易评级');
+  });
+
+  it('sanitizes news-style titles that contain action wording', () => {
+    const result = sanitizeFinancialSafetyText('Should You Buy Nvidia Before Earnings?');
+
+    expect(result).not.toMatch(/\bBuy\b/i);
+    expect(result).toContain('directional trading rating');
   });
 });

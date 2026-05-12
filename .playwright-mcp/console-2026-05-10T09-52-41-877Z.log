@@ -1,0 +1,106 @@
+[     165ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ https://cdn.tailwindcss.com/:63
+[     474ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:21550
+[     620ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[     621ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[     624ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[     625ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    2015ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    2015ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    2839ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    2864ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    3363ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    4323ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  115401ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  116770ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  118139ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  231473ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  232831ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  234226ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  267649ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:559
+[  267666ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  268673ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  269676ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  270680ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  270382ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  271387ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  272391ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  273395ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  274399ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  275404ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  276410ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  277413ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  278417ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  279420ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  280426ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  281434ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  282442ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  283452ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  284455ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  285459ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  286462ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  287472ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  288476ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  288781ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  288783ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/auth/heartbeat:0
+[  288783ms] [ERROR] Heartbeat failed TypeError: Failed to fetch
+    at http://localhost:5173/App.tsx?t=1778406709127:356:7 @ http://localhost:5173/App.tsx?t=1778406709127:362
+[  288792ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/SPY:0
+[  288792ms] [WARNING] [MarketService] Backend fetch failed for SPY. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at load (http://localhost:5173/components/MarketOverviewStrip.tsx:52:60)
+    at http://localhost:5173/components/MarketOverviewStrip.tsx:77:15
+    at http://localhost:5173/components/MarketOverviewStrip.tsx:78:9 @ http://localhost:5173/services/marketDataService.ts:68
+[  289294ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  289299ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/QQQ:0
+[  289299ms] [WARNING] [MarketService] Backend fetch failed for QQQ. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at load (http://localhost:5173/components/MarketOverviewStrip.tsx:52:60)
+    at async http://localhost:5173/components/MarketOverviewStrip.tsx:77:9 @ http://localhost:5173/services/marketDataService.ts:68
+[  289483ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  289801ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  289803ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/DIA:0
+[  289803ms] [WARNING] [MarketService] Backend fetch failed for DIA. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at load (http://localhost:5173/components/MarketOverviewStrip.tsx:52:60)
+    at async http://localhost:5173/components/MarketOverviewStrip.tsx:77:9 @ http://localhost:5173/services/marketDataService.ts:68
+[  290304ms] [LOG] [MarketService] Fetching data for GLD from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  290307ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/GLD:0
+[  290307ms] [WARNING] [MarketService] Backend fetch failed for GLD. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at load (http://localhost:5173/components/MarketOverviewStrip.tsx:52:60)
+    at async http://localhost:5173/components/MarketOverviewStrip.tsx:77:9 @ http://localhost:5173/services/marketDataService.ts:68
+[  290488ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  290807ms] [LOG] [MarketService] Fetching data for USO from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  290809ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/USO:0
+[  290810ms] [WARNING] [MarketService] Backend fetch failed for USO. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at load (http://localhost:5173/components/MarketOverviewStrip.tsx:52:60)
+    at async http://localhost:5173/components/MarketOverviewStrip.tsx:77:9 @ http://localhost:5173/services/marketDataService.ts:68
+[  291311ms] [LOG] [MarketService] Fetching data for BTC from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  291313ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/BTC:0
+[  291313ms] [WARNING] [MarketService] Backend fetch failed for BTC. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at load (http://localhost:5173/components/MarketOverviewStrip.tsx:52:60)
+    at async http://localhost:5173/components/MarketOverviewStrip.tsx:77:9 @ http://localhost:5173/services/marketDataService.ts:68
+[  291491ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  292445ms] [LOG] [MarketService] Fetching data for MSFT from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  292447ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/MSFT:0
+[  292447ms] [WARNING] [MarketService] Backend fetch failed for MSFT. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at http://localhost:5173/components/OverviewView.tsx?t=1778406643559:96:41
+    at http://localhost:5173/components/OverviewView.tsx?t=1778406643559:105:11 @ http://localhost:5173/services/marketDataService.ts:68
+[  292494ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  292948ms] [LOG] [MarketService] Fetching data for GOOGL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  292951ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/GOOGL:0
+[  292951ms] [WARNING] [MarketService] Backend fetch failed for GOOGL. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at http://localhost:5173/components/OverviewView.tsx?t=1778406643559:96:41 @ http://localhost:5173/services/marketDataService.ts:68
+[  293458ms] [LOG] [MarketService] Fetching data for AMZN from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  293461ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/api/quote/AMZN:0
+[  293461ms] [WARNING] [MarketService] Backend fetch failed for AMZN. Falling back to simulation. TypeError: Failed to fetch
+    at fetchStockQuote (http://localhost:5173/services/marketDataService.ts:31:28)
+    at http://localhost:5173/components/OverviewView.tsx?t=1778406643559:96:41 @ http://localhost:5173/services/marketDataService.ts:68
+[  293498ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  294502ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  295509ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  296513ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0

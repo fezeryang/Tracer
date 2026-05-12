@@ -1,0 +1,806 @@
+- generic [ref=e3]:
+  - generic [ref=e26]:
+    - complementary [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]: "N"
+        - generic [ref=e30]:
+          - generic [ref=e31]: NUX
+          - generic [ref=e32]: AI Research Terminal
+      - navigation [ref=e33]:
+        - button "总览" [ref=e34] [cursor=pointer]:
+          - img [ref=e35]
+          - text: 总览
+        - button "智能报告" [ref=e40] [cursor=pointer]:
+          - img [ref=e41]
+          - text: 智能报告
+        - button "聊天分析" [ref=e44] [cursor=pointer]:
+          - img [ref=e45]
+          - text: 聊天分析
+        - button "期权链" [ref=e47] [cursor=pointer]:
+          - img [ref=e48]
+          - text: 期权链
+        - button "策略回测" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - text: 策略回测
+        - button "新闻影响" [ref=e57] [cursor=pointer]:
+          - img [ref=e58]
+          - text: 新闻影响
+        - button "宏观数据" [ref=e64] [cursor=pointer]:
+          - img [ref=e65]
+          - text: 宏观数据
+        - button "模拟交易" [ref=e68] [cursor=pointer]:
+          - img [ref=e69]
+          - text: 模拟交易
+        - button "时间机器" [ref=e73] [cursor=pointer]:
+          - img [ref=e74]
+          - text: 时间机器
+        - button "市场情绪" [ref=e77] [cursor=pointer]:
+          - img [ref=e78]
+          - text: 市场情绪
+        - button "学院" [ref=e83] [cursor=pointer]:
+          - img [ref=e84]
+          - text: 学院
+        - button "反馈" [ref=e87] [cursor=pointer]:
+          - img [ref=e88]
+          - text: 反馈
+        - button "管理后台" [ref=e90] [cursor=pointer]:
+          - img [ref=e91]
+          - text: 管理后台
+      - generic [ref=e94]:
+        - generic [ref=e95]: 风险概览
+        - generic [ref=e96]: "42"
+        - generic [ref=e97]: 中等
+    - generic [ref=e98]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - img
+            - textbox "搜索资产、市场、报告..." [ref=e103]
+          - generic [ref=e104]:
+            - generic [ref=e107]:
+              - generic [ref=e108]: 市场已收盘
+              - generic [ref=e109]: "当前时间: 04:35:01 PM"
+            - button "English" [ref=e110] [cursor=pointer]:
+              - img [ref=e111]
+              - text: English
+            - button [ref=e116] [cursor=pointer]:
+              - img [ref=e117]
+            - button [ref=e120] [cursor=pointer]:
+              - img [ref=e121]
+            - button [ref=e124] [cursor=pointer]:
+              - img [ref=e125]
+        - generic [ref=e330]:
+          - generic [ref=e333]:
+            - generic [ref=e334]: NUX 智能金融研究终端
+            - heading "AI 聊天分析" [level=1] [ref=e335]
+            - paragraph [ref=e336]: 围绕行情、新闻、期权和策略进行交互式研究。
+          - generic [ref=e337]: "当前研究对象: TSLA"
+          - generic [ref=e384]: "当前上下文: TSLA · 最近查看: 证据包"
+          - generic [ref=e358]:
+            - img [ref=e360]
+            - generic [ref=e363]:
+              - paragraph [ref=e1255]: NUX 智能金融研究终端已启动。市场数据链路已连接，等待你的指令。
+              - button "朗读" [ref=e365] [cursor=pointer]:
+                - img [ref=e366]
+          - paragraph [ref=e1256]: /quote AAPL
+          - generic [ref=e390]:
+            - img [ref=e392]
+            - generic [ref=e394]:
+              - generic [ref=e395]:
+                - paragraph [ref=e1257]: 已获取 AAPL 行情。以下数据仅供学习研究使用。
+                - button "朗读" [ref=e397] [cursor=pointer]:
+                  - img [ref=e398]
+              - generic [ref=e402]:
+                - generic [ref=e403]:
+                  - heading "Raw Market Feed" [level=3] [ref=e404]:
+                    - img [ref=e405]
+                    - text: Raw Market Feed
+                  - generic [ref=e407]:
+                    - img [ref=e408]
+                    - text: "Source: Alpaca Markets (IEX)"
+                - generic [ref=e412]:
+                  - generic [ref=e413]:
+                    - generic [ref=e414]: AAPL
+                    - generic [ref=e415]:
+                      - img [ref=e416]
+                      - text: Real-time Snapshot
+                  - generic [ref=e419]:
+                    - generic [ref=e420]: $292.85
+                    - generic [ref=e421]: +5.45 (1.90%)
+                - generic [ref=e422]:
+                  - generic [ref=e423]:
+                    - generic [ref=e424]:
+                      - generic [ref=e425]: Heuristic Vol. Est.
+                      - generic [ref=e426]: 17.0%
+                    - generic [ref=e427]: This value is not sourced from the real options market.
+                  - generic [ref=e428]:
+                    - generic [ref=e429]: Data Integrity
+                    - generic [ref=e430]: HIGH
+              - generic [ref=e432]:
+                - heading "数据质量" [level=4] [ref=e433]:
+                  - img [ref=e434]
+                  - text: 数据质量
+                - generic [ref=e436]:
+                  - generic [ref=e437]:
+                    - generic [ref=e438]:
+                      - img [ref=e439]
+                      - generic [ref=e441]: 行情
+                    - generic [ref=e442]: "来自数据提供商: Alpaca Markets (IEX)"
+                  - generic [ref=e443]:
+                    - generic [ref=e444]:
+                      - img [ref=e445]
+                      - generic [ref=e449]: 基本面
+                    - generic [ref=e450]: 暂无数据
+                  - generic [ref=e451]:
+                    - generic [ref=e452]:
+                      - img [ref=e453]
+                      - generic [ref=e457]: 新闻
+                    - generic [ref=e458]: 暂无数据
+              - generic [ref=e459]:
+                - img [ref=e460]
+                - generic [ref=e463]: 聊天操作
+                - generic [ref=e464]: · 3 步骤
+                - generic [ref=e465]:
+                  - img [ref=e466]
+                  - text: 870ms
+                - button "查看证据" [ref=e469] [cursor=pointer]:
+                  - img [ref=e470]
+                  - text: 查看证据
+                  - img [ref=e473]
+          - paragraph [ref=e1258]: 苹果现价多少
+          - generic [ref=e485]:
+            - img [ref=e487]
+            - generic [ref=e490]:
+              - paragraph [ref=e1259]: 已识别为 行情 查询，将使用 NUX 系统数据服务处理。
+              - button "朗读" [ref=e492] [cursor=pointer]:
+                - img [ref=e493]
+          - generic [ref=e497]:
+            - img [ref=e499]
+            - generic [ref=e501]:
+              - generic [ref=e502]:
+                - paragraph [ref=e1260]: 已获取 AAPL 行情。以下数据仅供学习研究使用。
+                - button "朗读" [ref=e504] [cursor=pointer]:
+                  - img [ref=e505]
+              - generic [ref=e509]:
+                - generic [ref=e510]:
+                  - heading "Raw Market Feed" [level=3] [ref=e511]:
+                    - img [ref=e512]
+                    - text: Raw Market Feed
+                  - generic [ref=e514]:
+                    - img [ref=e515]
+                    - text: "Source: Alpaca Markets (IEX)"
+                - generic [ref=e519]:
+                  - generic [ref=e520]:
+                    - generic [ref=e521]: AAPL
+                    - generic [ref=e522]:
+                      - img [ref=e523]
+                      - text: Real-time Snapshot
+                  - generic [ref=e526]:
+                    - generic [ref=e527]: $292.85
+                    - generic [ref=e528]: +5.45 (1.90%)
+                - generic [ref=e529]:
+                  - generic [ref=e530]:
+                    - generic [ref=e531]:
+                      - generic [ref=e532]: Heuristic Vol. Est.
+                      - generic [ref=e533]: 18.0%
+                    - generic [ref=e534]: This value is not sourced from the real options market.
+                  - generic [ref=e535]:
+                    - generic [ref=e536]: Data Integrity
+                    - generic [ref=e537]: HIGH
+              - generic [ref=e539]:
+                - heading "数据质量" [level=4] [ref=e540]:
+                  - img [ref=e541]
+                  - text: 数据质量
+                - generic [ref=e543]:
+                  - generic [ref=e544]:
+                    - generic [ref=e545]:
+                      - img [ref=e546]
+                      - generic [ref=e548]: 行情
+                    - generic [ref=e549]: "来自数据提供商: Alpaca Markets (IEX)"
+                  - generic [ref=e550]:
+                    - generic [ref=e551]:
+                      - img [ref=e552]
+                      - generic [ref=e556]: 基本面
+                    - generic [ref=e557]: 暂无数据
+                  - generic [ref=e558]:
+                    - generic [ref=e559]:
+                      - img [ref=e560]
+                      - generic [ref=e564]: 新闻
+                    - generic [ref=e565]: 暂无数据
+              - generic [ref=e566]:
+                - img [ref=e567]
+                - generic [ref=e570]: 聊天操作
+                - generic [ref=e571]: · 3 步骤
+                - generic [ref=e572]:
+                  - img [ref=e573]
+                  - text: 841ms
+                - button "查看证据" [ref=e576] [cursor=pointer]:
+                  - img [ref=e577]
+                  - text: 查看证据
+                  - img [ref=e580]
+          - paragraph [ref=e1261]: /evidence TSLA
+          - generic [ref=e613]:
+            - img [ref=e615]
+            - generic [ref=e617]:
+              - generic [ref=e618]:
+                - paragraph [ref=e1262]: 已汇总 TSLA 综合证据。
+                - button "朗读" [ref=e620] [cursor=pointer]:
+                  - img [ref=e621]
+              - generic [ref=e625]:
+                - generic [ref=e626]:
+                  - heading "数据质量" [level=4] [ref=e627]:
+                    - img [ref=e628]
+                    - text: 数据质量
+                  - generic [ref=e630]:
+                    - generic [ref=e631]:
+                      - generic [ref=e632]:
+                        - img [ref=e633]
+                        - generic [ref=e635]: 行情
+                      - generic [ref=e636]: "来自数据提供商: Alpaca Markets (IEX)"
+                    - generic [ref=e637]:
+                      - generic [ref=e638]:
+                        - img [ref=e639]
+                        - generic [ref=e643]: 基本面
+                      - generic [ref=e644]: 暂无数据
+                    - generic [ref=e645]:
+                      - generic [ref=e646]:
+                        - img [ref=e647]
+                        - generic [ref=e651]: 新闻
+                      - generic [ref=e652]: 暂无数据
+                - generic [ref=e653]:
+                  - heading "来源可信度" [level=4] [ref=e654]:
+                    - img [ref=e655]
+                    - text: 来源可信度
+                  - generic [ref=e657]:
+                    - generic [ref=e658]:
+                      - img [ref=e659]
+                      - generic [ref=e662]: high
+                    - generic [ref=e663]: "76"
+                  - generic [ref=e666]:
+                    - generic [ref=e667]:
+                      - img [ref=e668]
+                      - generic [ref=e671]: "3"
+                      - generic [ref=e672]: Sources
+                    - generic [ref=e673]:
+                      - img [ref=e674]
+                      - generic [ref=e677]: "10"
+                      - generic [ref=e678]: SEC
+                  - generic [ref=e679]:
+                    - generic [ref=e680]:
+                      - img [ref=e681]
+                      - generic [ref=e684]: official_sources_available[3 sources, 3 types]
+                    - generic [ref=e685]:
+                      - img [ref=e686]
+                      - generic [ref=e689]: sec_filings_available[10 filings]
+                    - generic [ref=e690]:
+                      - img [ref=e691]
+                      - generic [ref=e694]: verified_news_available[5 items]
+                - generic [ref=e695]:
+                  - heading "证据来源" [level=4] [ref=e696]:
+                    - img [ref=e697]
+                    - text: 证据来源
+                  - generic [ref=e700]:
+                    - generic [ref=e701]:
+                      - generic [ref=e704]: "[49% 可信新闻] Prediction: The Helium Crunch Will Accelerate the Reshoring of Artificial Intelligence (AI) Chip Manufacturing. Here Are the Best Growth Stocks to Own."
+                      - generic [ref=e705]:
+                        - generic [ref=e706]: The Motley Fool
+                        - link [ref=e707] [cursor=pointer]:
+                          - /url: https://www.fool.com/investing/2026/05/09/helium-crunch-accelerates-ai-chip-reshoring/?source=iedfolrf0000001
+                          - img [ref=e708]
+                    - generic [ref=e712]:
+                      - generic [ref=e715]: "[46% 可信新闻] EVs Are Out of the Headlines and That's Exactly Why These 2 Stocks Are Buys"
+                      - generic [ref=e716]:
+                        - generic [ref=e717]: The Motley Fool
+                        - link [ref=e718] [cursor=pointer]:
+                          - /url: https://www.fool.com/investing/2026/05/09/evs-are-out-of-the-headlines-and-thats-exactly-why/?source=iedfolrf0000001
+                          - img [ref=e719]
+                    - generic [ref=e723]:
+                      - generic [ref=e726]: "[49% 可信新闻] Bullish on Robotaxis? This Is the Stock To Buy (Hint: It's Not Tesla or Alphabet)"
+                      - generic [ref=e727]:
+                        - generic [ref=e728]: The Motley Fool
+                        - link [ref=e729] [cursor=pointer]:
+                          - /url: https://www.fool.com/investing/2026/05/09/bullish-on-robotaxis-this-is-the-stock-to-buy-hint/?source=iedfolrf0000001
+                          - img [ref=e730]
+                    - generic [ref=e734]:
+                      - generic [ref=e737]: "[49% 可信新闻] Is It Finally Time to Buy Uber Stock?"
+                      - generic [ref=e738]:
+                        - generic [ref=e739]: The Motley Fool
+                        - link [ref=e740] [cursor=pointer]:
+                          - /url: https://www.fool.com/investing/2026/05/08/is-it-finally-time-to-buy-uber-stock/?source=iedfolrf0000001
+                          - img [ref=e741]
+                    - generic [ref=e745]:
+                      - generic [ref=e748]: "[49% 可信新闻] Nasdaq 100 Climbs Records, Oil Extends Drop As Iran Weighs Hormuz Deal: Stock Market Today"
+                      - generic [ref=e749]:
+                        - generic [ref=e750]: Benzinga
+                        - link [ref=e751] [cursor=pointer]:
+                          - /url: https://www.benzinga.com/markets/equities/26/05/52378659/nasdaq-100-record-highs-oil-slips-stocks-drift-iran-hormuz-deal-datadog-hr-block-planet-fitness-?utm_source=benzinga_taxonomy&utm_medium=rss_feed_free&utm_content=taxonomy_rss&utm_campaign=channel
+                          - img [ref=e752]
+                    - generic [ref=e756]:
+                      - generic [ref=e759]: 10-Q (2026-04-23)
+                      - generic [ref=e760]:
+                        - generic [ref=e761]: SEC
+                        - link [ref=e762] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026026673/tsla-20260331.htm
+                          - img [ref=e763]
+                    - generic [ref=e767]:
+                      - generic [ref=e770]: 8-K (2026-04-22)
+                      - generic [ref=e771]:
+                        - generic [ref=e772]: SEC
+                        - link [ref=e773] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026026551/tsla-20260422.htm
+                          - img [ref=e774]
+                    - generic [ref=e778]:
+                      - generic [ref=e781]: 8-K (2026-04-02)
+                      - generic [ref=e782]:
+                        - generic [ref=e783]: SEC
+                        - link [ref=e784] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026022956/tsla-20260402.htm
+                          - img [ref=e785]
+                    - generic [ref=e789]:
+                      - generic [ref=e792]: 10-K (2026-01-29)
+                      - generic [ref=e793]:
+                        - generic [ref=e794]: SEC
+                        - link [ref=e795] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm
+                          - img [ref=e796]
+                    - generic [ref=e800]:
+                      - generic [ref=e803]: 8-K (2026-01-28)
+                      - generic [ref=e804]:
+                        - generic [ref=e805]: SEC
+                        - link [ref=e806] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026003837/tsla-20260128.htm
+                          - img [ref=e807]
+                    - generic [ref=e811]:
+                      - generic [ref=e814]: 8-K (2026-01-02)
+                      - generic [ref=e815]:
+                        - generic [ref=e816]: SEC
+                        - link [ref=e817] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026000016/tsla-20260102.htm
+                          - img [ref=e818]
+                    - generic [ref=e822]:
+                      - generic [ref=e825]: 8-K (2025-11-07)
+                      - generic [ref=e826]:
+                        - generic [ref=e827]: SEC
+                        - link [ref=e828] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000110465925108507/tm2530590d1_8k.htm
+                          - img [ref=e829]
+                    - generic [ref=e833]:
+                      - generic [ref=e836]: 10-Q (2025-10-23)
+                      - generic [ref=e837]:
+                        - generic [ref=e838]: SEC
+                        - link [ref=e839] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025045968/tsla-20250930.htm
+                          - img [ref=e840]
+                    - generic [ref=e844]:
+                      - generic [ref=e847]: 8-K (2025-10-22)
+                      - generic [ref=e848]:
+                        - generic [ref=e849]: SEC
+                        - link [ref=e850] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025045861/tsla-20251022.htm
+                          - img [ref=e851]
+                    - generic [ref=e855]:
+                      - generic [ref=e858]: 8-K (2025-10-02)
+                      - generic [ref=e859]:
+                        - generic [ref=e860]: SEC
+                        - link [ref=e861] [cursor=pointer]:
+                          - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025043530/tsla-20251002.htm
+                          - img [ref=e862]
+                    - generic [ref=e866]:
+                      - generic [ref=e869]: Tesla
+                      - generic [ref=e870]:
+                        - generic [ref=e871]: official_website
+                        - link [ref=e872] [cursor=pointer]:
+                          - /url: https://www.tesla.com
+                          - img [ref=e873]
+                    - generic [ref=e877]:
+                      - generic [ref=e880]: Tesla Investor Relations
+                      - generic [ref=e881]:
+                        - generic [ref=e882]: investor_relations
+                        - link [ref=e883] [cursor=pointer]:
+                          - /url: https://ir.tesla.com
+                          - img [ref=e884]
+                    - generic [ref=e888]:
+                      - generic [ref=e891]: SEC EDGAR Company Filings
+                      - generic [ref=e892]:
+                        - generic [ref=e893]: sec
+                        - link [ref=e894] [cursor=pointer]:
+                          - /url: https://www.sec.gov/edgar/browse/?CIK=1318605&owner=exclude
+                          - img [ref=e895]
+                - generic [ref=e899]:
+                  - button "生成完整报告" [ref=e900] [cursor=pointer]:
+                    - img [ref=e901]
+                    - text: 生成完整报告
+                  - button "分析新闻影响" [ref=e903] [cursor=pointer]:
+                    - img [ref=e904]
+                    - text: 分析新闻影响
+                  - button "查看宏观背景" [ref=e906] [cursor=pointer]:
+                    - img [ref=e907]
+                    - text: 查看宏观背景
+              - generic [ref=e909]:
+                - img [ref=e910]
+                - generic [ref=e913]: 聊天操作
+                - generic [ref=e914]: · 3 步骤
+                - generic [ref=e915]:
+                  - img [ref=e916]
+                  - text: 6.9s
+                - button "查看证据" [ref=e919] [cursor=pointer]:
+                  - img [ref=e920]
+                  - text: 查看证据
+                  - img [ref=e923]
+          - paragraph [ref=e1263]: 分析 NVDA 的长期竞争优势
+          - generic [ref=e962]:
+            - img [ref=e964]
+            - generic [ref=e966]:
+              - generic [ref=e967]:
+                - paragraph [ref=e1264]: 以下是基于 NUX 金融研究终端系统的 NVDA 长期竞争优势深度分析。
+                - heading "1. 结论摘要" [level=3] [ref=e969]
+                - paragraph [ref=e1265]: 基于可用基础数据与行业结构，NVDA（英伟达）的长期竞争优势主要建立在其“软硬一体化”的生态系统壁垒上。其核心护城河不仅来自于领先的图形处理单元（GPU）硬件架构，更源于其长期深耕的 CUDA 软件开发平台，以及近年来在数据中心网络互联解决方案上的扩张。这种全栈式（Full-stack）的 AI 计算能力使其在大型语言模型（LLMs）的训练与推理市场中占据了先发且具黏性的主导地位。
+                - heading "2. 当前上下文" [level=3] [ref=e971]
+                - paragraph [ref=e1266]: 根据系统终端拉取的最新数据：
+                - list [ref=e1267]:
+                  - listitem [ref=e1268]:
+                    - strong [ref=e1269]: 当前分析标的
+                    - text: ：NVDA（用户特别请求，偏离了先前上下文中的 TSLA）
+                  - listitem [ref=e1270]:
+                    - strong [ref=e1271]: 最新报价
+                    - text: ：$215.21，日内变动 +1.73%
+                  - listitem [ref=e1272]:
+                    - strong [ref=e1273]: 数据来源
+                    - text: ：来自 Alpaca Markets (IEX) 的实时数据流。
+                  - listitem [ref=e1274]:
+                    - strong [ref=e1275]: 波动率提示
+                    - text: ：当前系统显示的波动率参数（0.39）为试探性（heuristic）估算值，并非真实期权市场的隐含波动率（IV）。
+                - heading "3. 可用数据与证据" [level=3] [ref=e982]
+                - paragraph [ref=e1276]: 目前系统收集到的基本面（Fundamentals）数据如下：
+                - list [ref=e1277]:
+                  - listitem [ref=e1278]:
+                    - strong [ref=e1279]: 市值 (Market Cap)
+                    - text: ：约 $5.23 万亿美元（$5229B）
+                  - listitem [ref=e1280]:
+                    - strong [ref=e1281]: 市盈率 (P/E Ratio)
+                    - text: ：43.55
+                  - listitem [ref=e1282]:
+                    - strong [ref=e1283]: 贝塔系数 (Beta)
+                    - text: ：2.25（显示出显著高于大盘的历史波动敏感度）
+                  - listitem [ref=e1284]:
+                    - strong [ref=e1285]: 业务描述核心词
+                    - text: ：AI GPUs（硬件）、CUDA（软件模型开发与训练平台）、Data Center Networking（数据中心网络互联）。
+                  - listitem [ref=e1286]:
+                    - strong [ref=e1287]: 新闻与情绪
+                    - text: ：当前市场新闻抓取了5篇最新文章，市场关注点继续围绕其在 AI 算力供应链中的主导地位。
+                - heading "4. 分析框架" [level=3] [ref=e995]
+                - paragraph [ref=e1288]: 要解构 NVDA 的长期竞争优势，可以采用“生态锁定与全栈化”研究框架：
+                - list [ref=e1289]:
+                  - listitem [ref=e1290]:
+                    - strong [ref=e1291]: 护城河一层：软件生态锁定 (CUDA)
+                    - text: ：CUDA 是 AI 开发者习惯且依赖的并行计算平台。由于转换成本（Switching costs）极高，开发者一旦在 CUDA 上构建模型，便很难轻易迁移到竞争对手的硬件上。
+                  - listitem [ref=e1292]:
+                    - strong [ref=e1293]: 护城河二层：硬件架构与性能迭代
+                    - text: ：其 GPU（如 Hopper、Blackwell 架构）在单芯片算力、显存带宽以及互联速度上持续保持业界标杆，满足了参数量呈指数级爆炸的 AI 模型需求。
+                  - listitem [ref=e1294]:
+                    - strong [ref=e1295]: 护城河三层：系统级与网络解决方案
+                    - text: ：NVDA 不仅销售单一芯片，还提供通过 NVLink、InfiniBand 等技术将数以万计的 GPU 连接起来的完整数据中心解决方案，解决了集群运算的瓶颈。
+                - heading "5. 主要不确定性" [level=3] [ref=e1004]
+                - paragraph [ref=e1296]: 尽管具有结构性优势，但长期基本面仍面临以下不确定性：
+                - list [ref=e1297]:
+                  - listitem [ref=e1298]:
+                    - strong [ref=e1299]: 客户自研芯片 (Custom ASICs) 替代
+                    - text: ：超大型云服务提供商（如谷歌、亚马逊、微软）正在积极研发自有 AI 加速芯片，以降低对单一供应商的依赖和高昂的采购成本。
+                  - listitem [ref=e1300]:
+                    - strong [ref=e1301]: 地缘政治与出口管制
+                    - text: ：高端半导体设备及计算芯片受到严格的国际贸易出口限制，这可能影响其在全球特定庞大市场的长期营收天花板。
+                  - listitem [ref=e1302]:
+                    - strong [ref=e1303]: 资本支出 (CapEx) 周期
+                    - text: ：科技巨头当前的 AI 基础设施军备竞赛是否会遭遇产能过剩或投资回报率（ROI）见顶导致的支出缩减。
+                - heading "6. 下一步可以查看什么" [level=3] [ref=e1013]
+                - paragraph [ref=e1304]: 如需进一步深化研究，建议执行以下信息检索与分析：
+                - list [ref=e1305]:
+                  - listitem [ref=e1306]: 查阅 NVDA 最近一期的 10-Q 或 10-K 文件，专门拆解“Data Center”业务的营收占比及环比增速。
+                  - listitem [ref=e1307]: 分析头部云厂商（Hyper-scalers）最新财报中的资本支出（CapEx）前瞻指引。
+                  - listitem [ref=e1308]: 使用终端命令提取开发者社区（如 GitHub、Reddit 相关板块）对于非 CUDA 平台（如 AMD 的 ROCm）接受度的替代数据（Whisper Data）。
+                - heading "7. 风险提示" [level=3] [ref=e1019]
+                - list [ref=e1309]:
+                  - listitem [ref=e1310]:
+                    - strong [ref=e1311]: 无投资建议
+                    - text: ：本报告完全出于教育与研究目的生成，绝对不构成任何买入、卖出、持有或其他资产评级建议。
+                  - listitem [ref=e1312]:
+                    - strong [ref=e1313]: 无价格指引
+                    - text: ：本系统不提供且禁止提供任何目标价格预测、入场点位、支撑/阻力位分析或止损建议。
+                  - listitem [ref=e1314]:
+                    - strong [ref=e1315]: 数据质量说明
+                    - text: ：分析中涉及的报价来自 Alpaca Markets (IEX)；波动率等指标为系统算法估测值。在进行任何真实金融研究前，必须交叉验证原始数据，切勿将其直接作为交易决策依据。
+                - button "朗读" [ref=e1027] [cursor=pointer]:
+                  - img [ref=e1028]
+              - generic [ref=e1032]:
+                - generic [ref=e1033]:
+                  - heading "Raw Market Feed" [level=3] [ref=e1034]:
+                    - img [ref=e1035]
+                    - text: Raw Market Feed
+                  - generic [ref=e1037]:
+                    - img [ref=e1038]
+                    - text: "Source: Alpaca Markets (IEX)"
+                - generic [ref=e1042]:
+                  - generic [ref=e1043]:
+                    - generic [ref=e1044]: NVDA
+                    - generic [ref=e1045]:
+                      - img [ref=e1046]
+                      - text: Real-time Snapshot
+                  - generic [ref=e1049]:
+                    - generic [ref=e1050]: $215.21
+                    - generic [ref=e1051]: +3.65 (1.73%)
+                - generic [ref=e1052]:
+                  - generic [ref=e1053]:
+                    - generic [ref=e1054]:
+                      - generic [ref=e1055]: Heuristic Vol. Est.
+                      - generic [ref=e1056]: 39.0%
+                    - generic [ref=e1057]: This value is not sourced from the real options market.
+                  - generic [ref=e1058]:
+                    - generic [ref=e1059]: Data Integrity
+                    - generic [ref=e1060]: HIGH
+              - generic [ref=e1061]:
+                - generic [ref=e1062]:
+                  - generic [ref=e1063]:
+                    - img "NVDA" [ref=e1065]
+                    - generic [ref=e1070]:
+                      - heading "Nvidia Corp" [level=3] [ref=e1071]
+                      - text: NVDA
+                  - link "Company website" [ref=e1072] [cursor=pointer]:
+                    - /url: https://www.nvidia.com
+                    - img [ref=e1073]
+                - generic [ref=e1076]:
+                  - generic [ref=e1077]:
+                    - generic [ref=e1078]:
+                      - img [ref=e1079]
+                      - text: Market Cap
+                    - generic [ref=e1081]: $5.23T
+                  - generic [ref=e1082]:
+                    - generic [ref=e1083]:
+                      - img [ref=e1084]
+                      - text: Beta (Vol)
+                    - generic [ref=e1086]: "2.26"
+                  - generic [ref=e1087]:
+                    - generic [ref=e1088]:
+                      - img [ref=e1089]
+                      - text: P/E Ratio
+                    - generic [ref=e1092]: "43.6"
+                  - generic [ref=e1093]:
+                    - generic [ref=e1094]:
+                      - img [ref=e1095]
+                      - text: Sector
+                    - generic "SEMICONDUCTORS & RELATED DEVICES" [ref=e1099]
+                - paragraph [ref=e1102] [cursor=pointer]: Nvidia is a leading developer of graphics processing units. Traditionally, GPUs were used to enhance the experience on computing platforms, most notably in gaming applications on PCs. GPU use cases have since emerged as important semiconductors used in artificial intelligence to run large language models. Nvidia not only offers AI GPUs, but also a software platform, Cuda, used for AI model development and training. Nvidia is also expanding its data center networking solutions, helping to tie GPUs together to handle complex workloads.
+              - generic [ref=e1103]:
+                - generic [ref=e1104]:
+                  - heading "Market Intelligence" [level=3] [ref=e1105]: Market Intelligence
+                  - generic [ref=e1109]: Live Sentiment Feed
+                - generic [ref=e1110]:
+                  - generic [ref=e1111]:
+                    - generic [ref=e1112]:
+                      - generic [ref=e1113]:
+                        - generic [ref=e1114]:
+                          - generic [ref=e1115]:
+                            - img [ref=e1116]
+                            - text: Neutral
+                          - generic [ref=e1117]: The Motley Fool
+                          - generic [ref=e1118]: •
+                          - generic [ref=e1119]: 5/10/2026
+                        - heading "Is CoreWeave Stock a Buy on the Dip as Revenue Continues to Skyrocket?" [level=4] [ref=e1120]
+                        - paragraph [ref=e1121]: CoreWeave's stock fell despite reporting 112% revenue growth to $2.08 billion and a nearly $100 billion project backlog. However, the company's adjusted EPS loss widened to $1.12 (worse than expected $0.91), Q2 guidance missed consensus, and rising component costs forced the company to increase its capex budget. CoreWeave remains highly leveraged and dependent on off-the-shelf GPUs, making it vulnerable to rising chip prices.
+                      - img "news" [ref=e1122]
+                    - link "Read" [ref=e1125] [cursor=pointer]:
+                      - /url: https://www.fool.com/investing/2026/05/10/is-coreweave-stock-a-buy-on-the-dip-as-revenue-con/?source=iedfolrf0000001
+                      - text: Read
+                      - img [ref=e1126]
+                  - generic [ref=e1130]:
+                    - generic [ref=e1131]:
+                      - generic [ref=e1132]:
+                        - generic [ref=e1133]:
+                          - generic [ref=e1134]:
+                            - img [ref=e1135]
+                            - text: Positive
+                          - generic [ref=e1138]: The Motley Fool
+                          - generic [ref=e1139]: •
+                          - generic [ref=e1140]: 5/10/2026
+                        - 'heading "Prediction: The Helium Crunch Will Accelerate the Reshoring of Artificial Intelligence (AI) Chip Manufacturing. Here Are the Best Growth Stocks to Own." [level=4] [ref=e1141]'
+                        - paragraph [ref=e1142]: A helium supply disruption caused by Iranian drone strikes on Qatar's semiconductor-grade helium production facility is expected to accelerate the reshoring of AI chip manufacturing to the U.S. Intel and Taiwan Semiconductor Manufacturing (TSMC) are positioned to benefit from this trend, with Intel having secured deals with Tesla and Google, while TSMC is expanding its U.S. operations significantly.
+                      - img "news" [ref=e1143]
+                    - link "Read" [ref=e1147] [cursor=pointer]:
+                      - /url: https://www.fool.com/investing/2026/05/09/helium-crunch-accelerates-ai-chip-reshoring/?source=iedfolrf0000001
+                      - text: Read
+                      - img [ref=e1148]
+                  - generic [ref=e1152]:
+                    - generic [ref=e1153]:
+                      - generic [ref=e1154]:
+                        - generic [ref=e1155]:
+                          - generic [ref=e1156]:
+                            - img [ref=e1157]
+                            - text: Positive
+                          - generic [ref=e1160]: The Motley Fool
+                          - generic [ref=e1161]: •
+                          - generic [ref=e1162]: 5/10/2026
+                        - heading "Why Is AMD Stock Soaring?" [level=4] [ref=e1163]
+                        - paragraph [ref=e1164]: AMD stock is experiencing significant gains as one of the best-performing semiconductor stocks in 2026, with the company showing more optimism about its long-term prospects. The stock has surged 11.44% and is up 320% over the past year, prompting investors to reconsider their semiconductor investments.
+                      - img "news" [ref=e1165]
+                    - link "Read" [ref=e1169] [cursor=pointer]:
+                      - /url: https://www.fool.com/investing/2026/05/09/why-is-amd-stock-soaring/?source=iedfolrf0000001
+                      - text: Read
+                      - img [ref=e1170]
+                  - generic [ref=e1174]:
+                    - generic [ref=e1175]:
+                      - generic [ref=e1176]:
+                        - generic [ref=e1177]:
+                          - generic [ref=e1178]:
+                            - img [ref=e1179]
+                            - text: Neutral
+                          - generic [ref=e1180]: The Motley Fool
+                          - generic [ref=e1181]: •
+                          - generic [ref=e1182]: 5/10/2026
+                        - heading "Amazon CEO Andy Jassy Has Good News and Bad News for Nvidia Investors" [level=4] [ref=e1183]
+                        - paragraph [ref=e1184]: Amazon is increasing AI chip purchases but shifting focus toward its own custom Trainium accelerators instead of Nvidia GPUs. CEO Andy Jassy revealed that AWS is deploying more Trainium chips than Nvidia chips and has a $225 billion backlog for Trainium compute. Other cloud providers like Google and Microsoft are similarly developing custom chips, threatening Nvidia's dominant market position in AI accelerators.
+                      - img "news" [ref=e1185]
+                    - link "Read" [ref=e1188] [cursor=pointer]:
+                      - /url: https://www.fool.com/investing/2026/05/09/amazon-ceo-andy-jassy-has-good-news-and-bad-news-f/?source=iedfolrf0000001
+                      - text: Read
+                      - img [ref=e1189]
+                  - generic [ref=e1193]:
+                    - generic [ref=e1194]:
+                      - generic [ref=e1195]:
+                        - generic [ref=e1196]:
+                          - generic [ref=e1197]:
+                            - img [ref=e1198]
+                            - text: Positive
+                          - generic [ref=e1201]: The Motley Fool
+                          - generic [ref=e1202]: •
+                          - generic [ref=e1203]: 5/10/2026
+                        - heading "Is Intel Stock the Next Nvidia?" [level=4] [ref=e1204]
+                        - paragraph [ref=e1205]: Intel's stock has surged nearly 500% over the past year following strong Q1 2026 results and strategic partnerships with Apple, Nvidia, and others. However, the article argues Intel is not the next Nvidia due to vastly different growth rates, profitability, and margins. While Intel's data center and AI segment shows promise with 22% YoY growth, the stock's forward P/E ratio of 140 appears overvalued compared to Nvidia's P/E of 24, despite Nvidia's superior growth and profitability metrics.
+                      - img "news" [ref=e1206]
+                    - link "Read" [ref=e1210] [cursor=pointer]:
+                      - /url: https://www.fool.com/investing/2026/05/09/is-intel-stock-the-next-nvidia/?source=iedfolrf0000001
+                      - text: Read
+                      - img [ref=e1211]
+              - generic [ref=e1216]:
+                - heading "数据质量" [level=4] [ref=e1217]:
+                  - img [ref=e1218]
+                  - text: 数据质量
+                - generic [ref=e1220]:
+                  - generic [ref=e1221]:
+                    - generic [ref=e1222]:
+                      - img [ref=e1223]
+                      - generic [ref=e1225]: 行情
+                    - generic [ref=e1226]: "来自数据提供商: Alpaca Markets (IEX)"
+                  - generic [ref=e1227]:
+                    - generic [ref=e1228]:
+                      - img [ref=e1229]
+                      - generic [ref=e1231]: 基本面
+                    - generic [ref=e1232]: SEMICONDUCTORS & RELATED DEVICES / SEMICONDUCTORS & RELATED DEVICES
+                  - generic [ref=e1233]:
+                    - generic [ref=e1234]:
+                      - img [ref=e1235]
+                      - generic [ref=e1237]: 新闻
+                    - generic [ref=e1238]: 5 items (5 real)
+              - generic [ref=e1239]:
+                - img [ref=e1240]
+                - generic [ref=e1243]: 聊天操作
+                - generic [ref=e1244]: · 3 步骤
+                - generic [ref=e1245]:
+                  - img [ref=e1246]
+                  - text: 27.5s
+                - button "查看证据" [active] [ref=e1249] [cursor=pointer]:
+                  - img [ref=e1250]
+                  - text: 查看证据
+                  - img [ref=e1253]
+      - contentinfo [ref=e370]:
+        - generic [ref=e371]:
+          - generic [ref=e372]:
+            - button "语音指令" [ref=e373] [cursor=pointer]:
+              - img [ref=e374]
+            - textbox "描述你的市场观点..." [ref=e377]
+            - button [disabled] [ref=e378]:
+              - img [ref=e379]
+          - paragraph [ref=e382]: NUX 是一个 AI 金融研究工作台，不构成投资建议。期权交易具有高风险。
+  - generic [ref=e1318]:
+    - generic [ref=e1319]:
+      - generic [ref=e1320]:
+        - img [ref=e1322]
+        - heading "证据抽屉" [level=2] [ref=e1326]
+      - button "关闭" [ref=e1327] [cursor=pointer]:
+        - img [ref=e1328]
+    - generic [ref=e1331]:
+      - generic [ref=e1332]:
+        - heading "摘要" [level=3] [ref=e1333]
+        - generic [ref=e1334]:
+          - generic [ref=e1336]:
+            - generic [ref=e1337]: "创建时间:"
+            - text: 16:05:21
+          - generic [ref=e1338]:
+            - img [ref=e1339]
+            - generic [ref=e1342]: 成功
+            - generic [ref=e1343]: 27.5s
+      - generic [ref=e1344]:
+        - heading "工具步骤" [level=3] [ref=e1345]:
+          - img [ref=e1346]
+          - text: 工具步骤
+        - generic [ref=e1350]:
+          - generic [ref=e1351]:
+            - img [ref=e1353]
+            - generic [ref=e1356]:
+              - generic [ref=e1357]:
+                - generic [ref=e1358]: 分析 NVDA 的长期竞争优势
+                - generic [ref=e1359]: 成功
+              - generic [ref=e1361]: 16:05:21
+          - generic [ref=e1362]:
+            - img [ref=e1364]
+            - generic [ref=e1367]:
+              - generic [ref=e1368]:
+                - generic [ref=e1369]: gemini:answer_composer
+                - generic [ref=e1370]: 成功
+              - generic [ref=e1372]: 16:05:21
+          - generic [ref=e1373]:
+            - img [ref=e1375]
+            - generic [ref=e1378]:
+              - generic [ref=e1379]:
+                - generic [ref=e1380]: Gemini AI
+                - generic [ref=e1381]: 成功
+              - generic [ref=e1382]:
+                - generic [ref=e1383]: 16:05:21
+                - generic [ref=e1384]: 27.5s
+      - generic [ref=e1385]:
+        - heading "证据" [level=3] [ref=e1386]:
+          - img [ref=e1387]
+          - text: 证据
+        - generic [ref=e1390]:
+          - generic [ref=e1391]:
+            - heading "行情" [level=4] [ref=e1392]
+            - generic [ref=e1396]:
+              - paragraph [ref=e1397]: NVDA @ $215.21 (+1.73%)
+              - generic [ref=e1398]:
+                - generic [ref=e1399]: Alpaca Markets (IEX)
+                - generic [ref=e1400]: "置信度: 100%"
+                - generic [ref=e1401]: 16:05:49
+          - generic [ref=e1402]:
+            - heading "基本面" [level=4] [ref=e1403]
+            - generic [ref=e1407]:
+              - paragraph [ref=e1408]: "Nvidia Corp — P/E: 43.6, Market Cap: $5229.4B"
+              - generic [ref=e1409]:
+                - generic [ref=e1410]: Fundamentals
+                - generic [ref=e1411]: 16:05:49
+          - generic [ref=e1412]:
+            - heading "新闻" [level=4] [ref=e1413]
+            - generic [ref=e1414]:
+              - generic [ref=e1416]:
+                - generic [ref=e1417]:
+                  - paragraph [ref=e1418]: Is CoreWeave Stock a Buy on the Dip as Revenue Continues to Skyrocket?
+                  - generic [ref=e1419]:
+                    - generic [ref=e1420]: The Motley Fool
+                    - generic [ref=e1421]: "置信度: 50%"
+                    - generic [ref=e1422]: 14:30:00
+                - link "打开链接" [ref=e1423] [cursor=pointer]:
+                  - /url: https://www.fool.com/investing/2026/05/10/is-coreweave-stock-a-buy-on-the-dip-as-revenue-con/?source=iedfolrf0000001
+                  - img [ref=e1424]
+              - generic [ref=e1429]:
+                - generic [ref=e1430]:
+                  - paragraph [ref=e1431]: "Prediction: The Helium Crunch Will Accelerate the Reshoring of Artificial Intelligence (AI) Chip Manufacturing. Here Are the Best Growth Stocks to Own."
+                  - generic [ref=e1432]:
+                    - generic [ref=e1433]: The Motley Fool
+                    - generic [ref=e1434]: "置信度: 83%"
+                    - generic [ref=e1435]: 09:37:00
+                - link "打开链接" [ref=e1436] [cursor=pointer]:
+                  - /url: https://www.fool.com/investing/2026/05/09/helium-crunch-accelerates-ai-chip-reshoring/?source=iedfolrf0000001
+                  - img [ref=e1437]
+              - generic [ref=e1442]:
+                - generic [ref=e1443]:
+                  - paragraph [ref=e1444]: Why Is AMD Stock Soaring?
+                  - generic [ref=e1445]:
+                    - generic [ref=e1446]: The Motley Fool
+                    - generic [ref=e1447]: "置信度: 83%"
+                    - generic [ref=e1448]: 08:16:05
+                - link "打开链接" [ref=e1449] [cursor=pointer]:
+                  - /url: https://www.fool.com/investing/2026/05/09/why-is-amd-stock-soaring/?source=iedfolrf0000001
+                  - img [ref=e1450]
+    - generic [ref=e1455]:
+      - img [ref=e1456]
+      - generic [ref=e1458]:
+        - paragraph [ref=e1459]: 安全提示
+        - paragraph [ref=e1460]: 仅供学习研究使用，不构成投资建议。
+        - paragraph [ref=e1461]: 数据可能存在延迟、回退、模拟或不可用。

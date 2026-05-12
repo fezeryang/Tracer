@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { createChatSession, GEMINI_KEY_MISSING_MESSAGE } from './services/geminiService';
-import { Message, OptionContract, StockAnalysisReport, UserSession, ChatIntent } from './types';
+import { ChatRenderBlock, Message, OptionContract, StockAnalysisReport, UserSession, ChatIntent } from './types';
 import EducationView from './components/EducationView';
 import OptionsChainView from './components/OptionsChainView';
 import BacktestView from './components/BacktestView';
@@ -36,7 +36,8 @@ import { parseChatCommand } from './services/chatCommandRegistry';
 import { ChatGoal, compileChatGoal } from './services/chatGoalCompiler';
 import { classifyChatIntentWithDeepSeek, DeepSeekIntentResult } from './services/chatIntentClassifierService';
 import { routeChatModel } from './services/chatModelRouter';
-import { composeFinancialChatAnswer } from './services/chatAnswerComposer';
+import { composeFinancialChatAnswer, planRichAnswer, sanitizeFinancialSafetyText } from './services/chatAnswerComposer';
+import { buildRichBlocksForAnswer } from './services/richAnswerBlockRules';
 import { planRichBlocksForAnswer } from './services/richBlockPlanner';
 import {
   buildContextSummaryForPrompt,
@@ -68,6 +69,44 @@ import { ShellViewMode } from './types';
 
 const SESSION_STORAGE_KEY = 'nux-session';
 const createMessageId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const blockSignature = (block: ChatRenderBlock): string => {
+  if (block.type === 'action_buttons') {
+    return `${block.type}:${(block.actions || []).map((action) => action.prompt || action.label).join('|')}`;
+  }
+  if (block.type === 'formula') return `${block.type}:${block.formulaId}`;
+  if (block.type === 'chart') {
+    const ticker = block.data?.ticker || block.data?.symbol || block.title;
+    return `${block.type}:${ticker}`;
+  }
+  if (block.type === 'mermaid') return `${block.type}:${block.data?.kind || block.content}`;
+  if (block.type === 'data_table') return `${block.type}:${block.title}:${block.rows?.length || 0}`;
+  if (block.type === 'disclaimer') return `${block.type}:${block.data?.disclaimerType || block.content}`;
+  return `${block.type}:${block.title || block.content || JSON.stringify(block.data || {})}`;
+};
+
+const mergeChatBlocks = (
+  existingBlocks: ChatRenderBlock[] | undefined,
+  attachedBlocks: ChatRenderBlock[],
+): ChatRenderBlock[] | undefined => {
+  const merged: ChatRenderBlock[] = [];
+  for (const block of [...(existingBlocks || []), ...attachedBlocks]) {
+    const signature = blockSignature(block);
+    if (!merged.some((candidate) => blockSignature(candidate) === signature)) {
+      merged.push(block);
+    }
+  }
+  return merged.length > 0 ? merged.slice(0, 5) : undefined;
+};
+
+const sanitizeGeminiNews = (news: any[] | undefined): any[] | undefined => {
+  if (!Array.isArray(news)) return news;
+  return news.map((item) => ({
+    ...item,
+    title: typeof item?.title === 'string' ? sanitizeFinancialSafetyText(item.title) : item?.title,
+    text: typeof item?.text === 'string' ? sanitizeFinancialSafetyText(item.text) : item?.text,
+  }));
+};
 
 interface DeepSeekCallMemo {
   normalizedInput: string;
@@ -516,6 +555,14 @@ const App: React.FC = () => {
       const shouldUsePlannerForChartExplanation = goal.source !== 'slash'
         && goal.intent === 'chart'
         && /解释|说明|怎么看|explain this move|explain.*trend|what.*trend|price action/i.test(text);
+      const richAnswerPlanForInput = planRichAnswer({
+        userText: text,
+        language,
+        context: chatContext,
+        selectedTicker,
+      });
+      const shouldPreferGeminiRichAnswer = Boolean(chatSessionRef.current)
+        && richAnswerPlanForInput.purpose === 'explain_formula';
 
       if (goal.source === 'slash') {
         currentTrace = addTraceStep(currentTrace, 'slash_command', `/${goal.command} ${goal.ticker || ''}`, 'success');
@@ -540,7 +587,7 @@ const App: React.FC = () => {
         recentMessages: recentMessagesForPlanner,
         selectedTicker,
       });
-      if (deterministicRichBlockPlan.reason.startsWith('mermaid_') && deterministicRichBlockPlan.blocks.length > 0) {
+      if (!shouldPreferGeminiRichAnswer && deterministicRichBlockPlan.reason.startsWith('mermaid_') && deterministicRichBlockPlan.blocks.length > 0) {
         const firstBlock = deterministicRichBlockPlan.blocks[0];
         setMessages((prev) => [
           ...prev,
@@ -555,7 +602,7 @@ const App: React.FC = () => {
         return;
       }
 
-      if (goal.source === 'local_rule' && goal.confidence >= 0.80 && goal.command && !shouldUsePlannerForChartExplanation) {
+      if (goal.source === 'local_rule' && goal.confidence >= 0.80 && goal.command && !shouldUsePlannerForChartExplanation && !shouldPreferGeminiRichAnswer) {
         currentTrace = addTraceStep(currentTrace, 'local_intent', `${goal.intent} (${(goal.confidence * 100).toFixed(0)}%)`, 'success');
         currentTrace = addTraceStep(currentTrace, 'command_execute', goal.command || 'unknown', 'pending');
 
@@ -699,7 +746,7 @@ const App: React.FC = () => {
         }
       }
 
-      if (goal.requiresTicker && !goal.ticker) {
+      if (goal.requiresTicker && !goal.ticker && !shouldPreferGeminiRichAnswer) {
         currentTrace = addTraceStep(currentTrace, 'fallback', 'Missing ticker', 'warning');
         const richBlockPlan = planRichBlocksForAnswer({
           language,
@@ -728,6 +775,8 @@ const App: React.FC = () => {
       const isComplexFinancialQuestion =
         goal.confidence < 0.45
         && /分析|explain|why|risk|competitive|long.?term|business model|thesis|framework|compare|outlook|prospect|战略|优势|风险|前景|模型/i.test(text);
+      const shouldUseAnswerComposer = isComplexFinancialQuestion
+        || richAnswerPlanForInput.purpose === 'analyze_risk';
 
       // 2. Route model
       const modelRoute = routeChatModel({
@@ -741,7 +790,14 @@ const App: React.FC = () => {
       if (modelRoute.provider === 'none') {
         currentTrace = addTraceStep(currentTrace, 'model_route', t(language, 'chat.modelRouter.unavailable'), 'error');
         currentTrace = addTraceStep(currentTrace, 'error', 'No API key', 'error');
-        const richBlockPlan = planRichBlocksForAnswer({
+        const richAnswerPlan = planRichAnswer({
+          userText: text,
+          language,
+          context: chatContext,
+          selectedTicker,
+        });
+        const richBlockPlan = buildRichBlocksForAnswer({
+          plan: richAnswerPlan,
           language,
           userText: text,
           context: chatContext,
@@ -754,7 +810,7 @@ const App: React.FC = () => {
             id: createMessageId('no-key'),
             role: 'model',
             text: t(language, 'chat.answerComposer.noApiKey'),
-            blocks: richBlockPlan.blocks.length > 0 ? richBlockPlan.blocks : undefined,
+            blocks: mergeChatBlocks(undefined, richBlockPlan.blocks),
           },
         ]);
         setIsTyping(false);
@@ -772,16 +828,20 @@ const App: React.FC = () => {
         }
 
         // 5. Build prompt
-        const prompt = isComplexFinancialQuestion
+        const prompt = shouldUseAnswerComposer
           ? (() => {
               const comp = composeFinancialChatAnswer({ userText: text, context: chatContext, language });
               return `${comp.systemPrefix}\n\n${comp.contextSummary}\n\n${comp.userPrompt}\n\n${comp.safetyInstructions}`;
             })()
           : (() => {
               const ctx = buildContextSummaryForPrompt(chatContext, language);
-              return ctx
+              const safety = language === 'zh'
+                ? '安全要求：仅做研究解释，不给出方向性交易评级、目标、点位或操作指令。'
+                : 'Safety: research explanation only; do not provide directional ratings, targets, levels, or action instructions.';
+              const promptText = ctx
                 ? `${ctx}\n\n${language === 'zh' ? '用户问题：' : 'User question:'}\n${text}`
                 : text;
+              return `${promptText}\n\n${safety}`;
             })();
 
         const response = await chatSessionRef.current.sendMessage(prompt);
@@ -789,7 +849,14 @@ const App: React.FC = () => {
         currentTrace = completeTraceStep(currentTrace, 'fallback', 'success');
 
         const geminiMsgId = createMessageId('gemini');
-        const richBlockPlan = planRichBlocksForAnswer({
+        const richAnswerPlan = planRichAnswer({
+          userText: text,
+          language,
+          context: chatContext,
+          selectedTicker,
+        });
+        const richBlockPlan = buildRichBlocksForAnswer({
+          plan: richAnswerPlan,
           language,
           userText: text,
           context: chatContext,
@@ -801,15 +868,15 @@ const App: React.FC = () => {
           {
             id: geminiMsgId,
             role: 'model',
-            text: response.text,
+            text: sanitizeFinancialSafetyText(response.text),
             strategy: response.strategy,
             fundamentals: response.fundamentals,
-            news: response.news,
+            news: sanitizeGeminiNews(response.news),
             whisper: response.whisper,
             impactAnalysis: response.impactAnalysis,
             quote: response.quote,
             ragContext: response.ragContext,
-            blocks: richBlockPlan.blocks.length > 0 ? richBlockPlan.blocks : undefined,
+            blocks: mergeChatBlocks(undefined, richBlockPlan.blocks),
           } as any,
         ]);
 
@@ -844,13 +911,19 @@ const App: React.FC = () => {
             id: createMessageId('gemini-error'),
             role: 'model',
             text: errorText,
-            blocks: planRichBlocksForAnswer({
+            blocks: mergeChatBlocks(undefined, buildRichBlocksForAnswer({
+              plan: planRichAnswer({
+                userText: text,
+                language,
+                context: chatContext,
+                selectedTicker,
+              }),
               language,
               userText: text,
               context: chatContext,
               recentMessages: recentMessagesForPlanner,
               selectedTicker,
-            }).blocks,
+            }).blocks),
           },
         ]);
       } finally {

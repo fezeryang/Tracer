@@ -1,0 +1,154 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: "N"
+      - generic [ref=e8]:
+        - generic [ref=e9]: NUX
+        - generic [ref=e10]: AI Research Terminal
+    - navigation [ref=e11]:
+      - button "总览" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+        - text: 总览
+      - button "智能报告" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+        - text: 智能报告
+      - button "聊天分析" [ref=e22] [cursor=pointer]:
+        - img [ref=e23]
+        - text: 聊天分析
+      - button "期权链" [ref=e25] [cursor=pointer]:
+        - img [ref=e26]
+        - text: 期权链
+      - button "策略回测" [ref=e30] [cursor=pointer]:
+        - img [ref=e31]
+        - text: 策略回测
+      - button "新闻影响" [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+        - text: 新闻影响
+      - button "宏观数据" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - text: 宏观数据
+      - button "模拟交易" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - text: 模拟交易
+      - button "时间机器" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+        - text: 时间机器
+      - button "市场情绪" [ref=e55] [cursor=pointer]:
+        - img [ref=e56]
+        - text: 市场情绪
+      - button "学院" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+        - text: 学院
+      - button "反馈" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+        - text: 反馈
+      - button "管理后台" [ref=e68] [cursor=pointer]:
+        - img [ref=e69]
+        - text: 管理后台
+    - generic [ref=e72]:
+      - generic [ref=e73]: 风险概览
+      - generic [ref=e74]: "42"
+      - generic [ref=e75]: 中等
+  - generic [ref=e78]:
+    - generic [ref=e79]:
+      - generic [ref=e80]:
+        - img
+        - textbox "搜索资产、市场、报告..." [ref=e81]
+      - generic [ref=e82]:
+        - generic [ref=e85]:
+          - generic [ref=e86]: 市场已收盘
+          - generic [ref=e87]: "当前时间: 06:03:23 PM"
+        - button "English" [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+          - text: English
+        - button [ref=e94] [cursor=pointer]:
+          - img [ref=e95]
+        - button [ref=e98] [cursor=pointer]:
+          - img [ref=e99]
+        - button [ref=e102] [cursor=pointer]:
+          - img [ref=e103]
+    - generic [ref=e108]:
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - heading "市场总览" [level=1] [ref=e111]
+          - paragraph [ref=e112]: 面向研究、监控和分发的金融工作台首页。
+        - generic [ref=e113]: "最近更新: 2 分钟前 · 5/10/2026"
+      - generic [ref=e114]:
+        - generic [ref=e115]:
+          - heading "市场表现" [level=3] [ref=e117]
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - generic [ref=e120]:
+                - generic [ref=e121]: $2,847,632.18
+                - generic [ref=e122]: +24,729.18 (0.88%)
+              - generic [ref=e123]: 1D · 1W · 1M · YTD
+            - img [ref=e125]
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - heading "资产配置" [level=3] [ref=e131]
+            - generic [ref=e134]:
+              - generic [ref=e135]: Assets
+              - generic [ref=e136]: $2.85M
+            - generic [ref=e137]:
+              - generic [ref=e138]:
+                - generic [ref=e139]: Equities
+                - generic [ref=e140]: 58.0%
+              - generic [ref=e141]:
+                - generic [ref=e142]: Fixed Income
+                - generic [ref=e143]: 16.0%
+              - generic [ref=e144]:
+                - generic [ref=e145]: Alternatives
+                - generic [ref=e146]: 10.0%
+              - generic [ref=e147]:
+                - generic [ref=e148]: Commodities
+                - generic [ref=e149]: 8.0%
+              - generic [ref=e150]:
+                - generic [ref=e151]: Cash
+                - generic [ref=e152]: 8.0%
+          - generic [ref=e153]:
+            - heading "风险概览" [level=3] [ref=e155]
+            - generic [ref=e156]:
+              - generic [ref=e157]:
+                - generic [ref=e158]: "42"
+                - generic [ref=e159]: 中等
+              - generic [ref=e162]:
+                - generic [ref=e163]:
+                  - generic [ref=e164]: Volatility
+                  - generic [ref=e165]: 12.45%
+                - generic [ref=e166]:
+                  - generic [ref=e167]: VaR (95%)
+                  - generic [ref=e168]: "-$78,430"
+                - generic [ref=e169]:
+                  - generic [ref=e170]: Max DD
+                  - generic [ref=e171]: "-12.32%"
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - heading "市场观察" [level=3] [ref=e175]
+            - paragraph [ref=e176]: 核心资产的实时追踪与快速分发。
+          - button "自定义" [ref=e177] [cursor=pointer]
+      - generic [ref=e178]:
+        - generic [ref=e179]:
+          - generic [ref=e180]:
+            - heading "市场图表" [level=3] [ref=e181]
+            - paragraph [ref=e182]: 用于快速判断趋势、波动和关键价位。
+          - generic [ref=e184]:
+            - generic [ref=e185]: AAPL · 1D · NASDAQ
+            - generic [ref=e186]: 193.92 → 195.89
+        - generic [ref=e224]:
+          - generic [ref=e225]:
+            - heading "AI 市场洞察" [level=3] [ref=e227]
+            - generic [ref=e228]:
+              - img [ref=e230]
+              - generic [ref=e232]:
+                - generic [ref=e233]: AI
+                - paragraph [ref=e234]: 科技与大盘风格资产保持相对强势，当前更适合把注意力放在盈利兑现、波动扩张和资金轮动信号上。
+          - generic [ref=e235]:
+            - generic [ref=e236]:
+              - heading "市场新闻" [level=3] [ref=e237]
+              - paragraph [ref=e238]: 用于快速扫描宏观、政策与科技板块 headline。
+            - generic [ref=e240]:
+              - generic [ref=e241]:
+                - img [ref=e242]
+                - text: Market Feed
+              - generic [ref=e245]: Fed signals policy flexibility as inflation cools
+              - generic [ref=e246]: A placeholder headline is shown when the live news feed is unavailable.

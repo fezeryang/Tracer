@@ -5,6 +5,10 @@
 			"args": [
 				"@playwright/mcp@latest"
 			]
+		},
+		"tavily": {
+			"type": "http",
+			"url": "https://mcp.tavily.com/mcp/?tavilyApiKey=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"
 		}
 	}
 }
