@@ -12,6 +12,8 @@ import { getSecFilingsForTicker } from './secService.js';
 import { getOfficialSourcesForTicker } from './officialSourceService.js';
 import { generateDeepSeekReport } from './aiReportService.js';
 import { classifyChatIntent } from './chatIntentService.js';
+import { handleServerChat } from './chatRouteService.js';
+import { buildServerChatSseEvents, formatSseEvent } from './chatStreamService.js';
 import {
     getPolygonCompatibleBaseUrl,
     getPolygonCompatibleKey,
@@ -730,6 +732,44 @@ app.post('/api/ai/report', async (req, res) => {
       provider: 'deepseek',
       error: e instanceof Error ? e.message : 'AI report generation failed.',
     });
+  }
+});
+
+app.post('/api/chat', async (req, res) => {
+  try {
+    const result = await handleServerChat(req.body || {}, {
+      executorDeps: {
+        requestOrigin: `${req.protocol}://${req.get('host')}`,
+      },
+    });
+    res.json(result);
+  } catch {
+    res.json({
+      ok: false,
+      messages: [],
+      error: 'server_chat_failed',
+    });
+  }
+});
+
+app.post('/api/chat/stream', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  try {
+    const events = await buildServerChatSseEvents(req.body || {});
+    for (const event of events) {
+      res.write(formatSseEvent(event));
+    }
+  } catch {
+    res.write(formatSseEvent({
+      event: 'error',
+      data: { error: 'server_chat_stream_failed' },
+    }));
+  } finally {
+    res.end();
   }
 });
 

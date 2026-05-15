@@ -36,6 +36,9 @@ import { parseChatCommand } from './services/chatCommandRegistry';
 import { ChatGoal, compileChatGoal } from './services/chatGoalCompiler';
 import { classifyChatIntentWithDeepSeek, DeepSeekIntentResult } from './services/chatIntentClassifierService';
 import { routeChatModel } from './services/chatModelRouter';
+import { callServerChatCommand } from './services/serverChatClient';
+import { AdaptedServerChatResponse, adaptServerChatResponse } from './services/serverChatResponseAdapter';
+import { shouldUseServerChatCommand } from './services/serverChatCommandRouting';
 import { composeFinancialChatAnswer, planRichAnswer, sanitizeFinancialSafetyText } from './services/chatAnswerComposer';
 import { buildRichBlocksForAnswer } from './services/richAnswerBlockRules';
 import { planRichBlocksForAnswer } from './services/richBlockPlanner';
@@ -55,6 +58,7 @@ import {
   addDataQualityNotes,
   extractEvidenceFromCommandResult,
   linkTraceToMessage,
+  ChatEvidenceItem,
   ChatTrace,
 } from './services/chatTraceService';
 import MacroView from './components/MacroView';
@@ -211,6 +215,54 @@ const createContextAwareGoal = (goal: ChatGoal, ticker: string): ChatGoal => ({
   safetyNotes: Array.from(new Set([...goal.safetyNotes, 'using_current_ticker'])),
 });
 
+const mergeEvidenceItemsForTrace = (items: ChatEvidenceItem[]): ChatEvidenceItem[] => {
+  const seen = new Set<string>();
+  const merged: ChatEvidenceItem[] = [];
+
+  for (const item of items) {
+    const key = item.url || item.id || `${item.type}:${item.title}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+    if (merged.length >= 8) break;
+  }
+
+  return merged;
+};
+
+const mergeServerCommandTrace = (
+  clientTrace: ChatTrace,
+  adapted: AdaptedServerChatResponse,
+  commandName: string,
+  intentName: string,
+): ChatTrace => {
+  const serverTrace = adapted.trace;
+  const now = new Date().toISOString();
+  const evidenceItems = mergeEvidenceItemsForTrace([
+    ...(clientTrace.evidenceItems || []),
+    ...(serverTrace?.evidenceItems || []),
+    ...(adapted.evidenceItems || []),
+  ]);
+  const dataQualityNotes = Array.from(new Set([
+    ...(clientTrace.dataQualityNotes || []),
+    ...(serverTrace?.dataQualityNotes || []),
+    ...(adapted.contextUpdate?.dataQualityNotes || []),
+  ])).slice(0, 6);
+
+  return {
+    ...(serverTrace || clientTrace),
+    id: serverTrace?.id || clientTrace.id,
+    ticker: serverTrace?.ticker || adapted.contextUpdate?.ticker || clientTrace.ticker,
+    command: serverTrace?.command || adapted.contextUpdate?.command || commandName,
+    intent: serverTrace?.intent || adapted.contextUpdate?.intent || intentName,
+    steps: [...clientTrace.steps, ...(serverTrace?.steps || [])].slice(0, 20),
+    evidenceItems,
+    dataQualityNotes,
+    createdAt: clientTrace.createdAt,
+    updatedAt: now,
+  };
+};
+
 const VoiceVisualizer = ({ active, onClose, language }: { active: boolean; onClose: () => void; language: Language }) => {
   if (!active) return null;
 
@@ -302,6 +354,7 @@ const App: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatSessionRef = useRef<ReturnType<typeof createChatSession> | null>(null);
+  const chatConversationIdRef = useRef<string | undefined>(undefined);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const lastDeepSeekCallRef = useRef<DeepSeekCallMemo | null>(null);
 
@@ -567,6 +620,107 @@ const App: React.FC = () => {
       if (goal.source === 'slash') {
         currentTrace = addTraceStep(currentTrace, 'slash_command', `/${goal.command} ${goal.ticker || ''}`, 'success');
         currentTrace = addTraceStep(currentTrace, 'command_execute', goal.command || 'unknown', 'pending');
+        const shouldTryServerCommand = shouldUseServerChatCommand(
+          goal.command,
+          import.meta.env.VITE_USE_SERVER_CHAT_COMMANDS,
+          import.meta.env.VITE_USE_SERVER_EVIDENCE_COMMANDS,
+        );
+
+        if (shouldTryServerCommand) {
+          currentTrace = addTraceStep(currentTrace, 'tool_call', 'server_chat_command', 'pending', {
+            command: goal.command,
+            ticker: goal.ticker || selectedTicker || chatContext.currentTicker,
+          });
+
+          let adaptedServerResponse: AdaptedServerChatResponse | null = null;
+          const serverResponse = await callServerChatCommand({
+            message: text,
+            language,
+            conversationId: chatConversationIdRef.current,
+            selectedTicker,
+            clientContext: {
+              currentTicker: chatContext.currentTicker,
+              lastCommand: chatContext.lastCommand,
+              lastIntent: chatContext.lastIntent,
+              lastDataQualityNotes: chatContext.lastDataQualityNotes,
+            },
+          });
+
+          if (serverResponse) {
+            try {
+              adaptedServerResponse = adaptServerChatResponse({
+                response: serverResponse,
+                language,
+                fallbackTicker: goal.ticker || selectedTicker || chatContext.currentTicker,
+              });
+            } catch {
+              adaptedServerResponse = null;
+            }
+          }
+
+          if (adaptedServerResponse) {
+            if (serverResponse?.conversationId) {
+              chatConversationIdRef.current = serverResponse.conversationId;
+            }
+
+            currentTrace = completeTraceStep(
+              currentTrace,
+              'tool_call',
+              'success',
+              'server_chat_command_succeeded',
+            );
+            currentTrace = completeTraceStep(
+              currentTrace,
+              'command_execute',
+              'success',
+              'server_chat_command_completed',
+            );
+
+            const messageId = createMessageId('server-cmd');
+            const linkedTrace = linkTraceToMessage(
+              mergeServerCommandTrace(
+                currentTrace,
+                adaptedServerResponse,
+                goal.command || 'unknown',
+                goal.intent,
+              ),
+              messageId,
+            );
+            const assistantMessage: Message = {
+              ...adaptedServerResponse.message,
+              id: messageId,
+              traceId: linkedTrace.id,
+            };
+
+            setMessages((prev) => [...prev, assistantMessage]);
+            setChatTraces((prev) => {
+              const filtered = prev.filter((trace) => trace.id !== linkedTrace.id);
+              return [...filtered, linkedTrace].slice(-50);
+            });
+
+            if (adaptedServerResponse.contextUpdate) {
+              setChatContext((prev) => updateContextFromCommandResult(prev, adaptedServerResponse.contextUpdate!));
+            }
+
+            const serverTicker = adaptedServerResponse.contextUpdate?.ticker || linkedTrace.ticker;
+            if (serverTicker) {
+              setSelectedTicker(serverTicker);
+              saveSelectedTicker(serverTicker);
+            }
+
+            setIsTyping(false);
+            return;
+          }
+
+          currentTrace = completeTraceStep(
+            currentTrace,
+            'tool_call',
+            'warning',
+            'server_attempt_failed',
+          );
+          currentTrace = addTraceStep(currentTrace, 'fallback', 'fallback_to_client', 'success');
+        }
+
         const intent = toExecutableIntent(goal);
         const result = await executeChatCommand({
           command: intent.command || intent.name,
