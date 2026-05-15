@@ -221,6 +221,13 @@ describe('chatRouteService', () => {
   });
 
   it('echoes only safe client context fields', async () => {
+    const callChatModelProvider = vi.fn(async () => ({
+      ok: true,
+      provider: 'none',
+      text: 'Safe context response.',
+      warnings: [],
+    }));
+
     const result = await handleServerChat({
       message: 'analyze context',
       language: 'en',
@@ -232,8 +239,11 @@ describe('chatRouteService', () => {
         secret: 'do-not-return',
         largePayload: Array.from({ length: 20 }, (_, index) => index),
       },
+    }, {
+      callChatModelProvider,
     });
 
+    expect(callChatModelProvider).toHaveBeenCalledTimes(1);
     expect(result.contextUpdate).toEqual({
       currentTicker: 'NVDA',
       lastCommand: 'chart',
