@@ -323,6 +323,71 @@ export const messages: Record<Language, MessageTree> = {
         mermaidPlaceholder: 'Mermaid 图将在后续阶段启用可视化渲染，当前显示源码。',
         evidence: '证据来源',
         noEvidence: '暂无证据来源。',
+        secFilingsTable: 'SEC 文件',
+      },
+      table: {
+        noData: '暂无数据',
+        source: '来源',
+        dataQualityAvailable: '可用',
+        dataQualityLimited: '有限',
+        dataQualitySimulation: '模拟',
+        dataQualityUnavailable: '暂无数据',
+        dataQualityFallback: '回退',
+        openSource: '打开来源',
+      },
+      formula: {
+        verified: '已验证',
+        unverified: '未验证',
+        limited: '有限',
+        simulation: '模拟',
+        unavailable: '暂无数据',
+        fallback: '回退',
+        variables: '变量',
+        limitation: '仅供学习研究',
+        educationalOnly: '仅供学习研究使用，不构成投资建议。',
+        source: '来源',
+        dataQuality: '数据质量',
+      },
+      secTable: {
+        form: '类型',
+        filingDate: '日期',
+        description: '描述',
+        source: '来源',
+        noFilings: '暂无 SEC 文件。',
+        title: 'SEC EDGAR 文件',
+      },
+      chart: {
+        source: '来源',
+        dataQuality: '数据质量',
+        available: '可用',
+        limited: '有限',
+        simulation: '模拟',
+        fallback: '回退',
+        unavailable: '暂无数据',
+        noData: '暂无可用图表数据。',
+        researchOnly: '图表仅供学习研究，历史数据不代表未来表现。',
+        historicalDisclaimer: '历史数据仅供学习研究，不代表未来表现。',
+        priceTrend: '{ticker} 价格趋势',
+        noReusableChart: '当前没有可复用图表数据',
+        tryChartCommand: '当前没有可复用图表数据，可以先查看 /chart {ticker}。',
+        line: '折线图',
+        bar: '柱状图',
+        area: '面积图',
+        pie: '饼图',
+      },
+      mermaid: {
+        title: 'Mermaid 源码图',
+        validated: '已验证',
+        unvalidated: '未验证',
+        diagramType: '图表类型',
+        sourceOnly: '当前仅显示安全源码。',
+        renderLater: '可视化渲染将在后续阶段启用。',
+        validationFailed: '验证失败',
+        tooLong: 'Mermaid 源码过长。',
+        empty: 'Mermaid 源码为空。',
+        researchOnly: 'Mermaid 图仅供学习研究辅助，不构成投资结论。',
+        systemTemplate: '系统模板',
+        safeSource: '安全源码',
       },
       actions: {
         generateReport: '生成完整报告',
@@ -470,6 +535,191 @@ export const messages: Record<Language, MessageTree> = {
         createdAt: '创建时间',
         noSteps: '无轨迹记录',
       },
+      // C-6: Model Router & Answer Composer
+      modelRouter: {
+        geminiConversation: 'Gemini 普通对话',
+        deepSeekIntent: 'DeepSeek 意图分类',
+        localToolCommand: '本地工具命令',
+        unavailable: 'AI 服务暂不可用',
+      },
+      answerComposer: {
+        summary: '结论摘要',
+        currentContext: '当前上下文',
+        availableEvidence: '可用数据与证据',
+        framework: '分析框架',
+        uncertainties: '主要不确定性',
+        nextChecks: '下一步可以查看什么',
+        riskNotice: '风险提示',
+        noEnoughData: '当前数据不足以进行全面分析，以下为有限上下文的初步输出。',
+        contextBased: '以下分析基于当前研究上下文，不构成投资建议。',
+        researchOnly: '仅供学习研究使用，不构成投资建议。',
+        noApiKey: '（NUX）AI 服务暂不可用，请检查 API Key 配置。命令功能（如 /quote、/evidence）可正常使用。',
+      },
+      richAnswer: {
+        purpose: {
+          explainContext: '解释研究上下文',
+          analyzeRisk: '分析风险',
+          explainTrend: '解释趋势',
+          explainFormula: '解释公式',
+          reviewEvidence: '核验证据',
+          compareSources: '比较来源',
+          learning: '学习说明',
+          general: '一般回答',
+        },
+        reason: {
+          chartReused: '已复用最近图表',
+          chartMissing: '可继续查看系统数据',
+          evidenceReused: '已复用证据列表',
+          evidenceMissing: '可继续查看证据',
+          sourceTrustReused: '已复用来源可信度',
+          sourceTrustMissing: '可继续查看来源可信度',
+          formulaAttached: '已附加已验证公式',
+          mermaidAttached: '已附加系统流程图',
+          dataTableAttached: '已附加数据表',
+          disclaimerAttached: '已附加研究用途提示',
+        },
+        action: {
+          viewEvidence: '查看证据',
+          checkSourceTrust: '检查来源可信度',
+          viewChart: '查看图表',
+          generateReport: '生成报告',
+          viewSec: '查看 SEC 文件',
+        },
+      },
+      // C-7: Suggestions
+      placeholder: {
+        default: '描述你的市场观点或输入 /help 获取命令列表...',
+        withTicker: '分析 {ticker} 的市场情况...',
+      },
+      suggestions: {
+        continueTitle: '继续研究',
+        starter: {
+          help: {
+            label: '查看帮助',
+          },
+          quote: {
+            label: '查看行情',
+            prompt: '/quote ',
+          },
+          news: {
+            label: '查看新闻',
+            prompt: '/news ',
+          },
+          fundamentals: {
+            label: '查看基本面',
+            prompt: '/fundamentals ',
+          },
+          report: {
+            label: '生成报告',
+            prompt: '/report ',
+          },
+        },
+        withTicker: {
+          quote: {
+            label: '查看 {ticker} 行情',
+          },
+          news: {
+            label: '查看 {ticker} 新闻',
+          },
+          trust: {
+            label: '查看 {ticker} 来源可信度',
+          },
+          report: {
+            label: '生成 {ticker} 报告',
+          },
+          chain: {
+            label: '查看 {ticker} 期权链',
+          },
+        },
+        contextual: {
+          afterQuote: {
+            news: {
+              label: '查看新闻',
+            },
+            history: {
+              label: '查看历史走势',
+            },
+            trust: {
+              label: '查看来源可信度',
+            },
+            report: {
+              label: '生成完整报告',
+            },
+          },
+          afterNews: {
+            trust: {
+              label: '查看来源可信度',
+            },
+            sec: {
+              label: '查看 SEC 文件',
+            },
+            report: {
+              label: '生成完整报告',
+            },
+          },
+          afterFundamentals: {
+            report: {
+              label: '生成完整报告',
+            },
+            chain: {
+              label: '查看期权链',
+            },
+            evidence: {
+              label: '查看综合证据',
+            },
+          },
+          afterEvidence: {
+            trust: {
+              label: '查看来源可信度',
+            },
+            sec: {
+              label: '查看 SEC 文件',
+            },
+            report: {
+              label: '生成完整报告',
+            },
+            risk: {
+              label: '风险评估',
+              prompt: '分析 {ticker} 的主要风险因素',
+            },
+          },
+          afterTrust: {
+            sec: {
+              label: '查看 SEC 文件',
+            },
+            report: {
+              label: '生成完整报告',
+            },
+            evidence: {
+              label: '查看综合证据',
+            },
+          },
+          afterSec: {
+            trust: {
+              label: '查看来源可信度',
+            },
+            report: {
+              label: '生成完整报告',
+            },
+          },
+          afterReport: {
+            chain: {
+              label: '查看期权链',
+            },
+            backtest: {
+              label: '运行回测',
+            },
+          },
+        },
+      },
+      // C-7: Help categories
+      helpCategories: {
+        marketData: '市场数据',
+        companyNews: '公司新闻',
+        evidenceTrust: '证据与可信度',
+        researchWorkflow: '研究流程',
+        system: '系统命令',
+      },
     },
     history: {
       dataPoints: '数据点数',
@@ -479,6 +729,33 @@ export const messages: Record<Language, MessageTree> = {
       highestClose: '最高收盘价',
       lowestClose: '最低收盘价',
       researchOnly: '历史数据仅供研究参考，不代表未来走势。',
+    },
+    richBlockPlanner: {
+      reusedRecentChart: '已复用最近图表。',
+      noReusableChart: '当前没有可复用图表数据。',
+      historySummaryOnly: '当前只有历史摘要，没有可复用的原始图表数据。',
+      mermaidWorkflow: '已附加研究链路 Mermaid 模板。',
+      mermaidEvidenceChain: '已附加证据链 Mermaid 模板。',
+      mermaidRiskTransmission: '已附加风险传导 Mermaid 模板。',
+      mermaidDataQuality: '已附加数据质量 Mermaid 模板。',
+    },
+    mermaidTemplate: {
+      researchWorkflow: {
+        title: '研究链路源码图',
+        description: '展示从用户问题到下一步研究的系统模板链路。',
+      },
+      evidenceChain: {
+        title: '证据链源码图',
+        description: '展示证据来源与 Evidence Drawer 的系统模板链路。',
+      },
+      riskTransmission: {
+        title: '风险传导源码图',
+        description: '展示新闻事件到风险提示的系统模板路径。',
+      },
+      dataQualityFlow: {
+        title: '数据质量流程源码图',
+        description: '展示数据请求到用户可见结果的数据质量路径。',
+      },
     },
     trust: {
       sourceTrustSummary: '来源可信度摘要',
@@ -781,6 +1058,140 @@ export const messages: Record<Language, MessageTree> = {
       subtitle: '学习期权、波动率、定价模型和策略基础。',
       emptyTitle: '暂无课程内容',
       emptyBody: '课程模块正在准备中。',
+    },
+    // C-8B: Data Table & Formula Block
+    table: {
+      noData: '暂无数据',
+      source: '来源',
+      dataQualityAvailable: '可用',
+      dataQualityLimited: '有限',
+      dataQualitySimulation: '模拟',
+      dataQualityUnavailable: '暂无数据',
+      dataQualityFallback: '回退',
+      openSource: '打开来源',
+    },
+    formula: {
+      verified: '已验证',
+      unverified: '未验证',
+      limited: '有限',
+      simulation: '模拟',
+      unavailable: '暂无数据',
+      fallback: '回退',
+      variables: '变量',
+      limitation: '仅供学习研究',
+      educationalOnly: '仅供学习研究使用，不构成投资建议。',
+      source: '来源',
+      dataQuality: '数据质量',
+    },
+    secTable: {
+      form: '类型',
+      filingDate: '日期',
+      description: '描述',
+      source: '来源',
+      noFilings: '暂无 SEC 文件。',
+      title: 'SEC EDGAR 文件',
+    },
+    blocks: {
+      secFilingsTable: 'SEC 文件',
+    },
+    // C-8B: Finance Formula Registry i18n
+    financeFormula: {
+      limitation: '仅供学习研究使用，不构成投资建议。',
+      percent_change: {
+        title: '百分比变化',
+        current: '当前值',
+        previous: '上期值',
+      },
+      simple_return: {
+        title: '简单收益率',
+        beginning: '期初价值',
+        ending: '期末价值',
+      },
+      cagr: {
+        title: '年复合增长率 (CAGR)',
+        beginning: '期初价值',
+        ending: '期末价值',
+        n: '周期数（年）',
+      },
+      volatility_estimate: {
+        title: '波动率估算（年化）',
+        ri: '各期收益率',
+        rbar: '平均收益率',
+        n: '观测数量',
+      },
+      max_drawdown: {
+        title: '最大回撤',
+        peak: '峰值',
+        trough: '谷值（峰值后最低点）',
+      },
+      sharpe_ratio: {
+        title: '夏普比率',
+        rp: '组合收益率',
+        rf: '无风险利率',
+        sigmap: '组合标准差',
+      },
+      option_breakeven_call: {
+        title: '看涨期权盈亏平衡点',
+        strike: '行权价',
+        premium: '每份权利金',
+      },
+      option_breakeven_put: {
+        title: '看跌期权盈亏平衡点',
+        strike: '行权价',
+        premium: '每份权利金',
+      },
+      pe_ratio: {
+        title: '市盈率',
+        price: '当前股价',
+        eps: '每股收益',
+      },
+      market_cap: {
+        title: '市值',
+        price: '当前股价',
+        shares: '总流通股数',
+      },
+      revenue_growth: {
+        title: '营收增长率',
+        current: '本期营收',
+        previous: '上期营收',
+      },
+      eps: {
+        title: '每股收益',
+        netIncome: '净利润',
+        preferred: '优先股股息',
+        shares: '平均流通股数',
+      },
+    },
+    richAnswer: {
+      purpose: {
+        explainContext: '解释研究上下文',
+        analyzeRisk: '分析风险',
+        explainTrend: '解释趋势',
+        explainFormula: '解释公式',
+        reviewEvidence: '核验证据',
+        compareSources: '比较来源',
+        learning: '学习说明',
+        general: '一般回答',
+      },
+      reason: {
+        chartReused: '已复用最近图表',
+        chartMissing: '可继续查看系统数据',
+        evidenceReused: '已复用证据列表',
+        evidenceMissing: '可继续查看证据',
+        sourceTrustReused: '已复用来源可信度',
+        sourceTrustMissing: '可继续查看来源可信度',
+        formulaAttached: '已附加已验证公式',
+        mermaidAttached: '已附加系统流程图',
+        dataTableAttached: '已附加数据表',
+        disclaimerAttached: '已附加研究用途提示',
+      },
+      action: {
+        viewEvidence: '查看证据',
+        checkSourceTrust: '检查来源可信度',
+        viewChart: '查看图表',
+        generateReport: '生成报告',
+        viewSec: '查看 SEC 文件',
+      },
     },
     feedback: {
       title: '反馈中心',
@@ -1128,6 +1539,71 @@ export const messages: Record<Language, MessageTree> = {
         mermaidPlaceholder: 'Mermaid visual rendering will be enabled in a later phase; source code is shown for now.',
         evidence: 'Evidence',
         noEvidence: 'No evidence sources available.',
+        secFilingsTable: 'SEC Filings',
+      },
+      table: {
+        noData: 'No data available',
+        source: 'Source',
+        dataQualityAvailable: 'Available',
+        dataQualityLimited: 'Limited',
+        dataQualitySimulation: 'Simulated',
+        dataQualityUnavailable: 'Unavailable',
+        dataQualityFallback: 'Fallback',
+        openSource: 'Open Source',
+      },
+      formula: {
+        verified: 'Verified',
+        unverified: 'Unverified',
+        limited: 'Limited',
+        simulation: 'Simulated',
+        unavailable: 'Unavailable',
+        fallback: 'Fallback',
+        variables: 'Variables',
+        limitation: 'Educational Only',
+        educationalOnly: 'For educational research only, not investment advice.',
+        source: 'Source',
+        dataQuality: 'Data Quality',
+      },
+      secTable: {
+        form: 'Form',
+        filingDate: 'Filing Date',
+        description: 'Description',
+        source: 'Source',
+        noFilings: 'No SEC filings available.',
+        title: 'SEC EDGAR Filings',
+      },
+      chart: {
+        source: 'Source',
+        dataQuality: 'Data Quality',
+        available: 'Available',
+        limited: 'Limited',
+        simulation: 'Simulation',
+        fallback: 'Fallback',
+        unavailable: 'Unavailable',
+        noData: 'No reusable chart data is available.',
+        researchOnly: 'Charts are for educational research only. Historical data does not indicate future performance.',
+        historicalDisclaimer: 'Historical data is for educational research only and does not indicate future performance.',
+        priceTrend: '{ticker} Price Trend',
+        noReusableChart: 'No reusable chart data is available',
+        tryChartCommand: 'No reusable chart data is available. Try /chart {ticker} first.',
+        line: 'Line',
+        bar: 'Bar',
+        area: 'Area',
+        pie: 'Pie',
+      },
+      mermaid: {
+        title: 'Mermaid Source Diagram',
+        validated: 'Validated',
+        unvalidated: 'Unvalidated',
+        diagramType: 'Diagram Type',
+        sourceOnly: 'Safe source only.',
+        renderLater: 'Visual rendering will be enabled in a later phase.',
+        validationFailed: 'Validation failed',
+        tooLong: 'Mermaid source is too long.',
+        empty: 'Mermaid source is empty.',
+        researchOnly: 'Mermaid diagrams are educational research aids and not investment conclusions.',
+        systemTemplate: 'System Template',
+        safeSource: 'Safe Source',
       },
       actions: {
         generateReport: 'Generate full report',
@@ -1275,6 +1751,191 @@ export const messages: Record<Language, MessageTree> = {
         createdAt: 'Created',
         noSteps: 'No trace recorded',
       },
+      // C-6: Model Router & Answer Composer
+      modelRouter: {
+        geminiConversation: 'Gemini conversation',
+        deepSeekIntent: 'DeepSeek intent classification',
+        localToolCommand: 'Local tool command',
+        unavailable: 'AI service unavailable',
+      },
+      answerComposer: {
+        summary: 'Summary',
+        currentContext: 'Current Context',
+        availableEvidence: 'Available Data & Evidence',
+        framework: 'Analytical Framework',
+        uncertainties: 'Key Uncertainties',
+        nextChecks: 'Suggested Next Checks',
+        riskNotice: 'Risk Notice',
+        noEnoughData: 'Current data is insufficient for comprehensive analysis. The following is a preliminary output based on limited context.',
+        contextBased: 'The following analysis is based on current research context and does not constitute investment advice.',
+        researchOnly: 'For learning and research purposes only, not investment advice.',
+        noApiKey: '(NUX) AI service is currently unavailable. Please check your API Key configuration. Command functions (e.g., /quote, /evidence) are still available.',
+      },
+      richAnswer: {
+        purpose: {
+          explainContext: 'Explain context',
+          analyzeRisk: 'Analyze risk',
+          explainTrend: 'Explain trend',
+          explainFormula: 'Explain formula',
+          reviewEvidence: 'Review evidence',
+          compareSources: 'Compare sources',
+          learning: 'Learning',
+          general: 'General',
+        },
+        reason: {
+          chartReused: 'Reused recent chart',
+          chartMissing: 'Continue with system data',
+          evidenceReused: 'Reused evidence list',
+          evidenceMissing: 'Continue with evidence',
+          sourceTrustReused: 'Reused source trust',
+          sourceTrustMissing: 'Continue with source trust',
+          formulaAttached: 'Attached verified formula',
+          mermaidAttached: 'Attached system diagram',
+          dataTableAttached: 'Attached data table',
+          disclaimerAttached: 'Attached research-only notice',
+        },
+        action: {
+          viewEvidence: 'View evidence',
+          checkSourceTrust: 'Check source trust',
+          viewChart: 'View chart',
+          generateReport: 'Generate report',
+          viewSec: 'View SEC',
+        },
+      },
+      // C-7: Suggestions
+      placeholder: {
+        default: 'Describe your market view or type /help for commands...',
+        withTicker: 'Analyze {ticker} market conditions...',
+      },
+      suggestions: {
+        continueTitle: 'Continue Research',
+        starter: {
+          help: {
+            label: 'View Help',
+          },
+          quote: {
+            label: 'View Quote',
+            prompt: '/quote ',
+          },
+          news: {
+            label: 'View News',
+            prompt: '/news ',
+          },
+          fundamentals: {
+            label: 'View Fundamentals',
+            prompt: '/fundamentals ',
+          },
+          report: {
+            label: 'Generate Report',
+            prompt: '/report ',
+          },
+        },
+        withTicker: {
+          quote: {
+            label: 'View {ticker} Quote',
+          },
+          news: {
+            label: 'View {ticker} News',
+          },
+          trust: {
+            label: 'View {ticker} Source Trust',
+          },
+          report: {
+            label: 'Generate {ticker} Report',
+          },
+          chain: {
+            label: 'View {ticker} Options Chain',
+          },
+        },
+        contextual: {
+          afterQuote: {
+            news: {
+              label: 'View News',
+            },
+            history: {
+              label: 'View Price History',
+            },
+            trust: {
+              label: 'View Source Trust',
+            },
+            report: {
+              label: 'Generate Full Report',
+            },
+          },
+          afterNews: {
+            trust: {
+              label: 'View Source Trust',
+            },
+            sec: {
+              label: 'View SEC Filings',
+            },
+            report: {
+              label: 'Generate Full Report',
+            },
+          },
+          afterFundamentals: {
+            report: {
+              label: 'Generate Full Report',
+            },
+            chain: {
+              label: 'View Options Chain',
+            },
+            evidence: {
+              label: 'View Evidence',
+            },
+          },
+          afterEvidence: {
+            trust: {
+              label: 'View Source Trust',
+            },
+            sec: {
+              label: 'View SEC Filings',
+            },
+            report: {
+              label: 'Generate Full Report',
+            },
+            risk: {
+              label: 'Risk Assessment',
+              prompt: 'Analyze main risk factors for {ticker}',
+            },
+          },
+          afterTrust: {
+            sec: {
+              label: 'View SEC Filings',
+            },
+            report: {
+              label: 'Generate Full Report',
+            },
+            evidence: {
+              label: 'View Evidence',
+            },
+          },
+          afterSec: {
+            trust: {
+              label: 'View Source Trust',
+            },
+            report: {
+              label: 'Generate Full Report',
+            },
+          },
+          afterReport: {
+            chain: {
+              label: 'View Options Chain',
+            },
+            backtest: {
+              label: 'Run Backtest',
+            },
+          },
+        },
+      },
+      // C-7: Help categories
+      helpCategories: {
+        marketData: 'Market Data',
+        companyNews: 'Company & News',
+        evidenceTrust: 'Evidence & Trust',
+        researchWorkflow: 'Research Workflow',
+        system: 'System Commands',
+      },
     },
     history: {
       dataPoints: 'Data Points',
@@ -1284,6 +1945,33 @@ export const messages: Record<Language, MessageTree> = {
       highestClose: 'Highest Close',
       lowestClose: 'Lowest Close',
       researchOnly: 'Historical data for research only. Past performance does not indicate future results.',
+    },
+    richBlockPlanner: {
+      reusedRecentChart: 'Reused the recent chart.',
+      noReusableChart: 'No reusable chart data is available.',
+      historySummaryOnly: 'Only a history summary is available; raw chart data was not reused.',
+      mermaidWorkflow: 'Attached research workflow Mermaid template.',
+      mermaidEvidenceChain: 'Attached evidence chain Mermaid template.',
+      mermaidRiskTransmission: 'Attached risk transmission Mermaid template.',
+      mermaidDataQuality: 'Attached data quality Mermaid template.',
+    },
+    mermaidTemplate: {
+      researchWorkflow: {
+        title: 'Research Workflow Source Diagram',
+        description: 'System template showing the path from user question to next checks.',
+      },
+      evidenceChain: {
+        title: 'Evidence Chain Source Diagram',
+        description: 'System template showing evidence sources and the Evidence Drawer.',
+      },
+      riskTransmission: {
+        title: 'Risk Transmission Source Diagram',
+        description: 'System template showing the path from news event to risk notice.',
+      },
+      dataQualityFlow: {
+        title: 'Data Quality Flow Source Diagram',
+        description: 'System template showing data quality from request to visible result.',
+      },
     },
     insiders: {
       title: 'Insider Trading',
@@ -1584,6 +2272,41 @@ export const messages: Record<Language, MessageTree> = {
       emptyTitle: 'No course content',
       emptyBody: 'Course modules are being prepared.',
     },
+    // C-8B: Data Table & Formula Block
+    table: {
+      noData: 'No data available',
+      source: 'Source',
+      dataQualityAvailable: 'Available',
+      dataQualityLimited: 'Limited',
+      dataQualitySimulation: 'Simulated',
+      dataQualityUnavailable: 'Unavailable',
+      dataQualityFallback: 'Fallback',
+      openSource: 'Open Source',
+    },
+    formula: {
+      verified: 'Verified',
+      unverified: 'Unverified',
+      limited: 'Limited',
+      simulation: 'Simulated',
+      unavailable: 'Unavailable',
+      fallback: 'Fallback',
+      variables: 'Variables',
+      limitation: 'Educational Only',
+      educationalOnly: 'For educational research only, not investment advice.',
+      source: 'Source',
+      dataQuality: 'Data Quality',
+    },
+    secTable: {
+      form: 'Form',
+      filingDate: 'Filing Date',
+      description: 'Description',
+      source: 'Source',
+      noFilings: 'No SEC filings available.',
+      title: 'SEC EDGAR Filings',
+    },
+    blocks: {
+      secFilingsTable: 'SEC Filings',
+    },
     feedback: {
       title: 'Feedback Center',
       subtitle: 'Submit issues, ideas, or demo feedback to improve NUX.',
@@ -1612,6 +2335,105 @@ export const messages: Record<Language, MessageTree> = {
       emptyTitle: 'No admin data',
       emptyBody: 'There are no logs or user records to display.',
       error: 'Admin data failed to load.',
+    },
+    // C-8B: Finance Formula Registry i18n
+    financeFormula: {
+      limitation: 'For educational research only, not investment advice.',
+      percent_change: {
+        title: 'Percent Change',
+        current: 'Current value',
+        previous: 'Previous value',
+      },
+      simple_return: {
+        title: 'Simple Return',
+        beginning: 'Beginning value',
+        ending: 'Ending value',
+      },
+      cagr: {
+        title: 'CAGR (Compound Annual Growth Rate)',
+        beginning: 'Beginning value',
+        ending: 'Ending value',
+        n: 'Number of periods (years)',
+      },
+      volatility_estimate: {
+        title: 'Volatility Estimate (Annualized)',
+        ri: 'Individual period return',
+        rbar: 'Mean return',
+        n: 'Number of observations',
+      },
+      max_drawdown: {
+        title: 'Maximum Drawdown',
+        peak: 'Peak portfolio value',
+        trough: 'Trough (lowest) value after peak',
+      },
+      sharpe_ratio: {
+        title: 'Sharpe Ratio',
+        rp: 'Portfolio return',
+        rf: 'Risk-free rate',
+        sigmap: 'Portfolio standard deviation',
+      },
+      option_breakeven_call: {
+        title: 'Call Option Breakeven',
+        strike: 'Strike price',
+        premium: 'Premium paid per share',
+      },
+      option_breakeven_put: {
+        title: 'Put Option Breakeven',
+        strike: 'Strike price',
+        premium: 'Premium paid per share',
+      },
+      pe_ratio: {
+        title: 'P/E Ratio',
+        price: 'Current stock price',
+        eps: 'Earnings per share',
+      },
+      market_cap: {
+        title: 'Market Capitalization',
+        price: 'Current stock price',
+        shares: 'Total shares outstanding',
+      },
+      revenue_growth: {
+        title: 'Revenue Growth Rate',
+        current: 'Current period revenue',
+        previous: 'Previous period revenue',
+      },
+      eps: {
+        title: 'Earnings Per Share',
+        netIncome: 'Net income',
+        preferred: 'Preferred dividends',
+        shares: 'Average outstanding shares',
+      },
+    },
+    richAnswer: {
+      purpose: {
+        explainContext: 'Explain context',
+        analyzeRisk: 'Analyze risk',
+        explainTrend: 'Explain trend',
+        explainFormula: 'Explain formula',
+        reviewEvidence: 'Review evidence',
+        compareSources: 'Compare sources',
+        learning: 'Learning',
+        general: 'General',
+      },
+      reason: {
+        chartReused: 'Reused recent chart',
+        chartMissing: 'Continue with system data',
+        evidenceReused: 'Reused evidence list',
+        evidenceMissing: 'Continue with evidence',
+        sourceTrustReused: 'Reused source trust',
+        sourceTrustMissing: 'Continue with source trust',
+        formulaAttached: 'Attached verified formula',
+        mermaidAttached: 'Attached system diagram',
+        dataTableAttached: 'Attached data table',
+        disclaimerAttached: 'Attached research-only notice',
+      },
+      action: {
+        viewEvidence: 'View evidence',
+        checkSourceTrust: 'Check source trust',
+        viewChart: 'View chart',
+        generateReport: 'Generate report',
+        viewSec: 'View SEC',
+      },
     },
   },
 };

@@ -410,6 +410,18 @@ export interface OptionsChain {
   rateLimited?: boolean;
 }
 
+// --- Chat Table Types ---
+export interface ChatTableColumn {
+  key: string;
+  label: string;
+  align?: 'left' | 'center' | 'right';
+  width?: string;
+}
+
+export interface ChatTableRow {
+  [key: string]: string | number | null | undefined;
+}
+
 // --- Chat Render Block Types ---
 export type ChatBlockType =
   | 'markdown'
@@ -421,7 +433,8 @@ export type ChatBlockType =
   | 'mermaid'
   | 'action_buttons'
   | 'evidence_list'
-  | 'disclaimer';
+  | 'disclaimer'
+  | 'data_table';
 
 export interface ChatMetricItem {
   label: string;
@@ -438,6 +451,27 @@ export interface ChatAction {
   tone?: 'primary' | 'secondary' | 'warning';
 }
 
+export type ChatChartType =
+  | 'line'
+  | 'bar'
+  | 'area'
+  | 'pie';
+
+export type ChatMermaidDiagramType =
+  | 'flowchart'
+  | 'sequenceDiagram'
+  | 'stateDiagram'
+  | 'erDiagram'
+  | 'unknown';
+
+export interface ChatChartPoint {
+  label: string;
+  value: number;
+  secondary?: number;
+  category?: string;
+  source?: string;
+}
+
 export interface ChatRenderBlock {
   id?: string;
   type: ChatBlockType;
@@ -447,6 +481,40 @@ export interface ChatRenderBlock {
   data?: any;
   actions?: ChatAction[];
   tone?: 'neutral' | 'info' | 'warning' | 'danger' | 'success';
+  // Backward-compatible metadata fields
+  source?: string;
+  sourceUrl?: string;
+  dataQuality?: 'available' | 'limited' | 'simulation' | 'unavailable' | 'fallback';
+  disclaimer?: string;
+  compact?: boolean;
+  createdBy?: 'system' | 'ai_suggested' | 'tool';
+  validationStatus?: 'valid' | 'limited' | 'unavailable' | 'fallback';
+  createdAt?: string;
+  // DataTable fields
+  columns?: ChatTableColumn[];
+  rows?: ChatTableRow[];
+  caption?: string;
+  emptyState?: string;
+  // FormulaBlock v2 fields
+  formulaId?: string;
+  // ChartBlock v2 fields
+  chartType?: ChatChartType;
+  xAxisLabel?: string;
+  yAxisLabel?: string;
+  secondaryYAxisLabel?: string;
+  legend?: string[];
+  colorScheme?: 'default' | 'positive' | 'negative' | 'neutral' | 'mixed';
+  annotations?: {
+    label: string;
+    x: string;
+    y?: number;
+    note?: string;
+  }[];
+  // MermaidBlock safe source fields
+  diagramType?: ChatMermaidDiagramType;
+  validated?: boolean;
+  validationMessage?: string;
+  maxLength?: number;
 }
 
 export interface Message {

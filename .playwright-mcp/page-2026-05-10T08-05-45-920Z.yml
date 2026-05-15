@@ -1,0 +1,439 @@
+- generic [ref=e26]:
+  - complementary [ref=e27]:
+    - generic [ref=e28]:
+      - generic [ref=e29]: "N"
+      - generic [ref=e30]:
+        - generic [ref=e31]: NUX
+        - generic [ref=e32]: AI Research Terminal
+    - navigation [ref=e33]:
+      - button "总览" [ref=e34] [cursor=pointer]:
+        - img [ref=e35]
+        - text: 总览
+      - button "智能报告" [ref=e40] [cursor=pointer]:
+        - img [ref=e41]
+        - text: 智能报告
+      - button "聊天分析" [ref=e44] [cursor=pointer]:
+        - img [ref=e45]
+        - text: 聊天分析
+      - button "期权链" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+        - text: 期权链
+      - button "策略回测" [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+        - text: 策略回测
+      - button "新闻影响" [ref=e57] [cursor=pointer]:
+        - img [ref=e58]
+        - text: 新闻影响
+      - button "宏观数据" [ref=e64] [cursor=pointer]:
+        - img [ref=e65]
+        - text: 宏观数据
+      - button "模拟交易" [ref=e68] [cursor=pointer]:
+        - img [ref=e69]
+        - text: 模拟交易
+      - button "时间机器" [ref=e73] [cursor=pointer]:
+        - img [ref=e74]
+        - text: 时间机器
+      - button "市场情绪" [ref=e77] [cursor=pointer]:
+        - img [ref=e78]
+        - text: 市场情绪
+      - button "学院" [ref=e83] [cursor=pointer]:
+        - img [ref=e84]
+        - text: 学院
+      - button "反馈" [ref=e87] [cursor=pointer]:
+        - img [ref=e88]
+        - text: 反馈
+      - button "管理后台" [ref=e90] [cursor=pointer]:
+        - img [ref=e91]
+        - text: 管理后台
+    - generic [ref=e94]:
+      - generic [ref=e95]: 风险概览
+      - generic [ref=e96]: "42"
+      - generic [ref=e97]: 中等
+  - generic [ref=e98]:
+    - generic [ref=e100]:
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - img
+          - textbox "搜索资产、市场、报告..." [ref=e103]
+        - generic [ref=e104]:
+          - generic [ref=e107]:
+            - generic [ref=e108]: 市场已收盘
+            - generic [ref=e109]: "当前时间: 04:05:45 PM"
+          - button "English" [ref=e110] [cursor=pointer]:
+            - img [ref=e111]
+            - text: English
+          - button [ref=e116] [cursor=pointer]:
+            - img [ref=e117]
+          - button [ref=e120] [cursor=pointer]:
+            - img [ref=e121]
+          - button [ref=e124] [cursor=pointer]:
+            - img [ref=e125]
+      - generic [ref=e330]:
+        - generic [ref=e333]:
+          - generic [ref=e334]: NUX 智能金融研究终端
+          - heading "AI 聊天分析" [level=1] [ref=e335]
+          - paragraph [ref=e336]: 围绕行情、新闻、期权和策略进行交互式研究。
+        - generic [ref=e337]: "当前研究对象: TSLA"
+        - generic [ref=e384]: "当前上下文: TSLA · 最近查看: 证据包"
+        - generic [ref=e358]:
+          - img [ref=e360]
+          - generic [ref=e363]:
+            - paragraph [ref=e933]: NUX 智能金融研究终端已启动。市场数据链路已连接，等待你的指令。
+            - button "朗读" [ref=e365] [cursor=pointer]:
+              - img [ref=e366]
+        - paragraph [ref=e934]: /quote AAPL
+        - generic [ref=e390]:
+          - img [ref=e392]
+          - generic [ref=e394]:
+            - generic [ref=e395]:
+              - paragraph [ref=e935]: 已获取 AAPL 行情。以下数据仅供学习研究使用。
+              - button "朗读" [ref=e397] [cursor=pointer]:
+                - img [ref=e398]
+            - generic [ref=e402]:
+              - generic [ref=e403]:
+                - heading "Raw Market Feed" [level=3] [ref=e404]:
+                  - img [ref=e405]
+                  - text: Raw Market Feed
+                - generic [ref=e407]:
+                  - img [ref=e408]
+                  - text: "Source: Alpaca Markets (IEX)"
+              - generic [ref=e412]:
+                - generic [ref=e413]:
+                  - generic [ref=e414]: AAPL
+                  - generic [ref=e415]:
+                    - img [ref=e416]
+                    - text: Real-time Snapshot
+                - generic [ref=e419]:
+                  - generic [ref=e420]: $292.85
+                  - generic [ref=e421]: +5.45 (1.90%)
+              - generic [ref=e422]:
+                - generic [ref=e423]:
+                  - generic [ref=e424]:
+                    - generic [ref=e425]: Heuristic Vol. Est.
+                    - generic [ref=e426]: 17.0%
+                  - generic [ref=e427]: This value is not sourced from the real options market.
+                - generic [ref=e428]:
+                  - generic [ref=e429]: Data Integrity
+                  - generic [ref=e430]: HIGH
+            - generic [ref=e432]:
+              - heading "数据质量" [level=4] [ref=e433]:
+                - img [ref=e434]
+                - text: 数据质量
+              - generic [ref=e436]:
+                - generic [ref=e437]:
+                  - generic [ref=e438]:
+                    - img [ref=e439]
+                    - generic [ref=e441]: 行情
+                  - generic [ref=e442]: "来自数据提供商: Alpaca Markets (IEX)"
+                - generic [ref=e443]:
+                  - generic [ref=e444]:
+                    - img [ref=e445]
+                    - generic [ref=e449]: 基本面
+                  - generic [ref=e450]: 暂无数据
+                - generic [ref=e451]:
+                  - generic [ref=e452]:
+                    - img [ref=e453]
+                    - generic [ref=e457]: 新闻
+                  - generic [ref=e458]: 暂无数据
+            - generic [ref=e459]:
+              - img [ref=e460]
+              - generic [ref=e463]: 聊天操作
+              - generic [ref=e464]: · 3 步骤
+              - generic [ref=e465]:
+                - img [ref=e466]
+                - text: 870ms
+              - button "查看证据" [ref=e469] [cursor=pointer]:
+                - img [ref=e470]
+                - text: 查看证据
+                - img [ref=e473]
+        - paragraph [ref=e936]: 苹果现价多少
+        - generic [ref=e485]:
+          - img [ref=e487]
+          - generic [ref=e490]:
+            - paragraph [ref=e937]: 已识别为 行情 查询，将使用 NUX 系统数据服务处理。
+            - button "朗读" [ref=e492] [cursor=pointer]:
+              - img [ref=e493]
+        - generic [ref=e497]:
+          - img [ref=e499]
+          - generic [ref=e501]:
+            - generic [ref=e502]:
+              - paragraph [ref=e938]: 已获取 AAPL 行情。以下数据仅供学习研究使用。
+              - button "朗读" [ref=e504] [cursor=pointer]:
+                - img [ref=e505]
+            - generic [ref=e509]:
+              - generic [ref=e510]:
+                - heading "Raw Market Feed" [level=3] [ref=e511]:
+                  - img [ref=e512]
+                  - text: Raw Market Feed
+                - generic [ref=e514]:
+                  - img [ref=e515]
+                  - text: "Source: Alpaca Markets (IEX)"
+              - generic [ref=e519]:
+                - generic [ref=e520]:
+                  - generic [ref=e521]: AAPL
+                  - generic [ref=e522]:
+                    - img [ref=e523]
+                    - text: Real-time Snapshot
+                - generic [ref=e526]:
+                  - generic [ref=e527]: $292.85
+                  - generic [ref=e528]: +5.45 (1.90%)
+              - generic [ref=e529]:
+                - generic [ref=e530]:
+                  - generic [ref=e531]:
+                    - generic [ref=e532]: Heuristic Vol. Est.
+                    - generic [ref=e533]: 18.0%
+                  - generic [ref=e534]: This value is not sourced from the real options market.
+                - generic [ref=e535]:
+                  - generic [ref=e536]: Data Integrity
+                  - generic [ref=e537]: HIGH
+            - generic [ref=e539]:
+              - heading "数据质量" [level=4] [ref=e540]:
+                - img [ref=e541]
+                - text: 数据质量
+              - generic [ref=e543]:
+                - generic [ref=e544]:
+                  - generic [ref=e545]:
+                    - img [ref=e546]
+                    - generic [ref=e548]: 行情
+                  - generic [ref=e549]: "来自数据提供商: Alpaca Markets (IEX)"
+                - generic [ref=e550]:
+                  - generic [ref=e551]:
+                    - img [ref=e552]
+                    - generic [ref=e556]: 基本面
+                  - generic [ref=e557]: 暂无数据
+                - generic [ref=e558]:
+                  - generic [ref=e559]:
+                    - img [ref=e560]
+                    - generic [ref=e564]: 新闻
+                  - generic [ref=e565]: 暂无数据
+            - generic [ref=e566]:
+              - img [ref=e567]
+              - generic [ref=e570]: 聊天操作
+              - generic [ref=e571]: · 3 步骤
+              - generic [ref=e572]:
+                - img [ref=e573]
+                - text: 841ms
+              - button "查看证据" [ref=e576] [cursor=pointer]:
+                - img [ref=e577]
+                - text: 查看证据
+                - img [ref=e580]
+        - paragraph [ref=e939]: /evidence TSLA
+        - generic [ref=e613]:
+          - img [ref=e615]
+          - generic [ref=e617]:
+            - generic [ref=e618]:
+              - paragraph [ref=e940]: 已汇总 TSLA 综合证据。
+              - button "朗读" [ref=e620] [cursor=pointer]:
+                - img [ref=e621]
+            - generic [ref=e625]:
+              - generic [ref=e626]:
+                - heading "数据质量" [level=4] [ref=e627]:
+                  - img [ref=e628]
+                  - text: 数据质量
+                - generic [ref=e630]:
+                  - generic [ref=e631]:
+                    - generic [ref=e632]:
+                      - img [ref=e633]
+                      - generic [ref=e635]: 行情
+                    - generic [ref=e636]: "来自数据提供商: Alpaca Markets (IEX)"
+                  - generic [ref=e637]:
+                    - generic [ref=e638]:
+                      - img [ref=e639]
+                      - generic [ref=e643]: 基本面
+                    - generic [ref=e644]: 暂无数据
+                  - generic [ref=e645]:
+                    - generic [ref=e646]:
+                      - img [ref=e647]
+                      - generic [ref=e651]: 新闻
+                    - generic [ref=e652]: 暂无数据
+              - generic [ref=e653]:
+                - heading "来源可信度" [level=4] [ref=e654]:
+                  - img [ref=e655]
+                  - text: 来源可信度
+                - generic [ref=e657]:
+                  - generic [ref=e658]:
+                    - img [ref=e659]
+                    - generic [ref=e662]: high
+                  - generic [ref=e663]: "76"
+                - generic [ref=e666]:
+                  - generic [ref=e667]:
+                    - img [ref=e668]
+                    - generic [ref=e671]: "3"
+                    - generic [ref=e672]: Sources
+                  - generic [ref=e673]:
+                    - img [ref=e674]
+                    - generic [ref=e677]: "10"
+                    - generic [ref=e678]: SEC
+                - generic [ref=e679]:
+                  - generic [ref=e680]:
+                    - img [ref=e681]
+                    - generic [ref=e684]: official_sources_available[3 sources, 3 types]
+                  - generic [ref=e685]:
+                    - img [ref=e686]
+                    - generic [ref=e689]: sec_filings_available[10 filings]
+                  - generic [ref=e690]:
+                    - img [ref=e691]
+                    - generic [ref=e694]: verified_news_available[5 items]
+              - generic [ref=e695]:
+                - heading "证据来源" [level=4] [ref=e696]:
+                  - img [ref=e697]
+                  - text: 证据来源
+                - generic [ref=e700]:
+                  - generic [ref=e701]:
+                    - generic [ref=e704]: "[49% 可信新闻] Prediction: The Helium Crunch Will Accelerate the Reshoring of Artificial Intelligence (AI) Chip Manufacturing. Here Are the Best Growth Stocks to Own."
+                    - generic [ref=e705]:
+                      - generic [ref=e706]: The Motley Fool
+                      - link [ref=e707] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/09/helium-crunch-accelerates-ai-chip-reshoring/?source=iedfolrf0000001
+                        - img [ref=e708]
+                  - generic [ref=e712]:
+                    - generic [ref=e715]: "[46% 可信新闻] EVs Are Out of the Headlines and That's Exactly Why These 2 Stocks Are Buys"
+                    - generic [ref=e716]:
+                      - generic [ref=e717]: The Motley Fool
+                      - link [ref=e718] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/09/evs-are-out-of-the-headlines-and-thats-exactly-why/?source=iedfolrf0000001
+                        - img [ref=e719]
+                  - generic [ref=e723]:
+                    - generic [ref=e726]: "[49% 可信新闻] Bullish on Robotaxis? This Is the Stock To Buy (Hint: It's Not Tesla or Alphabet)"
+                    - generic [ref=e727]:
+                      - generic [ref=e728]: The Motley Fool
+                      - link [ref=e729] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/09/bullish-on-robotaxis-this-is-the-stock-to-buy-hint/?source=iedfolrf0000001
+                        - img [ref=e730]
+                  - generic [ref=e734]:
+                    - generic [ref=e737]: "[49% 可信新闻] Is It Finally Time to Buy Uber Stock?"
+                    - generic [ref=e738]:
+                      - generic [ref=e739]: The Motley Fool
+                      - link [ref=e740] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/08/is-it-finally-time-to-buy-uber-stock/?source=iedfolrf0000001
+                        - img [ref=e741]
+                  - generic [ref=e745]:
+                    - generic [ref=e748]: "[49% 可信新闻] Nasdaq 100 Climbs Records, Oil Extends Drop As Iran Weighs Hormuz Deal: Stock Market Today"
+                    - generic [ref=e749]:
+                      - generic [ref=e750]: Benzinga
+                      - link [ref=e751] [cursor=pointer]:
+                        - /url: https://www.benzinga.com/markets/equities/26/05/52378659/nasdaq-100-record-highs-oil-slips-stocks-drift-iran-hormuz-deal-datadog-hr-block-planet-fitness-?utm_source=benzinga_taxonomy&utm_medium=rss_feed_free&utm_content=taxonomy_rss&utm_campaign=channel
+                        - img [ref=e752]
+                  - generic [ref=e756]:
+                    - generic [ref=e759]: 10-Q (2026-04-23)
+                    - generic [ref=e760]:
+                      - generic [ref=e761]: SEC
+                      - link [ref=e762] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026026673/tsla-20260331.htm
+                        - img [ref=e763]
+                  - generic [ref=e767]:
+                    - generic [ref=e770]: 8-K (2026-04-22)
+                    - generic [ref=e771]:
+                      - generic [ref=e772]: SEC
+                      - link [ref=e773] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026026551/tsla-20260422.htm
+                        - img [ref=e774]
+                  - generic [ref=e778]:
+                    - generic [ref=e781]: 8-K (2026-04-02)
+                    - generic [ref=e782]:
+                      - generic [ref=e783]: SEC
+                      - link [ref=e784] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026022956/tsla-20260402.htm
+                        - img [ref=e785]
+                  - generic [ref=e789]:
+                    - generic [ref=e792]: 10-K (2026-01-29)
+                    - generic [ref=e793]:
+                      - generic [ref=e794]: SEC
+                      - link [ref=e795] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm
+                        - img [ref=e796]
+                  - generic [ref=e800]:
+                    - generic [ref=e803]: 8-K (2026-01-28)
+                    - generic [ref=e804]:
+                      - generic [ref=e805]: SEC
+                      - link [ref=e806] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026003837/tsla-20260128.htm
+                        - img [ref=e807]
+                  - generic [ref=e811]:
+                    - generic [ref=e814]: 8-K (2026-01-02)
+                    - generic [ref=e815]:
+                      - generic [ref=e816]: SEC
+                      - link [ref=e817] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026000016/tsla-20260102.htm
+                        - img [ref=e818]
+                  - generic [ref=e822]:
+                    - generic [ref=e825]: 8-K (2025-11-07)
+                    - generic [ref=e826]:
+                      - generic [ref=e827]: SEC
+                      - link [ref=e828] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000110465925108507/tm2530590d1_8k.htm
+                        - img [ref=e829]
+                  - generic [ref=e833]:
+                    - generic [ref=e836]: 10-Q (2025-10-23)
+                    - generic [ref=e837]:
+                      - generic [ref=e838]: SEC
+                      - link [ref=e839] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025045968/tsla-20250930.htm
+                        - img [ref=e840]
+                  - generic [ref=e844]:
+                    - generic [ref=e847]: 8-K (2025-10-22)
+                    - generic [ref=e848]:
+                      - generic [ref=e849]: SEC
+                      - link [ref=e850] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025045861/tsla-20251022.htm
+                        - img [ref=e851]
+                  - generic [ref=e855]:
+                    - generic [ref=e858]: 8-K (2025-10-02)
+                    - generic [ref=e859]:
+                      - generic [ref=e860]: SEC
+                      - link [ref=e861] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025043530/tsla-20251002.htm
+                        - img [ref=e862]
+                  - generic [ref=e866]:
+                    - generic [ref=e869]: Tesla
+                    - generic [ref=e870]:
+                      - generic [ref=e871]: official_website
+                      - link [ref=e872] [cursor=pointer]:
+                        - /url: https://www.tesla.com
+                        - img [ref=e873]
+                  - generic [ref=e877]:
+                    - generic [ref=e880]: Tesla Investor Relations
+                    - generic [ref=e881]:
+                      - generic [ref=e882]: investor_relations
+                      - link [ref=e883] [cursor=pointer]:
+                        - /url: https://ir.tesla.com
+                        - img [ref=e884]
+                  - generic [ref=e888]:
+                    - generic [ref=e891]: SEC EDGAR Company Filings
+                    - generic [ref=e892]:
+                      - generic [ref=e893]: sec
+                      - link [ref=e894] [cursor=pointer]:
+                        - /url: https://www.sec.gov/edgar/browse/?CIK=1318605&owner=exclude
+                        - img [ref=e895]
+              - generic [ref=e899]:
+                - button "生成完整报告" [ref=e900] [cursor=pointer]:
+                  - img [ref=e901]
+                  - text: 生成完整报告
+                - button "分析新闻影响" [ref=e903] [cursor=pointer]:
+                  - img [ref=e904]
+                  - text: 分析新闻影响
+                - button "查看宏观背景" [ref=e906] [cursor=pointer]:
+                  - img [ref=e907]
+                  - text: 查看宏观背景
+            - generic [ref=e909]:
+              - img [ref=e910]
+              - generic [ref=e913]: 聊天操作
+              - generic [ref=e914]: · 3 步骤
+              - generic [ref=e915]:
+                - img [ref=e916]
+                - text: 6.9s
+              - button "查看证据" [ref=e919] [cursor=pointer]:
+                - img [ref=e920]
+                - text: 查看证据
+                - img [ref=e923]
+        - paragraph [ref=e944]: 分析 NVDA 的长期竞争优势
+        - img [ref=e947]
+    - contentinfo [ref=e370]:
+      - generic [ref=e371]:
+        - generic [ref=e372]:
+          - button "语音指令" [ref=e373] [cursor=pointer]:
+            - img [ref=e374]
+          - textbox "描述你的市场观点..." [active] [ref=e377]
+          - button [disabled] [ref=e378]:
+            - img [ref=e379]
+        - paragraph [ref=e382]: NUX 是一个 AI 金融研究工作台，不构成投资建议。期权交易具有高风险。

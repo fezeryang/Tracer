@@ -1,0 +1,370 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: "N"
+      - generic [ref=e8]:
+        - generic [ref=e9]: NUX
+        - generic [ref=e10]: AI Research Terminal
+    - navigation [ref=e11]:
+      - button "总览" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+        - text: 总览
+      - button "智能报告" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+        - text: 智能报告
+      - button "聊天分析" [ref=e22] [cursor=pointer]:
+        - img [ref=e23]
+        - text: 聊天分析
+      - button "期权链" [ref=e25] [cursor=pointer]:
+        - img [ref=e26]
+        - text: 期权链
+      - button "策略回测" [ref=e30] [cursor=pointer]:
+        - img [ref=e31]
+        - text: 策略回测
+      - button "新闻影响" [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+        - text: 新闻影响
+      - button "宏观数据" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - text: 宏观数据
+      - button "模拟交易" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - text: 模拟交易
+      - button "时间机器" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+        - text: 时间机器
+      - button "市场情绪" [ref=e55] [cursor=pointer]:
+        - img [ref=e56]
+        - text: 市场情绪
+      - button "学院" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+        - text: 学院
+      - button "反馈" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+        - text: 反馈
+      - button "管理后台" [ref=e68] [cursor=pointer]:
+        - img [ref=e69]
+        - text: 管理后台
+    - generic [ref=e72]:
+      - generic [ref=e73]: 风险概览
+      - generic [ref=e74]: "42"
+      - generic [ref=e75]: 中等
+  - generic [ref=e76]:
+    - generic [ref=e78]:
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - img
+          - textbox "搜索资产、市场、报告..." [ref=e81]
+        - generic [ref=e82]:
+          - generic [ref=e85]:
+            - generic [ref=e86]: 市场已收盘
+            - generic [ref=e87]: "当前时间: 05:48:01 PM"
+          - button "English" [ref=e88] [cursor=pointer]:
+            - img [ref=e89]
+            - text: English
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+          - button [ref=e98] [cursor=pointer]:
+            - img [ref=e99]
+          - button [ref=e102] [cursor=pointer]:
+            - img [ref=e103]
+      - generic [ref=e308]:
+        - generic [ref=e311]:
+          - generic [ref=e312]: NUX 智能金融研究终端
+          - heading "AI 聊天分析" [level=1] [ref=e313]
+          - paragraph [ref=e314]: 围绕行情、新闻、期权和策略进行交互式研究。
+        - generic [ref=e315]: "当前研究对象: TSLA"
+        - generic [ref=e349]: "当前上下文: TSLA · 最近查看: 证据包"
+        - generic [ref=e323]:
+          - img [ref=e325]
+          - generic [ref=e328]:
+            - paragraph [ref=e350]: NUX 智能金融研究终端已启动。市场数据链路已连接，等待你的指令。
+            - button "朗读" [ref=e330] [cursor=pointer]:
+              - img [ref=e331]
+        - paragraph [ref=e354]: /evidence TSLA
+        - generic [ref=e355]:
+          - img [ref=e357]
+          - generic [ref=e359]:
+            - generic [ref=e360]:
+              - paragraph [ref=e361]: 已汇总 TSLA 综合证据。
+              - button "朗读" [ref=e362] [cursor=pointer]:
+                - img [ref=e363]
+            - generic [ref=e367]:
+              - generic [ref=e368]:
+                - heading "数据质量" [level=4] [ref=e369]:
+                  - img [ref=e370]
+                  - text: 数据质量
+                - generic [ref=e372]:
+                  - generic [ref=e373]:
+                    - generic [ref=e374]:
+                      - img [ref=e375]
+                      - generic [ref=e377]: 行情
+                    - generic [ref=e378]: "来自数据提供商: Alpaca Markets (IEX)"
+                  - generic [ref=e379]:
+                    - generic [ref=e380]:
+                      - img [ref=e381]
+                      - generic [ref=e385]: 基本面
+                    - generic [ref=e386]: 暂无数据
+                  - generic [ref=e387]:
+                    - generic [ref=e388]:
+                      - img [ref=e389]
+                      - generic [ref=e393]: 新闻
+                    - generic [ref=e394]: 暂无数据
+              - generic [ref=e395]:
+                - heading "来源可信度" [level=4] [ref=e396]:
+                  - img [ref=e397]
+                  - text: 来源可信度
+                - generic [ref=e399]:
+                  - generic [ref=e400]:
+                    - img [ref=e401]
+                    - generic [ref=e404]: high
+                  - generic [ref=e405]: "76"
+                - generic [ref=e408]:
+                  - generic [ref=e409]:
+                    - img [ref=e410]
+                    - generic [ref=e413]: "3"
+                    - generic [ref=e414]: Sources
+                  - generic [ref=e415]:
+                    - img [ref=e416]
+                    - generic [ref=e419]: "10"
+                    - generic [ref=e420]: SEC
+                - generic [ref=e421]:
+                  - generic [ref=e422]:
+                    - img [ref=e423]
+                    - generic [ref=e426]: official_sources_available[3 sources, 3 types]
+                  - generic [ref=e427]:
+                    - img [ref=e428]
+                    - generic [ref=e431]: sec_filings_available[10 filings]
+                  - generic [ref=e432]:
+                    - img [ref=e433]
+                    - generic [ref=e436]: verified_news_available[5 items]
+              - generic [ref=e437]:
+                - heading "证据来源" [level=4] [ref=e438]:
+                  - img [ref=e439]
+                  - text: 证据来源
+                - generic [ref=e442]:
+                  - generic [ref=e443]:
+                    - generic [ref=e446]: "[49% 可信新闻] Stock-Split Follow-Up: How Nvidia, Alphabet, Amazon, Netflix, and Tesla Have Performed Since Their Historic Splits"
+                    - generic [ref=e447]:
+                      - generic [ref=e448]: The Motley Fool
+                      - link [ref=e449] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/10/stock-split-follow-up-how-nvidia-alphabet-perform/?source=iedfolrf0000001
+                        - img [ref=e450]
+                  - generic [ref=e454]:
+                    - generic [ref=e457]: "[49% 可信新闻] Prediction: The Helium Crunch Will Accelerate the Reshoring of Artificial Intelligence (AI) Chip Manufacturing. Here Are the Best Growth Stocks to Own."
+                    - generic [ref=e458]:
+                      - generic [ref=e459]: The Motley Fool
+                      - link [ref=e460] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/09/helium-crunch-accelerates-ai-chip-reshoring/?source=iedfolrf0000001
+                        - img [ref=e461]
+                  - generic [ref=e465]:
+                    - generic [ref=e468]: "[46% 可信新闻] EVs Are Out of the Headlines and That's Exactly Why These 2 Stocks Are Buys"
+                    - generic [ref=e469]:
+                      - generic [ref=e470]: The Motley Fool
+                      - link [ref=e471] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/09/evs-are-out-of-the-headlines-and-thats-exactly-why/?source=iedfolrf0000001
+                        - img [ref=e472]
+                  - generic [ref=e476]:
+                    - generic [ref=e479]: "[49% 可信新闻] Bullish on Robotaxis? This Is the Stock To Buy (Hint: It's Not Tesla or Alphabet)"
+                    - generic [ref=e480]:
+                      - generic [ref=e481]: The Motley Fool
+                      - link [ref=e482] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/09/bullish-on-robotaxis-this-is-the-stock-to-buy-hint/?source=iedfolrf0000001
+                        - img [ref=e483]
+                  - generic [ref=e487]:
+                    - generic [ref=e490]: "[49% 可信新闻] Is It Finally Time to Buy Uber Stock?"
+                    - generic [ref=e491]:
+                      - generic [ref=e492]: The Motley Fool
+                      - link [ref=e493] [cursor=pointer]:
+                        - /url: https://www.fool.com/investing/2026/05/08/is-it-finally-time-to-buy-uber-stock/?source=iedfolrf0000001
+                        - img [ref=e494]
+                  - generic [ref=e498]:
+                    - generic [ref=e501]: 10-Q (2026-04-23)
+                    - generic [ref=e502]:
+                      - generic [ref=e503]: SEC
+                      - link [ref=e504] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026026673/tsla-20260331.htm
+                        - img [ref=e505]
+                  - generic [ref=e509]:
+                    - generic [ref=e512]: 8-K (2026-04-22)
+                    - generic [ref=e513]:
+                      - generic [ref=e514]: SEC
+                      - link [ref=e515] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026026551/tsla-20260422.htm
+                        - img [ref=e516]
+                  - generic [ref=e520]:
+                    - generic [ref=e523]: 8-K (2026-04-02)
+                    - generic [ref=e524]:
+                      - generic [ref=e525]: SEC
+                      - link [ref=e526] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026022956/tsla-20260402.htm
+                        - img [ref=e527]
+                  - generic [ref=e531]:
+                    - generic [ref=e534]: 10-K (2026-01-29)
+                    - generic [ref=e535]:
+                      - generic [ref=e536]: SEC
+                      - link [ref=e537] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026003952/tsla-20251231.htm
+                        - img [ref=e538]
+                  - generic [ref=e542]:
+                    - generic [ref=e545]: 8-K (2026-01-28)
+                    - generic [ref=e546]:
+                      - generic [ref=e547]: SEC
+                      - link [ref=e548] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026003837/tsla-20260128.htm
+                        - img [ref=e549]
+                  - generic [ref=e553]:
+                    - generic [ref=e556]: 8-K (2026-01-02)
+                    - generic [ref=e557]:
+                      - generic [ref=e558]: SEC
+                      - link [ref=e559] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828026000016/tsla-20260102.htm
+                        - img [ref=e560]
+                  - generic [ref=e564]:
+                    - generic [ref=e567]: 8-K (2025-11-07)
+                    - generic [ref=e568]:
+                      - generic [ref=e569]: SEC
+                      - link [ref=e570] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000110465925108507/tm2530590d1_8k.htm
+                        - img [ref=e571]
+                  - generic [ref=e575]:
+                    - generic [ref=e578]: 10-Q (2025-10-23)
+                    - generic [ref=e579]:
+                      - generic [ref=e580]: SEC
+                      - link [ref=e581] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025045968/tsla-20250930.htm
+                        - img [ref=e582]
+                  - generic [ref=e586]:
+                    - generic [ref=e589]: 8-K (2025-10-22)
+                    - generic [ref=e590]:
+                      - generic [ref=e591]: SEC
+                      - link [ref=e592] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025045861/tsla-20251022.htm
+                        - img [ref=e593]
+                  - generic [ref=e597]:
+                    - generic [ref=e600]: 8-K (2025-10-02)
+                    - generic [ref=e601]:
+                      - generic [ref=e602]: SEC
+                      - link [ref=e603] [cursor=pointer]:
+                        - /url: https://www.sec.gov/Archives/edgar/data/1318605/000162828025043530/tsla-20251002.htm
+                        - img [ref=e604]
+                  - generic [ref=e608]:
+                    - generic [ref=e611]: Tesla
+                    - generic [ref=e612]:
+                      - generic [ref=e613]: official_website
+                      - link [ref=e614] [cursor=pointer]:
+                        - /url: https://www.tesla.com
+                        - img [ref=e615]
+                  - generic [ref=e619]:
+                    - generic [ref=e622]: Tesla Investor Relations
+                    - generic [ref=e623]:
+                      - generic [ref=e624]: investor_relations
+                      - link [ref=e625] [cursor=pointer]:
+                        - /url: https://ir.tesla.com
+                        - img [ref=e626]
+                  - generic [ref=e630]:
+                    - generic [ref=e633]: SEC EDGAR Company Filings
+                    - generic [ref=e634]:
+                      - generic [ref=e635]: sec
+                      - link [ref=e636] [cursor=pointer]:
+                        - /url: https://www.sec.gov/edgar/browse/?CIK=1318605&owner=exclude
+                        - img [ref=e637]
+              - generic [ref=e641]:
+                - generic [ref=e642]:
+                  - generic [ref=e643]:
+                    - img [ref=e644]
+                    - heading "chat.blocks.secFilingsTable" [level=4] [ref=e646]
+                  - generic [ref=e647]:
+                    - generic [ref=e648]: chat.table.dataQualityAvailable
+                    - 'link "chat.table.source: SEC EDGAR" [ref=e649] [cursor=pointer]':
+                      - /url: https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=1318605&type=&dateb=&owner=include&count=10
+                      - text: "chat.table.source: SEC EDGAR"
+                      - img [ref=e650]
+                - table [ref=e655]:
+                  - rowgroup [ref=e656]:
+                    - row "chat.secTable.form chat.secTable.filingDate chat.secTable.description chat.secTable.source" [ref=e657]:
+                      - columnheader "chat.secTable.form" [ref=e658]
+                      - columnheader "chat.secTable.filingDate" [ref=e659]
+                      - columnheader "chat.secTable.description" [ref=e660]
+                      - columnheader "chat.secTable.source" [ref=e661]
+                  - rowgroup [ref=e662]:
+                    - row "10-Q 2026-04-23 10-Q SEC EDGAR" [ref=e663]:
+                      - cell "10-Q" [ref=e664]
+                      - cell "2026-04-23" [ref=e665]
+                      - cell "10-Q" [ref=e666]
+                      - cell "SEC EDGAR" [ref=e667]
+                    - row "8-K 2026-04-22 8-K SEC EDGAR" [ref=e668]:
+                      - cell "8-K" [ref=e669]
+                      - cell "2026-04-22" [ref=e670]
+                      - cell "8-K" [ref=e671]
+                      - cell "SEC EDGAR" [ref=e672]
+                    - row "8-K 2026-04-02 8-K SEC EDGAR" [ref=e673]:
+                      - cell "8-K" [ref=e674]
+                      - cell "2026-04-02" [ref=e675]
+                      - cell "8-K" [ref=e676]
+                      - cell "SEC EDGAR" [ref=e677]
+                    - row "10-K 2026-01-29 10-K SEC EDGAR" [ref=e678]:
+                      - cell "10-K" [ref=e679]
+                      - cell "2026-01-29" [ref=e680]
+                      - cell "10-K" [ref=e681]
+                      - cell "SEC EDGAR" [ref=e682]
+                    - row "8-K 2026-01-28 8-K SEC EDGAR" [ref=e683]:
+                      - cell "8-K" [ref=e684]
+                      - cell "2026-01-28" [ref=e685]
+                      - cell "8-K" [ref=e686]
+                      - cell "SEC EDGAR" [ref=e687]
+                    - row "8-K 2026-01-02 8-K SEC EDGAR" [ref=e688]:
+                      - cell "8-K" [ref=e689]
+                      - cell "2026-01-02" [ref=e690]
+                      - cell "8-K" [ref=e691]
+                      - cell "SEC EDGAR" [ref=e692]
+                    - row "8-K 2025-11-07 FORM 8-K SEC EDGAR" [ref=e693]:
+                      - cell "8-K" [ref=e694]
+                      - cell "2025-11-07" [ref=e695]
+                      - cell "FORM 8-K" [ref=e696]
+                      - cell "SEC EDGAR" [ref=e697]
+                    - row "10-Q 2025-10-23 10-Q SEC EDGAR" [ref=e698]:
+                      - cell "10-Q" [ref=e699]
+                      - cell "2025-10-23" [ref=e700]
+                      - cell "10-Q" [ref=e701]
+                      - cell "SEC EDGAR" [ref=e702]
+                    - row "8-K 2025-10-22 8-K SEC EDGAR" [ref=e703]:
+                      - cell "8-K" [ref=e704]
+                      - cell "2025-10-22" [ref=e705]
+                      - cell "8-K" [ref=e706]
+                      - cell "SEC EDGAR" [ref=e707]
+                    - row "8-K 2025-10-02 8-K SEC EDGAR" [ref=e708]:
+                      - cell "8-K" [ref=e709]
+                      - cell "2025-10-02" [ref=e710]
+                      - cell "8-K" [ref=e711]
+                      - cell "SEC EDGAR" [ref=e712]
+              - generic [ref=e713]:
+                - button "生成完整报告" [ref=e714] [cursor=pointer]:
+                  - img [ref=e715]
+                  - text: 生成完整报告
+                - button "分析新闻影响" [ref=e717] [cursor=pointer]:
+                  - img [ref=e718]
+                  - text: 分析新闻影响
+                - button "查看宏观背景" [ref=e720] [cursor=pointer]:
+                  - img [ref=e721]
+                  - text: 查看宏观背景
+            - generic [ref=e723]:
+              - img [ref=e724]
+              - generic [ref=e727]: 聊天操作
+              - generic [ref=e728]: · 3 步骤
+              - generic [ref=e729]:
+                - img [ref=e730]
+                - text: 6.0s
+              - button "查看证据" [ref=e733] [cursor=pointer]:
+                - img [ref=e734]
+                - text: 查看证据
+                - img [ref=e737]
+    - contentinfo [ref=e335]:
+      - generic [ref=e336]:
+        - generic [ref=e337]:
+          - button "语音指令" [ref=e338] [cursor=pointer]:
+            - img [ref=e339]
+          - textbox "分析 TSLA 的市场情况..." [active] [ref=e342]
+          - button [disabled] [ref=e343]:
+            - img [ref=e344]
+        - paragraph [ref=e347]: NUX 是一个 AI 金融研究工作台，不构成投资建议。期权交易具有高风险。

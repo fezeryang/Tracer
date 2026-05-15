@@ -1,0 +1,15 @@
+export function formatCurrency(value: unknown): string;
+export function formatPercent(value: unknown): string;
+export function formatLargeNumber(value: unknown): string;
+export function inferDataQuality(source: unknown): 'available' | 'limited' | 'simulation' | 'unavailable' | 'fallback';
+export function buildQuoteBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildNewsBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildFundamentalsBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildHistoryChartBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildSecTableBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildOfficialSourceBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildSourceTrustBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildEvidenceBundleBlocks(input: Record<string, unknown>): Record<string, unknown>[];
+export function buildDataQualityBlock(input: Record<string, unknown>): Record<string, unknown>;
+export function buildDisclaimerBlock(input?: Record<string, unknown>): Record<string, unknown>;
+export function buildActionButtonBlock(input: Record<string, unknown>): Record<string, unknown>;

@@ -21,6 +21,8 @@ const getAI = () => {
   return aiInstance;
 };
 
+const isRagEmbeddingEnabled = () => import.meta.env.VITE_ENABLE_RAG_EMBEDDINGS === 'true';
+
 interface VectorDocument {
   id: string;
   text: string;
@@ -46,6 +48,7 @@ class SimpleVectorStore {
   }
 
   async addDocument(text: string, metadata: any = {}) {
+    if (!isRagEmbeddingEnabled()) return;
     try {
       const ai = getAI();
       // Generate Embedding using Gemini
@@ -68,11 +71,12 @@ class SimpleVectorStore {
           console.log(`[RAG] Ingested document: "${text.substring(0, 50)}..."`);
       }
     } catch (e) {
-      console.error("[RAG] Failed to generate embedding", e);
+      console.warn("[RAG] Failed to generate embedding", e);
     }
   }
 
   async search(query: string, limit: number = 3): Promise<VectorDocument[]> {
+    if (!isRagEmbeddingEnabled()) return [];
     if (this.documents.length === 0) return [];
 
     try {
@@ -99,7 +103,7 @@ class SimpleVectorStore {
             .slice(0, limit);
 
     } catch (e) {
-        console.error("[RAG] Search failed", e);
+        console.warn("[RAG] Search failed", e);
         return [];
     }
   }

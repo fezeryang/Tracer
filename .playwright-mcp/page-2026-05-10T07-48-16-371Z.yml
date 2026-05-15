@@ -1,0 +1,205 @@
+- generic [ref=e26]:
+  - complementary [ref=e27]:
+    - generic [ref=e28]:
+      - generic [ref=e29]: "N"
+      - generic [ref=e30]:
+        - generic [ref=e31]: NUX
+        - generic [ref=e32]: AI Research Terminal
+    - navigation [ref=e33]:
+      - button "总览" [ref=e34] [cursor=pointer]:
+        - img [ref=e35]
+        - text: 总览
+      - button "智能报告" [ref=e40] [cursor=pointer]:
+        - img [ref=e41]
+        - text: 智能报告
+      - button "聊天分析" [ref=e44] [cursor=pointer]:
+        - img [ref=e45]
+        - text: 聊天分析
+      - button "期权链" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+        - text: 期权链
+      - button "策略回测" [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+        - text: 策略回测
+      - button "新闻影响" [ref=e57] [cursor=pointer]:
+        - img [ref=e58]
+        - text: 新闻影响
+      - button "宏观数据" [ref=e64] [cursor=pointer]:
+        - img [ref=e65]
+        - text: 宏观数据
+      - button "模拟交易" [ref=e68] [cursor=pointer]:
+        - img [ref=e69]
+        - text: 模拟交易
+      - button "时间机器" [ref=e73] [cursor=pointer]:
+        - img [ref=e74]
+        - text: 时间机器
+      - button "市场情绪" [ref=e77] [cursor=pointer]:
+        - img [ref=e78]
+        - text: 市场情绪
+      - button "学院" [ref=e83] [cursor=pointer]:
+        - img [ref=e84]
+        - text: 学院
+      - button "反馈" [ref=e87] [cursor=pointer]:
+        - img [ref=e88]
+        - text: 反馈
+      - button "管理后台" [ref=e90] [cursor=pointer]:
+        - img [ref=e91]
+        - text: 管理后台
+    - generic [ref=e94]:
+      - generic [ref=e95]: 风险概览
+      - generic [ref=e96]: "42"
+      - generic [ref=e97]: 中等
+  - generic [ref=e100]:
+    - generic [ref=e101]:
+      - generic [ref=e102]:
+        - img
+        - textbox "搜索资产、市场、报告..." [ref=e103]
+      - generic [ref=e104]:
+        - generic [ref=e107]:
+          - generic [ref=e108]: 市场已收盘
+          - generic [ref=e109]: "当前时间: 03:48:15 PM"
+        - button "English" [ref=e110] [cursor=pointer]:
+          - img [ref=e111]
+          - text: English
+        - button [ref=e116] [cursor=pointer]:
+          - img [ref=e117]
+        - button [ref=e120] [cursor=pointer]:
+          - img [ref=e121]
+        - button [ref=e124] [cursor=pointer]:
+          - img [ref=e125]
+    - generic [ref=e130]:
+      - generic [ref=e131]:
+        - generic [ref=e132]:
+          - heading "市场总览" [level=1] [ref=e133]
+          - paragraph [ref=e134]: 面向研究、监控和分发的金融工作台首页。
+        - generic [ref=e135]: "最近更新: 2 分钟前 · 5/10/2026"
+      - generic [ref=e269]:
+        - generic [ref=e270]:
+          - generic [ref=e271]: S&P 500
+          - generic [ref=e272]:
+            - generic [ref=e273]:
+              - generic [ref=e274]: "737.54"
+              - generic [ref=e275]: +0.82%
+            - img [ref=e276]
+        - generic [ref=e278]:
+          - generic [ref=e279]: NASDAQ 100
+          - generic [ref=e280]:
+            - generic [ref=e281]:
+              - generic [ref=e282]: "711.06"
+              - generic [ref=e283]: +2.32%
+            - img [ref=e284]
+        - generic [ref=e286]:
+          - generic [ref=e287]: DOW JONES
+          - generic [ref=e288]:
+            - generic [ref=e289]:
+              - generic [ref=e290]: "496.04"
+              - generic [ref=e291]: +0.03%
+            - img [ref=e292]
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - heading "市场表现" [level=3] [ref=e139]
+          - generic [ref=e140]:
+            - generic [ref=e141]:
+              - generic [ref=e142]:
+                - generic [ref=e143]: $2,847,632.18
+                - generic [ref=e144]: +24,729.18 (0.88%)
+              - generic [ref=e145]: 1D · 1W · 1M · YTD
+            - img [ref=e147]
+        - generic [ref=e150]:
+          - generic [ref=e151]:
+            - heading "资产配置" [level=3] [ref=e153]
+            - generic [ref=e156]:
+              - generic [ref=e157]: Assets
+              - generic [ref=e158]: $2.85M
+            - generic [ref=e159]:
+              - generic [ref=e160]:
+                - generic [ref=e161]: Equities
+                - generic [ref=e162]: 58.0%
+              - generic [ref=e163]:
+                - generic [ref=e164]: Fixed Income
+                - generic [ref=e165]: 16.0%
+              - generic [ref=e166]:
+                - generic [ref=e167]: Alternatives
+                - generic [ref=e168]: 10.0%
+              - generic [ref=e169]:
+                - generic [ref=e170]: Commodities
+                - generic [ref=e171]: 8.0%
+              - generic [ref=e172]:
+                - generic [ref=e173]: Cash
+                - generic [ref=e174]: 8.0%
+          - generic [ref=e175]:
+            - heading "风险概览" [level=3] [ref=e177]
+            - generic [ref=e178]:
+              - generic [ref=e179]:
+                - generic [ref=e180]: "42"
+                - generic [ref=e181]: 中等
+              - generic [ref=e184]:
+                - generic [ref=e185]:
+                  - generic [ref=e186]: Volatility
+                  - generic [ref=e187]: 12.45%
+                - generic [ref=e188]:
+                  - generic [ref=e189]: VaR (95%)
+                  - generic [ref=e190]: "-$78,430"
+                - generic [ref=e191]:
+                  - generic [ref=e192]: Max DD
+                  - generic [ref=e193]: "-12.32%"
+        - generic [ref=e194]:
+          - generic [ref=e195]:
+            - generic [ref=e196]:
+              - heading "市场观察" [level=3] [ref=e197]
+              - paragraph [ref=e198]: 核心资产的实时追踪与快速分发。
+            - button "自定义" [ref=e199] [cursor=pointer]
+          - generic [ref=e294]:
+            - generic [ref=e295]:
+              - generic [ref=e296]:
+                - generic [ref=e297]: AAPL
+                - generic [ref=e298]: Alpaca Markets (IEX)
+              - generic [ref=e299]:
+                - generic [ref=e300]: $292.85
+                - generic [ref=e301]: +5.45 / 1.90%
+            - generic [ref=e302]:
+              - generic [ref=e303]:
+                - generic [ref=e304]: NVDA
+                - generic [ref=e305]: Alpaca Markets (IEX)
+              - generic [ref=e306]:
+                - generic [ref=e307]: $215.21
+                - generic [ref=e308]: +3.65 / 1.73%
+      - generic [ref=e200]:
+        - generic [ref=e201]:
+          - generic [ref=e202]:
+            - heading "市场图表" [level=3] [ref=e203]
+            - paragraph [ref=e204]: 用于快速判断趋势、波动和关键价位。
+          - generic [ref=e206]:
+            - generic [ref=e207]: AAPL · 1D · NASDAQ
+            - generic [ref=e208]: 193.92 → 195.89
+        - generic [ref=e246]:
+          - generic [ref=e247]:
+            - heading "AI 市场洞察" [level=3] [ref=e249]
+            - generic [ref=e250]:
+              - img [ref=e252]
+              - generic [ref=e254]:
+                - generic [ref=e255]: AI
+                - paragraph [ref=e256]: 科技与大盘风格资产保持相对强势，当前更适合把注意力放在盈利兑现、波动扩张和资金轮动信号上。
+          - generic [ref=e257]:
+            - generic [ref=e258]:
+              - heading "市场新闻" [level=3] [ref=e259]
+              - paragraph [ref=e260]: 用于快速扫描宏观、政策与科技板块 headline。
+            - generic [ref=e261]:
+              - generic [ref=e309]:
+                - generic [ref=e310]:
+                  - img [ref=e311]
+                  - text: The Motley Fool Cached
+                - generic [ref=e314]: Is This the Right Time to Rebalance Your Portfolio?
+                - generic [ref=e315]: The article discusses portfolio rebalancing strategy, noting there's no perfect time to rebalance but the right time depends on individual circumstances. Rebalancing restores target allocation and enforces buy-low, sell-high discipline, but can trigger taxes and cut short winning positions. The author recommends rebalancing when material changes occur rather than on a calendar basis, emphasizing that investors should make decisions based on their own situation rather than market timing.
+              - generic [ref=e316]:
+                - generic [ref=e317]:
+                  - img [ref=e318]
+                  - text: Benzinga Cached
+                - generic [ref=e321]: SanDisk Did In Months What Nvidia Took 9 Years To Pull Off — And The Chart Looks Almost Unreal
+                - generic [ref=e322]: SanDisk has surged 4,086% since its February 2025 spin-off, matching Nvidia's 9-year 4,006% gain in just 15 months. The rally is driven by an extreme supply-demand imbalance in AI memory chips, with hyperscalers signing multi-year contracts and memory companies operating at 80%+ margins. Despite explosive earnings growth, memory chip makers trade at valuations (5-8x forward earnings) far below the S&P 500 (21.5x) and Nvidia (37x), suggesting potential further upside if the market re-rates these essential AI infrastructure suppliers.
+              - generic [ref=e323]:
+                - generic [ref=e324]:
+                  - img [ref=e325]
+                  - text: Investing.com Cached
+                - generic [ref=e328]: S&P 500 Technical Setup Suggests Bulls Still Control the Market Trend
+                - generic [ref=e329]: Technical analysis of the S&P 500 indicates bullish momentum continues to dominate the market. The SPY's 5-period RSI shows multiple 'Signs of Strength' (SOS) price surges coming off recent lows, with the SPY/VIX ratio confirming the uptrend. Previous resistance near 715 SPY is now acting as support. Meanwhile, GDX remains in consolidation between 80.00-120.00, with both momentum indicators below zero suggesting a trading range may persist for several more weeks.

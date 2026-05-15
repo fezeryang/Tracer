@@ -1,0 +1,107 @@
+[      39ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ https://cdn.tailwindcss.com/:63
+[     299ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:21550
+[     379ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[     380ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[     384ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[     385ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    1722ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    1736ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    2563ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    2568ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    3085ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[    3932ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   37196ms] [LOG] [MarketService] Fetching data for TSLA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  139146ms] ReferenceError: padding is not defined
+    at DataTableBlock (http://localhost:5173/components/chat/DataTableBlock.tsx?t=1778407244157:79:51)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:3699:24)
+    at invokeGuardedCallback (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:3733:39)
+    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19765:15)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19198:20)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19137:13)
+[  139149ms] ReferenceError: padding is not defined
+    at DataTableBlock (http://localhost:5173/components/chat/DataTableBlock.tsx?t=1778407244157:79:51)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:15924:22)
+    at HTMLUnknownElement.callCallback2 (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:3674:22)
+    at Object.invokeGuardedCallbackDev (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:3699:24)
+    at invokeGuardedCallback (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:3733:39)
+    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19765:15)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19198:20)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19137:13)
+[  139153ms] [ERROR] The above error occurred in the <DataTableBlock> component:
+
+    at DataTableBlock (http://localhost:5173/components/chat/DataTableBlock.tsx?t=1778407244157:50:3)
+    at div
+    at div
+    at ChatMessageRenderer (http://localhost:5173/components/chat/ChatMessageRenderer.tsx:36:3)
+    at div
+    at div
+    at NuxPage (http://localhost:5173/components/NuxPage.tsx:29:27)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at AppShell (http://localhost:5173/components/AppShell.tsx:51:3)
+    at div
+    at ErrorBoundary (http://localhost:5173/App.tsx:79:5)
+    at App (http://localhost:5173/App.tsx:292:35)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, ErrorBoundary. @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:14031
+[  139153ms] [ERROR] App crashed: ReferenceError: padding is not defined
+    at DataTableBlock (http://localhost:5173/components/chat/DataTableBlock.tsx?t=1778407244157:79:51)
+    at renderWithHooks (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:11548:26)
+    at updateFunctionComponent (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:14582:28)
+    at beginWork (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:15924:22)
+    at beginWork$1 (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19753:22)
+    at performUnitOfWork (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19198:20)
+    at workLoopSync (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19137:13)
+    at renderRootSync (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:19116:15)
+    at recoverFromConcurrentError (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:18736:28)
+    at performSyncWorkOnRoot (http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:18879:28) {componentStack: 
+    at DataTableBlock (http://localhost:5173/comp…    at App (http://localhost:5173/App.tsx:292:35)} @ http://localhost:5173/App.tsx:85
+[  176699ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5173/components/chat/DataTableBlock.tsx?t=1778407281880:0
+[  176745ms] [ERROR] [hmr] Failed to reload /components/chat/DataTableBlock.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:5173/@vite/client:175
+[  264736ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5173/@vite/client:559
+[  264741ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  265760ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  266763ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  267767ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  267439ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  268451ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  269455ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  270460ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  271468ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  272482ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  273496ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  274511ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  275515ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  276530ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  277545ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  278553ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  279569ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  280572ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  281582ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  282585ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  283588ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  284592ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  285595ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  286600ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  287602ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:5173/:0
+[  288731ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ https://cdn.tailwindcss.com/:63
+[  290337ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:21550
+[  290457ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  290459ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  290463ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  290464ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  291827ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  291849ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  292679ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  292765ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  293270ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[  294122ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29

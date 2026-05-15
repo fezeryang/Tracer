@@ -18,6 +18,7 @@ import MermaidBlock from './MermaidBlock';
 import ActionButtonRow from './ActionButtonRow';
 import EvidenceList from './EvidenceList';
 import ToolTracePanel from './ToolTracePanel';
+import DataTableBlock from './DataTableBlock';
 
 interface ChatMessageRendererProps {
   message: Message;
@@ -173,8 +174,12 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({
                   <FormulaBlock
                     key={idx}
                     language={language}
-                    formula={block.content || ''}
+                    formula={block.content}
                     description={block.title}
+                    formulaId={block.formulaId}
+                    dataQuality={block.dataQuality}
+                    source={block.source}
+                    compact={block.compact}
                   />
                 );
 
@@ -184,15 +189,39 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({
                     key={idx}
                     language={language}
                     title={block.title}
-                    data={block.data?.chartData || []}
-                    type={block.data?.chartType || 'line'}
+                    description={block.content}
+                    data={Array.isArray(block.data) ? block.data : (Array.isArray(block.data?.chartData) ? block.data.chartData : [])}
+                    type={block.chartType || block.data?.chartType || 'line'}
                     color={block.data?.chartColor}
-                    yAxisLabel={block.data?.yAxisLabel}
+                    source={block.source}
+                    sourceUrl={block.sourceUrl}
+                    dataQuality={block.dataQuality}
+                    xAxisLabel={block.xAxisLabel || block.data?.xAxisLabel}
+                    yAxisLabel={block.yAxisLabel || block.data?.yAxisLabel}
+                    secondaryYAxisLabel={block.secondaryYAxisLabel || block.data?.secondaryYAxisLabel}
+                    legend={block.legend || block.data?.legend}
+                    compact={block.compact}
+                    validationStatus={block.validationStatus}
                   />
                 );
 
               case 'mermaid':
-                return <MermaidBlock key={idx} language={language} code={block.content || ''} />;
+                return (
+                  <MermaidBlock
+                    key={idx}
+                    language={language}
+                    title={block.title}
+                    code={block.content || ''}
+                    description={block.data?.description}
+                    source={block.source}
+                    dataQuality={block.dataQuality}
+                    validationStatus={block.validationStatus}
+                    diagramType={block.diagramType}
+                    validated={block.validated}
+                    validationMessage={block.validationMessage}
+                    compact={block.compact}
+                  />
+                );
 
               case 'action_buttons':
                 return (
@@ -224,6 +253,23 @@ const ChatMessageRenderer: React.FC<ChatMessageRendererProps> = ({
                       message={block.content}
                     />
                   </div>
+                );
+
+              case 'data_table':
+                return (
+                  <DataTableBlock
+                    key={idx}
+                    title={block.title}
+                    columns={block.columns || []}
+                    rows={block.rows || []}
+                    caption={block.caption}
+                    source={block.source}
+                    sourceUrl={block.sourceUrl}
+                    dataQuality={block.dataQuality}
+                    emptyState={block.emptyState}
+                    compact={block.compact}
+                    language={language}
+                  />
                 );
 
               default:

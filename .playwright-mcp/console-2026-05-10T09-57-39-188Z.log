@@ -1,0 +1,12 @@
+[   35398ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ https://cdn.tailwindcss.com/:63
+[   35751ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ http://localhost:5173/node_modules/.vite/deps/chunk-NUMECXU6.js?v=3afc9807:21550
+[   36053ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   36055ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   36061ms] [LOG] [MarketService] Fetching data for SPY from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   36062ms] [LOG] [MarketService] Fetching data for AAPL from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   37429ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   37437ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   38266ms] [LOG] [MarketService] Fetching data for QQQ from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   38274ms] [LOG] [MarketService] Fetching data for NVDA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   38784ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29
+[   39627ms] [LOG] [MarketService] Fetching data for DIA from Backend... @ http://localhost:5173/services/marketDataService.ts:29

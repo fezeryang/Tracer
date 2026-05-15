@@ -1,0 +1,97 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: "N"
+      - generic [ref=e8]:
+        - generic [ref=e9]: NUX
+        - generic [ref=e10]: AI Research Terminal
+    - navigation [ref=e11]:
+      - button "总览" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+        - text: 总览
+      - button "智能报告" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+        - text: 智能报告
+      - button "聊天分析" [ref=e22] [cursor=pointer]:
+        - img [ref=e23]
+        - text: 聊天分析
+      - button "期权链" [ref=e25] [cursor=pointer]:
+        - img [ref=e26]
+        - text: 期权链
+      - button "策略回测" [ref=e30] [cursor=pointer]:
+        - img [ref=e31]
+        - text: 策略回测
+      - button "新闻影响" [ref=e35] [cursor=pointer]:
+        - img [ref=e36]
+        - text: 新闻影响
+      - button "宏观数据" [ref=e42] [cursor=pointer]:
+        - img [ref=e43]
+        - text: 宏观数据
+      - button "模拟交易" [ref=e46] [cursor=pointer]:
+        - img [ref=e47]
+        - text: 模拟交易
+      - button "时间机器" [ref=e51] [cursor=pointer]:
+        - img [ref=e52]
+        - text: 时间机器
+      - button "市场情绪" [ref=e55] [cursor=pointer]:
+        - img [ref=e56]
+        - text: 市场情绪
+      - button "学院" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+        - text: 学院
+      - button "反馈" [ref=e65] [cursor=pointer]:
+        - img [ref=e66]
+        - text: 反馈
+      - button "管理后台" [ref=e68] [cursor=pointer]:
+        - img [ref=e69]
+        - text: 管理后台
+    - generic [ref=e72]:
+      - generic [ref=e73]: 风险概览
+      - generic [ref=e74]: "42"
+      - generic [ref=e75]: 中等
+  - generic [ref=e76]:
+    - generic [ref=e78]:
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - img
+          - textbox "搜索资产、市场、报告..." [ref=e81]
+        - generic [ref=e82]:
+          - generic [ref=e85]:
+            - generic [ref=e86]: 市场已收盘
+            - generic [ref=e87]: "当前时间: 06:06:57 PM"
+          - button "English" [ref=e88] [cursor=pointer]:
+            - img [ref=e89]
+            - text: English
+          - button [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+          - button [ref=e98] [cursor=pointer]:
+            - img [ref=e99]
+          - button [ref=e102] [cursor=pointer]:
+            - img [ref=e103]
+      - generic [ref=e247]:
+        - generic [ref=e250]:
+          - generic [ref=e251]: NUX 智能金融研究终端
+          - heading "AI 聊天分析" [level=1] [ref=e252]
+          - paragraph [ref=e253]: 围绕行情、新闻、期权和策略进行交互式研究。
+        - generic [ref=e254]: "当前研究对象: TSLA"
+        - generic [ref=e256]:
+          - button "查看 TSLA 行情" [ref=e257] [cursor=pointer]
+          - button "查看 TSLA 新闻" [ref=e258] [cursor=pointer]
+          - button "查看 TSLA 来源可信度" [ref=e259] [cursor=pointer]
+          - button "生成 TSLA 报告" [ref=e260] [cursor=pointer]
+          - button "查看 TSLA 期权链" [ref=e261] [cursor=pointer]
+        - generic [ref=e262]:
+          - img [ref=e264]
+          - generic [ref=e267]:
+            - paragraph [ref=e268]: NUX 智能金融研究终端已启动。市场数据链路已连接，等待你的指令。
+            - button "朗读" [ref=e269] [cursor=pointer]:
+              - img [ref=e270]
+    - contentinfo [ref=e274]:
+      - generic [ref=e275]:
+        - generic [ref=e276]:
+          - button "语音指令" [ref=e277] [cursor=pointer]:
+            - img [ref=e278]
+          - textbox "分析 TSLA 的市场情况..." [active] [ref=e281]
+          - button [disabled] [ref=e282]:
+            - img [ref=e283]
+        - paragraph [ref=e286]: NUX 是一个 AI 金融研究工作台，不构成投资建议。期权交易具有高风险。
